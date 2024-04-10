@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestConvertVideoToAudio(t *testing.T) {
+func Test_convertVideoToAudio(t *testing.T) {
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
@@ -28,7 +28,7 @@ func TestConvertVideoToAudio(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "TestConvertVideoToAudio",
+			name: "Convert a video to audio file successfully",
 			args: args{
 				inputFilePath:  testFilePath,
 				outputFilePath: filepath.Join(rootDirectory, "output.mp3"),
@@ -39,7 +39,7 @@ func TestConvertVideoToAudio(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := convertVideoToAudio(tt.args.inputFilePath, tt.args.outputFilePath); (err != nil) != tt.wantErr {
-				t.Errorf("ConvertVideoToAudio() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("convertVideoToAudio() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
