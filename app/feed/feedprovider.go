@@ -28,6 +28,16 @@ func NewFeedProvider(directoryPath string) *FeedProvider {
 }
 
 func (fp *FeedProvider) GetFeed() (*feeds.RssFeed, error) {
+	_, err := getAllAudioFiles(fp.directoryPath)
+	if err != nil {
+		return nil, err
+	}
+	
+	// create a feed parent and items for each audio file
+	//for _, _ := range audioFiles {
+		// checkout https://github.com/gorilla/feeds
+	//}
+	
 	return nil, nil
 }
 
