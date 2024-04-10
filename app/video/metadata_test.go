@@ -6,45 +6,48 @@ import (
 	"testing"
 )
 
-func TestGetMetadata(t *testing.T) {
+func TestSetThumbnailPicture(t *testing.T) {
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
 		t.Error("could not create folder")
 	}
 
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test", "video.mp4"))
+	videoFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test", "video.mp4"))
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	imageFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test", "image.jpg"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
 
 	type args struct {
-		inputFilePath string
+		mediaFilePath string
+		imageFilePath string
+		outputFilePath string
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    string
 		wantErr bool
 	}{
 		{
-			name: "get metadata",
+			name: "set thumbnail picture to video file",
 			args: args{
-				inputFilePath: testFilePath,
+				mediaFilePath: videoFilePath,
+				imageFilePath: imageFilePath,
+				outputFilePath: filepath.Join(rootDirectory, "output.mp4"),
 			},
-			want: "---",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetMetadata(tt.args.inputFilePath)
+			err := SetThumbnailPicture(tt.args.mediaFilePath, tt.args.imageFilePath, tt.args.outputFilePath)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetMetadata() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SetThumbnailPicture() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != tt.want {
-				t.Errorf("GetMetadata() = %v, want %v", got, tt.want)
 			}
 		})
 	}
