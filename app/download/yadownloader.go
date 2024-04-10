@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/jo-hoe/go-audio-rss-feeder/app/video"
 	"github.com/kkdai/youtube/v2"
 )
 
@@ -82,7 +83,47 @@ func downloadVideo(videoId string, path string) (string, error) {
 		return "", err
 	}
 	defer stream.Close()
-	return createVideoFromStream(stream, video.Title, path)
+	path, err = createVideoFromStream(stream, video.Title, path)
+	if err != nil {
+		return "", err
+	}
+
+	err = setThumbnailUrlAsTag(path, video)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func setThumbnailUrlAsTag(videoPath string, inputVideo *youtube.Video) error {
+	if inputVideo.Thumbnails == nil || len(inputVideo.Thumbnails) == 0 {
+		return nil
+	}
+
+	metadata, err := video.GetTagMetadata(videoPath)
+	if err != nil {
+		return err
+	}
+
+	thumbnailIdx := 0
+	thumbnailMaxSize := uint(0)
+	for i, thumbnail := range inputVideo.Thumbnails {
+		if thumbnail.Width > thumbnailMaxSize {
+			thumbnailIdx = i
+		}
+
+	}
+
+	metadata[ThumbnailUrlTag] = inputVideo.Thumbnails[thumbnailIdx].URL
+
+	tmpFileName := fmt.Sprintf("%s.tmp.mp4", videoPath)
+	err = video.SetTagMetadata(videoPath, metadata, tmpFileName)
+	if err != nil {
+		return err
+	}
+
+	return os.Rename(tmpFileName, videoPath)
 }
 
 func createVideoFromStream(stream io.ReadCloser, videoName string, path string) (string, error) {

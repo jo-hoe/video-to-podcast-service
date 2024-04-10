@@ -6,3 +6,4 @@ type VideoAudioDownloader interface {
 }
 
 const ErrIsSupported = "this downloader is not responsible for this URL"
+const ThumbnailUrlTag = "comment"
