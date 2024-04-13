@@ -1,96 +1,78 @@
 package feed
 
 import (
-	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"reflect"
+	"time"
 
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
 )
 
-var supportedAudioFileExtensions = map[string]bool {
-    "mp3": true,
-    "wav": true,
-    "flac": true,
-    "ogg": true,
-	"mpeg": true,
-}
-
 type FeedProvider struct {
-	directoryPath string
+	audioSourceDirectory string
+	feedTitle            string
+	feedLink             string
+	feedDescription      string
+	feedAuthor           string
+	feedCreated          time.Time
+	feedImage            *feeds.Image
 }
 
-func NewFeedProvider(directoryPath string) *FeedProvider {
+func NewFeedProvider(
+	audioSourceDirectory string,
+	feedTitle string,
+	feedLink string,
+	feedDescription string,
+	feedAuthor string,
+	feedCreated time.Time,
+	feedCopyright string,
+	feedImage *feeds.Image) *FeedProvider {
 	return &FeedProvider{
-		directoryPath: directoryPath,
+		audioSourceDirectory: audioSourceDirectory,
+		feedTitle:            feedTitle,
+		feedLink:             feedLink,
+		feedDescription:      feedDescription,
+		feedAuthor:           feedAuthor,
+		feedCreated:          feedCreated,
+		feedImage:            feedImage,
 	}
 }
 
 func (fp *FeedProvider) GetFeed() (*feeds.RssFeed, error) {
-	_, err := getAllAudioFiles(fp.directoryPath)
+	_, err := discovery.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// create a feed parent and items for each audio file
 	//for _, _ := range audioFiles {
-		// checkout https://github.com/gorilla/feeds
+	// checkout https://github.com/gorilla/feeds
 	//}
-	
+
 	return nil, nil
 }
 
-func getAllAudioFiles(directoryPath string) (result []string, err error) {
-	// take an input directory and return all audio files in it
-	result = make([]string, 0)
-	err = filepath.Walk(directoryPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if !info.IsDir() && isSupportedAudioFile(path) {
-			result = append(result, path)
-		}
-		return nil
-	})
+func (fp *FeedProvider) createFeed() *feeds.Feed {
+	now := time.Now()
 
-	return result, err
+	feed := &feeds.Feed{
+		Title:       valueOrDefault(fp.feedTitle, "Rss Feed"),
+		Link:        &feeds.Link{Href: valueOrDefault(fp.feedLink, "127.0.0.1:8080/rss.xml")},
+		Description: valueOrDefault(fp.feedDescription, ""),
+		Author:      &feeds.Author{Name: valueOrDefault(fp.feedAuthor, "")},
+		Created:     now,
+		Image:       valueOrDefault(fp.feedImage, nil),
+	}
+
+	return feed
 }
 
-func isSupportedAudioFile(filePath string) bool {
-	// plain file extension check
-	fileExtension := strings.ToLower(filepath.Ext(filePath))
-	fileExtensionParts := strings.Split(fileExtension, ".")
-	if len(fileExtensionParts) != 2 {
-		return false
+func valueOrDefault[T any](value, defaultValue T) T {
+	reflectedValue := reflect.ValueOf(value)
+	if reflectedValue.Kind() == reflect.Invalid {
+		return defaultValue
+	} else if reflectedValue.Kind() == reflect.String && reflectedValue.String() == "" {
+		return defaultValue
 	}
-	if !supportedAudioFileExtensions[fileExtensionParts[1]] {
-		return false
-	}
-
-	// more in depth check of file content
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
-	if err != nil {
-		return false
-	}
-	// check content type which looks like "audio/mp3"
-	contentType := http.DetectContentType(buffer)
-	contentTypeParts := strings.Split(contentType, "/")
-	if len(contentTypeParts) != 2 {
-		return false
-	}
-	if contentTypeParts[0] != "audio" {
-		return false
-	}
-	if !supportedAudioFileExtensions[contentTypeParts[1]] {
-		return false
-	}
-
-	return true
+	return value
 }

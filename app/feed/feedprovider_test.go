@@ -1,44 +1,56 @@
 package feed
 
 import (
-	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/gorilla/feeds"
 )
 
-func Test_getAllAudioFiles(t *testing.T) {
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
-	
+func Test_valueOrDefault(t *testing.T) {
 	type args struct {
-		directoryPath string
+		value        any
+		defaultValue any
 	}
 	tests := []struct {
-		name       string
-		args       args
-		wantResult []string
-		wantErr    bool
+		name string
+		args args
+		want any
 	}{
 		{
-			name: "Find MP3 files",
+			name: "string",
 			args: args{
-				directoryPath: testFilePath,
+				value:        "foo",
+				defaultValue: "bar",
 			},
-			wantResult: []string{filepath.Join(testFilePath, "audio.mp3")},
-			wantErr: false,
+			want: "foo",
+		}, {
+			name: "string empty",
+			args: args{
+				value:        "",
+				defaultValue: "bar",
+			},
+			want: "bar",
+		}, {
+			name: "image",
+			args: args{
+				value:        &feeds.Image{},
+				defaultValue: nil,
+			},
+			want: &feeds.Image{},
+		},{
+			name: "nil",
+			args: args{
+				value:        nil,
+				defaultValue: &feeds.Image{},
+			},
+			want: &feeds.Image{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, err := getAllAudioFiles(tt.args.directoryPath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getAllAudioFiles() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("getAllAudioFiles() = %v, want %v", gotResult, tt.wantResult)
+			if got := valueOrDefault(tt.args.value, tt.args.defaultValue); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("valueOrDefault() = %v, want %v", got, tt.want)
 			}
 		})
 	}
