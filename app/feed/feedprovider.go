@@ -10,6 +10,7 @@ import (
 
 type FeedProvider struct {
 	audioSourceDirectory string
+	feedBaseUrl          string
 	feedTitle            string
 	feedLink             string
 	feedDescription      string
@@ -20,17 +21,16 @@ type FeedProvider struct {
 
 func NewFeedProvider(
 	audioSourceDirectory string,
+	feedBaseUrl string,
 	feedTitle string,
-	feedLink string,
 	feedDescription string,
 	feedAuthor string,
 	feedCreated time.Time,
-	feedCopyright string,
 	feedImage *feeds.Image) *FeedProvider {
 	return &FeedProvider{
 		audioSourceDirectory: audioSourceDirectory,
+		feedBaseUrl:          feedBaseUrl,
 		feedTitle:            feedTitle,
-		feedLink:             feedLink,
 		feedDescription:      feedDescription,
 		feedAuthor:           feedAuthor,
 		feedCreated:          feedCreated,
@@ -57,7 +57,7 @@ func (fp *FeedProvider) createFeed() *feeds.Feed {
 
 	feed := &feeds.Feed{
 		Title:       valueOrDefault(fp.feedTitle, "Rss Feed"),
-		Link:        &feeds.Link{Href: valueOrDefault(fp.feedLink, "127.0.0.1:8080/rss.xml")},
+		Link:        &feeds.Link{Href: valueOrDefault(fp.feedBaseUrl, "127.0.0.1:8080/rss.xml")},
 		Description: valueOrDefault(fp.feedDescription, ""),
 		Author:      &feeds.Author{Name: valueOrDefault(fp.feedAuthor, "")},
 		Created:     now,
