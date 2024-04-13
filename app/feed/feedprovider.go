@@ -44,12 +44,10 @@ func (fp *FeedProvider) GetFeed() (*feeds.RssFeed, error) {
 		return nil, err
 	}
 
-	// create a feed parent and items for each audio file
-	//for _, _ := range audioFiles {
-	// checkout https://github.com/gorilla/feeds
-	//}
+	feed := fp.createFeed()
 
-	return nil, nil
+	rssFeed := (&feeds.Rss{Feed: feed}).RssFeed()
+	return rssFeed, nil
 }
 
 func (fp *FeedProvider) createFeed() *feeds.Feed {
