@@ -70,7 +70,7 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 	return &feeds.Item{
 		Title:       valueOrDefault(audioMetadata["Title"], audioFilePath),
 		Link:        &feeds.Link{Href: fp.feedBaseUrl + filepath.Base(audioFilePath)},
-		Description: "A discussion on controlled parallelism in golang",
+		Description: valueOrDefault(audioMetadata["Description"], audioFilePath),
 		Author:      &feeds.Author{Name: valueOrDefault(audioMetadata["Artist"], "")},
 		Created:     now,
 
