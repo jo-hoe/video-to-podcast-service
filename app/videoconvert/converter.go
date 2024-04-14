@@ -21,7 +21,7 @@ func convertVideoToAudio(videoFilePath string, outputFilePath string) error {
 		return err
 	}
 
-	// reapply metadata
+	// re-apply metadata
 	return mp3joiner.SetFFmpegMetadataTag(outputFilePath, metadata, make([]mp3joiner.Chapter, 0))
 }
 
