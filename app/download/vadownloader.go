@@ -6,3 +6,4 @@ type AudioDownloader interface {
 }
 
 const ErrIsSupported = "this downloader is not responsible for this URL"
+const ThumbnailUrlTag = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details

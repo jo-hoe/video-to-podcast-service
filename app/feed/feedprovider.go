@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
@@ -54,6 +55,15 @@ func (fp *FeedProvider) GetFeed() (*feeds.RssFeed, error) {
 
 		feed.Items = append(feed.Items, item)
 	}
+	if len(feed.Items) > 0 {
+		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePaths[0])
+		if err != nil {
+			return nil, err
+		}
+		feed.Image = &feeds.Image{
+			Url: metadata[download.ThumbnailUrlTag],
+		}
+	}
 
 	rssFeed := (&feeds.Rss{Feed: feed}).RssFeed()
 	return rssFeed, nil
@@ -70,10 +80,9 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 	return &feeds.Item{
 		Title:       valueOrDefault(audioMetadata["Title"], audioFilePath),
 		Link:        &feeds.Link{Href: fp.feedBaseUrl + filepath.Base(audioFilePath)},
-		Description: valueOrDefault(audioMetadata["Description"], audioFilePath),
+		Description: valueOrDefault(audioMetadata["Comment"], audioFilePath),
 		Author:      &feeds.Author{Name: valueOrDefault(audioMetadata["Artist"], "")},
 		Created:     now,
-
 	}, nil
 }
 
