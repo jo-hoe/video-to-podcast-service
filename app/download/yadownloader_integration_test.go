@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestYoutubeAudioDownloader_Download(t *testing.T) {
+func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestYoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: "https://www.youtube.com/watch?v=jNQXAC9IVRw&pp=ygUQb25lIHNlY29uZCB2aWRlbw%3D%3D",
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "Me at the zoo.mp4")},
+			want:    []string{filepath.Join(rootDirectory, "Me at the zoo.mp3")},
 			wantErr: false,
 		},
 		{

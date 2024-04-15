@@ -1,4 +1,4 @@
-package videoconvert
+package convertvideo
 
 import (
 	"os"
@@ -38,8 +38,8 @@ func Test_convertVideoToAudio(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := convertVideoToAudio(tt.args.inputFilePath, tt.args.outputFilePath); (err != nil) != tt.wantErr {
-				t.Errorf("convertVideoToAudio() error = %v, wantErr %v", err, tt.wantErr)
+			if err := ConvertVideoToAudio(tt.args.inputFilePath, tt.args.outputFilePath); (err != nil) != tt.wantErr {
+				t.Errorf("ConvertVideoToAudio() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
