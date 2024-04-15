@@ -52,17 +52,16 @@ func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path strin
 func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
 	result := make(map[string]string)
 
-	thumbnailIdx := 0
 	thumbnailMaxSize := uint(0)
 	for i, thumbnail := range youtubeMetadata.Thumbnails {
 		if thumbnail.Width > thumbnailMaxSize {
-			thumbnailIdx = i
+			result[ThumbnailUrlTag] = youtubeMetadata.Thumbnails[i].URL
 		}
 
 	}
-	result["thumbnail"] = youtubeMetadata.Thumbnails[thumbnailIdx].URL
-	result["title"] = youtubeMetadata.Title
-	result["TDES"] = youtubeMetadata.Description
+	result["Artist"] = youtubeMetadata.Author
+	result["Title"] = youtubeMetadata.Title
+	result["Comment"] = youtubeMetadata.Description
 
 	return result
 }
