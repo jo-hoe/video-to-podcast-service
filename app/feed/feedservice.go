@@ -74,7 +74,8 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		feed.Items = append(feed.Items, item)
 		if feed.Image == nil {
 			feed.Image = &feeds.Image{
-				Url: metadata[download.ThumbnailUrlTag],
+				Url:  metadata[download.ThumbnailUrlTag],
+				Link: metadata[download.ThumbnailUrlTag],
 			}
 		}
 	}
