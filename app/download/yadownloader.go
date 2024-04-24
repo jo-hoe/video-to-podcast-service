@@ -31,26 +31,30 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 		if err != nil {
 			return results, err
 		}
-		results = append(results, convertToAudio(videoFile, videoMetadata, path))
+		audioPath, err := convertToAudio(videoFile, videoMetadata, path)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, audioPath)
 	}
 	return results, nil
 }
 
-func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) string {
+func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) (string, error) {
 	fileName := filepath.Base(videoFile)
 	fileNameWithoutExtension := strings.TrimSuffix(fileName, filepath.Ext(fileName))
 	audioFile := filepath.Join(path, fmt.Sprintf("%s.mp3", fileNameWithoutExtension))
-	
+
 	err := convertvideo.ConvertVideoToAudio(videoFile, audioFile)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	metadata := getAudioMetaData(youtubeMetadata)
 	err = mp3joiner.SetFFmpegMetadataTag(audioFile, metadata, make([]mp3joiner.Chapter, 0))
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return audioFile
+	return audioFile, nil
 }
 
 func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
