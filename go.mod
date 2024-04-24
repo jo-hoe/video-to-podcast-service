@@ -12,13 +12,13 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.51.16 // indirect
+	github.com/aws/aws-sdk-go v1.51.28 // indirect
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
+	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
