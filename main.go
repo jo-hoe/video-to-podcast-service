@@ -30,7 +30,7 @@ func main() {
 }
 
 func feedHandler(ctx echo.Context) (err error) {
-	feed.NewFeedProvider("", "").GetFeed()
+	feed.NewFeedProvider("", "").GetFeeds()
 
 	return nil
 }

@@ -1,11 +1,13 @@
 package feed
 
 import (
+	"fmt"
+	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
@@ -13,14 +15,17 @@ import (
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
+const (
+	defaultURL         = "127.0.0.1:8080"
+	defaultURLSuffix   = "rss.xml"
+	defaultTitlePrefix = "Podcast Feed of"
+	defaultDescription = defaultTitlePrefix
+	mp3KeyAttribute    = "artist"
+)
+
 type FeedProvider struct {
 	audioSourceDirectory string
 	feedBaseUrl          string
-	feedTitle            string
-	feedDescription      string
-	feedAuthor           string
-	feedCreated          time.Time
-	feedImage            *feeds.Image
 }
 
 func NewFeedProvider(
@@ -32,33 +37,59 @@ func NewFeedProvider(
 	}
 }
 
-func (fp *FeedProvider) GetFeed() (*feeds.RssFeed, error) {
+func (fp *FeedProvider) GetFeeds() ([]*feeds.RssFeed, error) {
+	feedCollector := make([]*feeds.Feed, 0)
 	audioFilePaths, err := discovery.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
 		return nil, err
 	}
 
-	feed := fp.createFeed()
 	for _, audioFilePath := range audioFilePaths {
+		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
+		if err != nil {
+			return nil, err
+		}
+
+		if metadata[mp3KeyAttribute] == "" {
+			log.Printf("no '%s' found for file '%s' - skipping file", mp3KeyAttribute, filepath.Base(audioFilePath))
+			continue
+		}
+
+		// either returns already created feed or nil
+		feed := fp.getFeedWithAuthor(metadata[mp3KeyAttribute], feedCollector)
+		if feed == nil {
+			feed = fp.createFeed(metadata[mp3KeyAttribute])
+			feedCollector = append(feedCollector, feed)
+		}
+
 		item, err := fp.createFeedItem(audioFilePath)
 		if err != nil {
 			return nil, err
 		}
 
 		feed.Items = append(feed.Items, item)
-	}
-	if len(feed.Items) > 0 {
-		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePaths[0])
-		if err != nil {
-			return nil, err
-		}
-		feed.Image = &feeds.Image{
-			Url: metadata[download.ThumbnailUrlTag],
+		if feed.Image == nil {
+			feed.Image = &feeds.Image{
+				Url: metadata[download.ThumbnailUrlTag],
+			}
 		}
 	}
 
-	rssFeed := (&feeds.Rss{Feed: feed}).RssFeed()
-	return rssFeed, nil
+	results := make([]*feeds.RssFeed, 0)
+	for _, item := range feedCollector {
+		results = append(results, (&feeds.Rss{Feed: item}).RssFeed())
+	}
+
+	return results, nil
+}
+
+func (fp *FeedProvider) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {
+	for _, feed := range feeds {
+		if feed.Author.Name == author {
+			return feed
+		}
+	}
+	return nil
 }
 
 func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error) {
@@ -75,49 +106,34 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 
 	return &feeds.Item{
 		Title:       valueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
-		Link:        &feeds.Link{Href: fp.feedBaseUrl + fileInfo.Name()},
+		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
 		Description: valueOrDefault(audioMetadata["Comment"], ""),
-		Author:      &feeds.Author{Name: valueOrDefault(audioMetadata["Artist"], "")},
+		Author:      &feeds.Author{Name: valueOrDefault(audioMetadata[mp3KeyAttribute], "")},
 		Created:     fileInfo.ModTime(),
 	}, nil
 }
 
-const (
-	defaultTitle = "Podcast Feed"
-	defaultURL   = "127.0.0.1:8080/rss.xml"
-)
-
-func (fp *FeedProvider) createFeed() *feeds.Feed {
+func (fp *FeedProvider) createFeed(author string) *feeds.Feed {
 	feed := &feeds.Feed{
-		Title:       valueOrDefault(fp.feedTitle, defaultTitle),
-		Link:        &feeds.Link{Href: valueOrDefault(fp.feedBaseUrl, defaultURL)},
-		Description: valueOrDefault(fp.feedDescription, ""),
-		Author:      &feeds.Author{Name: valueOrDefault(fp.feedAuthor, "")},
-		Created:     valueOrDefault(fp.feedCreated, time.Now()),
-		Image:       valueOrDefault(fp.feedImage, nil),
+		Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, author),
+		Link:        &feeds.Link{Href: fp.getFeedUrl(author)},
+		Description: fmt.Sprintf("%s %s", defaultDescription, author),
+		Author:      &feeds.Author{Name: author},
 	}
 
 	return feed
 }
 
-func (fp *FeedProvider) setFeedTitle(title string) {
-	fp.feedTitle = title
+func (fp *FeedProvider) getFeedUrl(author string) string {
+	urlEncodedTitle := url.PathEscape(author)
+
+	return fmt.Sprintf("%s/%s/%s", valueOrDefault(fp.feedBaseUrl, defaultURL), urlEncodedTitle, defaultURLSuffix)
 }
 
-func (fp *FeedProvider) setFeedDescription(description string) {
-	fp.feedDescription = description
-}
+func (fp *FeedProvider) getFeedItemUrl(author string, itemName string) string {
+	urlEncodedItemName := url.PathEscape(itemName)
 
-func (fp *FeedProvider) setFeedAuthor(author string) {
-	fp.feedAuthor = author
-}
-
-func (fp *FeedProvider) setFeedCreationTime(creationTime time.Time) {
-	fp.feedCreated = creationTime
-}
-
-func (fp *FeedProvider) setFeedImage(image *feeds.Image) {
-	fp.feedImage = image
+	return fmt.Sprintf("%s/%s", fp.getFeedUrl(author), urlEncodedItemName)
 }
 
 func valueOrDefault[T any](value, defaultValue T) T {
