@@ -82,10 +82,15 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 	}, nil
 }
 
+const (
+	defaultTitle = "Podcast Feed"
+	defaultURL   = "127.0.0.1:8080/rss.xml"
+)
+
 func (fp *FeedProvider) createFeed() *feeds.Feed {
 	feed := &feeds.Feed{
-		Title:       valueOrDefault(fp.feedTitle, "Rss Feed"),
-		Link:        &feeds.Link{Href: valueOrDefault(fp.feedBaseUrl, "127.0.0.1:8080/rss.xml")},
+		Title:       valueOrDefault(fp.feedTitle, defaultTitle),
+		Link:        &feeds.Link{Href: valueOrDefault(fp.feedBaseUrl, defaultURL)},
 		Description: valueOrDefault(fp.feedDescription, ""),
 		Author:      &feeds.Author{Name: valueOrDefault(fp.feedAuthor, "")},
 		Created:     valueOrDefault(fp.feedCreated, time.Now()),
