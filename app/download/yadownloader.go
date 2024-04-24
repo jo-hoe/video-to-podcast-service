@@ -31,7 +31,15 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 		if err != nil {
 			return results, err
 		}
-		audioPath, err := convertToAudio(videoFile, videoMetadata, path)
+
+		// create author specific path if not exist
+		calculatedPath := filepath.Join(path, videoMetadata.Author)
+		err = os.MkdirAll(calculatedPath, os.ModePerm)
+		if err != nil {
+			return results, err
+		}
+
+		audioPath, err := convertToAudio(videoFile, videoMetadata, calculatedPath)
 		if err != nil {
 			return results, err
 		}

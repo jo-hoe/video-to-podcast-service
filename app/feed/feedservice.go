@@ -19,8 +19,7 @@ const (
 	defaultURL         = "127.0.0.1"
 	defaultPort        = "8080"
 	defaultURLSuffix   = "rss.xml"
-	defaultTitlePrefix = "Podcast Feed of"
-	defaultDescription = defaultTitlePrefix
+	defaultDescription = "Podcast Feed of"
 	mp3KeyAttribute    = "artist"
 )
 
@@ -119,7 +118,7 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 
 func (fp *FeedService) createFeed(author string) *feeds.Feed {
 	feed := &feeds.Feed{
-		Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, author),
+		Title:       author,
 		Link:        &feeds.Link{Href: fp.getFeedUrl(author)},
 		Description: fmt.Sprintf("%s %s", defaultDescription, author),
 		Author:      &feeds.Author{Name: author},
@@ -138,6 +137,8 @@ func (fp *FeedService) getFeedUrl(author string) string {
 
 func (fp *FeedService) getFeedItemUrl(author string, itemName string) string {
 	urlEncodedItemName := url.PathEscape(itemName)
+	// remove the suffix from the url
+	urlPath := strings.TrimSuffix(fp.getFeedUrl(author), fmt.Sprintf("/%s", defaultURLSuffix))
 
-	return fmt.Sprintf("%s/%s", fp.getFeedUrl(author), urlEncodedItemName)
+	return fmt.Sprintf("%s/%s", urlPath, urlEncodedItemName)
 }
