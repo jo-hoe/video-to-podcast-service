@@ -37,11 +37,12 @@ func TestCreateFeed(t *testing.T) {
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
-				Title:       "Rss Feed",
+				Title:       defaultTitle,
 				Link:        &feeds.Link{Href: "127.0.0.1:8080/rss.xml"},
 				Description: "",
 				Author:      &feeds.Author{Name: ""},
 				Created:     defaultTime,
+				Updated:     time.Time{},
 				Image:       nil,
 			},
 		},
@@ -165,7 +166,6 @@ func TestNewFeedProvider(t *testing.T) {
 }
 
 func TestFeedProvider_GetFeed(t *testing.T) {
-	testTitle := "Test Title"
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
@@ -184,7 +184,8 @@ func TestFeedProvider_GetFeed(t *testing.T) {
 				feedBaseUrl:          "",
 			},
 			want: &feeds.RssFeed{
-				Title: testTitle,
+				Title: defaultTitle,
+				Link:  defaultURL,
 			},
 			wantErr: false,
 		},
@@ -197,8 +198,11 @@ func TestFeedProvider_GetFeed(t *testing.T) {
 				return
 			}
 
-			if got.Title != testTitle {
-				t.Errorf("Unexpected Title. Expected %s but received %s", testTitle, got.Title)
+			if got.Title != defaultTitle {
+				t.Errorf("Unexpected Title. Expected %s but received %s", defaultTitle, got.Title)
+			}
+			if got.Link != defaultURL {
+				t.Errorf("Unexpected Title. Expected %s but received %s", defaultURL, got.Link)
 			}
 			if len(got.Items) != 1 {
 				t.Errorf("Unexpected Number of Items. Expected %d but received %d", 1, len(got.Items))
