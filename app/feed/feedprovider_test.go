@@ -1,6 +1,7 @@
 package feed
 
 import (
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -10,14 +11,10 @@ import (
 )
 
 func TestCreateFeed(t *testing.T) {
-	defaultTime := time.Now()
+	defaultAuthor := "John Doe"
 	type fields struct {
-		feedTitle            string
 		feedBaseUrl          string
-		feedDescription      string
 		feedAuthor           string
-		feedCreated          time.Time
-		feedImage            *feeds.Image
 		audioSourceDirectory string
 	}
 	tests := []struct {
@@ -28,57 +25,40 @@ func TestCreateFeed(t *testing.T) {
 		{
 			name: "default values",
 			fields: fields{
-				feedTitle:            "",
 				feedBaseUrl:          "",
-				feedDescription:      "",
-				feedAuthor:           "",
-				feedCreated:          defaultTime,
-				feedImage:            nil,
+				feedAuthor:           defaultAuthor,
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
-				Title:       defaultTitle,
-				Link:        &feeds.Link{Href: "127.0.0.1:8080/rss.xml"},
-				Description: "",
-				Author:      &feeds.Author{Name: ""},
-				Created:     defaultTime,
+				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
+				Link:        &feeds.Link{Href: "127.0.0.1:8080/John%20Doe/rss.xml"},
+				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
+				Author:      &feeds.Author{Name: defaultAuthor},
 				Updated:     time.Time{},
-				Image:       nil,
 			},
 		},
 		{
 			name: "custom values",
 			fields: fields{
-				feedTitle:            "My Feed Title",
 				feedBaseUrl:          "https://example.com/feed",
-				feedDescription:      "This is my feed description",
-				feedAuthor:           "John Doe",
-				feedCreated:          defaultTime,
-				feedImage:            &feeds.Image{Url: "https://example.com/image.png"}, // TODO: add more image fields
+				feedAuthor:           defaultAuthor,
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
-				Title:       "My Feed Title",
-				Link:        &feeds.Link{Href: "https://example.com/feed"},
-				Description: "This is my feed description",
-				Author:      &feeds.Author{Name: "John Doe"},
-				Created:     defaultTime,
-				Image:       &feeds.Image{Url: "https://example.com/image.png"}, // TODO: add more image fields
+				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
+				Link:        &feeds.Link{Href: "https://example.com/feed/John%20Doe/rss.xml"},
+				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
+				Author:      &feeds.Author{Name: defaultAuthor},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fp := &FeedProvider{
-				feedTitle:            tt.fields.feedTitle,
 				feedBaseUrl:          tt.fields.feedBaseUrl,
-				feedDescription:      tt.fields.feedDescription,
-				feedAuthor:           tt.fields.feedAuthor,
-				feedCreated:          tt.fields.feedCreated,
-				feedImage:            tt.fields.feedImage,
 				audioSourceDirectory: tt.fields.audioSourceDirectory,
 			}
-			if got := fp.createFeed(); !reflect.DeepEqual(got, tt.want) {
+			if got := fp.createFeed(tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createFeed() = %v, want %v", got, tt.want)
 			}
 		})
@@ -165,85 +145,46 @@ func TestNewFeedProvider(t *testing.T) {
 	}
 }
 
-func TestFeedProvider_GetFeed(t *testing.T) {
+func TestFeedProvider_GetFeeds(t *testing.T) {
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-
 	tests := []struct {
 		name    string
 		fp      *FeedProvider
-		want    *feeds.RssFeed
 		wantErr bool
 	}{
 		{
-			name: "Get Feed",
+			name: "positive test",
 			fp: &FeedProvider{
+				feedBaseUrl:          defaultURL,
 				audioSourceDirectory: testFilePath,
-				feedBaseUrl:          "",
-			},
-			want: &feeds.RssFeed{
-				Title: defaultTitle,
-				Link:  defaultURL,
 			},
 			wantErr: false,
+		},
+		{
+			name: "non existing directory",
+			fp: &FeedProvider{
+				feedBaseUrl:          defaultURL,
+				audioSourceDirectory: "testDir",
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.fp.GetFeed()
+			got, err := tt.fp.GetFeeds()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("FeedProvider.GetFeed() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("FeedProvider.GetFeeds() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
-			if got.Title != defaultTitle {
-				t.Errorf("Unexpected Title. Expected %s but received %s", defaultTitle, got.Title)
+			if got == nil && !tt.wantErr {
+				t.Error("FeedProvider.GetFeeds() got = nil")
 			}
-			if got.Link != defaultURL {
-				t.Errorf("Unexpected Title. Expected %s but received %s", defaultURL, got.Link)
-			}
-			if len(got.Items) != 1 {
-				t.Errorf("Unexpected Number of Items. Expected %d but received %d", 1, len(got.Items))
+			if len(got) != 2 && !tt.wantErr {
+				t.Errorf("expected 2 feeds, got %d", len(got))
 			}
 		})
-	}
-}
-
-func TestFeedProvider_setFeedTitle(t *testing.T) {
-	provider := &FeedProvider{
-		audioSourceDirectory: "",
-		feedBaseUrl:          "",
-	}
-
-	testTitle := "Title"
-	testAuthor := "Autherino"
-	testDescription := "TestDesc"
-	testCreationDate := time.Now()
-	image := feeds.Image{
-		Url: "TestImageUrl",
-	}
-
-	provider.setFeedTitle(testTitle)
-	provider.setFeedAuthor(testAuthor)
-	provider.setFeedDescription(testDescription)
-	provider.setFeedCreationTime(testCreationDate)
-	provider.setFeedImage(&image)
-
-	if provider.feedTitle != testTitle {
-		t.Errorf("Unexpected title. Expected %s but received %s", testTitle, provider.feedTitle)
-	}
-	if provider.feedAuthor != testAuthor {
-		t.Errorf("Unexpected author. Expected %s but received %s", testAuthor, provider.feedAuthor)
-	}
-	if provider.feedDescription != testDescription {
-		t.Errorf("Unexpected description. Expected %s but received %s", testDescription, provider.feedDescription)
-	}
-	if provider.feedCreated != testCreationDate {
-		t.Errorf("Unexpected creation time. Expected %s but received %s", testCreationDate, provider.feedCreated)
-	}
-	if provider.feedImage.Url != image.Url {
-		t.Errorf("Unexpected image url. Expected %s but received %s", provider.feedImage.Url, image.Url)
 	}
 }

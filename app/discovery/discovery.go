@@ -20,7 +20,7 @@ func GetAudioFiles(directoryPath string) (result []string, err error) {
 	result = make([]string, 0)
 	err = filepath.Walk(directoryPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 		if !info.IsDir() && isSupportedAudioFile(path) {
 			result = append(result, path)

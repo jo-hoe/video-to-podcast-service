@@ -27,8 +27,20 @@ func Test_GetAudioFiles(t *testing.T) {
 			args: args{
 				directoryPath: testFilePath,
 			},
-			wantResult: []string{filepath.Join(testFilePath, "audio.mp3")},
+			wantResult: []string{
+				filepath.Join(testFilePath, "audio11.mp3"), 
+				filepath.Join(testFilePath, "audio12.mp3"), 
+				filepath.Join(testFilePath, "audio21.mp3"),
+			},
 			wantErr: false,
+		},
+		{
+			name: "Non Existing Directory",
+			args: args{
+				directoryPath: "test/non-existing-directory",
+			},
+			wantResult: make([]string, 0),
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
