@@ -32,7 +32,7 @@ func TestCreateFeed(t *testing.T) {
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
-				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
+				Title:       defaultAuthor,
 				Link:        &feeds.Link{Href: "127.0.0.1:8080/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
@@ -48,7 +48,7 @@ func TestCreateFeed(t *testing.T) {
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
-				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
+				Title:       defaultAuthor,
 				Link:        &feeds.Link{Href: "https://example.com:443/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},

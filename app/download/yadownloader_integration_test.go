@@ -31,7 +31,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: "https://www.youtube.com/watch?v=jNQXAC9IVRw&pp=ygUQb25lIHNlY29uZCB2aWRlbw%3D%3D",
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "Me at the zoo.mp3")},
+			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo.mp3")},
 			wantErr: false,
 		},
 		{
@@ -39,7 +39,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 			y:    &YoutubeAudioDownloader{},
 			args: args{
 				urlString: "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-",
-				path:      rootDirectory,
+				path:      filepath.Join(rootDirectory, "Successman"),
 			},
 			want:    make([]string, 10),
 			wantErr: false,

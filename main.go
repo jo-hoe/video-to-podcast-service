@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-playground/validator"
+	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/feed"
@@ -39,9 +40,12 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Validator = &genericValidator{Validator: validator.New()}
 
-	e.GET("/v1/feeds", feedsHandler)
-	e.GET("/v1/feeds/:feedName", feedHandler)
 	e.POST("/v1/addItem", addItemHandler)
+
+	e.GET("/v1/feeds", feedsHandler)
+	e.GET("/v1/feeds/:feedTitle/rss.xml", feedHandler)
+	e.GET("/v1/feeds/:feedTitle/:audioFileName", audioFileHandler)
+
 	e.GET("/", probeHandler)
 
 	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
@@ -51,10 +55,7 @@ func main() {
 }
 
 func feedsHandler(ctx echo.Context) (err error) {
-	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
-	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
-	audioSourceDirectory := getResourcePath()
-	feeds, err := feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
+	feeds, err := getFeedService().GetFeeds()
 	if err != nil {
 		return err
 	}
@@ -68,20 +69,42 @@ func feedsHandler(ctx echo.Context) (err error) {
 }
 
 func feedHandler(ctx echo.Context) (err error) {
-	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
-	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
-	audioSourceDirectory := getResourcePath()
-	feeds, err := feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
+	feedTitle := ctx.Param("feedTitle")
+	result, err := getFeed(feedTitle)
 	if err != nil {
 		return err
 	}
 
-	result := make([]string, 0)
-	for _, feed := range feeds {
-		result = append(result, feed.Link)
+	return ctx.XML(http.StatusOK, result)
+}
+
+func audioFileHandler(ctx echo.Context) (err error) {
+	
+	return ctx.File("")
+}
+
+func getFeed(feedTitle string) (result *feeds.RssFeed, err error) {
+	if feedTitle == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	feedItems, err := getFeedService().GetFeeds()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, feed := range feedItems {
+		if feed.Title == feedTitle {
+			result = feed
+			break
+		}
+	}
+
+	if result == nil {
+		return nil, echo.NewHTTPError(http.StatusNotFound, "feed not found")
+	}
+
+	return result, nil
 }
 
 type DownloadItem struct {
