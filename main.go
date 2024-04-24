@@ -45,6 +45,7 @@ func main() {
 	e.Validator = &genericValidator{Validator: validator.New()}
 
 	e.POST("/v1/addItem", addItemHandler)
+	e.POST("/v1/addItems", addItemsHandler)
 
 	e.GET(defaultItemPath, feedsHandler)
 	e.GET(fmt.Sprintf("%s%s", defaultItemPath, "/:feedTitle/rss.xml"), feedHandler)
@@ -149,11 +150,42 @@ func addItemHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	downloader := download.YoutubeAudioDownloader{}
-	audioSourceDirectory := getResourcePath()
-	_, err = downloader.Download(downloadItem.URL, audioSourceDirectory)
+	err = downloadItemsHandler(downloadItem.URL)
 	if err != nil {
 		return err
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func downloadItemsHandler(url string) (err error) {
+	downloader := download.YoutubeAudioDownloader{}
+	audioSourceDirectory := getResourcePath()
+	_, err = downloader.Download(url, audioSourceDirectory)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type DownloadItems struct {
+	URLS []string `json:"urls" validate:"required"`
+}
+
+func addItemsHandler(ctx echo.Context) (err error) {
+	downloadItems := new(DownloadItems)
+	if err = ctx.Bind(downloadItems); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err = ctx.Validate(downloadItems); err != nil {
+		return err
+	}
+
+	for _, url := range downloadItems.URLS {
+		err = downloadItemsHandler(url)
+		if err != nil {
+			return err
+		}
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -182,13 +214,13 @@ func (gv *genericValidator) Validate(i interface{}) error {
 }
 
 func getOutboundIP() string {
-    conn, err := net.Dial("udp", "8.8.8.8:80")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer conn.Close()
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
 
-    localAddr := conn.LocalAddr().(*net.UDPAddr)
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-    return localAddr.IP.String()
+	return localAddr.IP.String()
 }
