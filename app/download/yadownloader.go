@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/jo-hoe/go-audio-rss-feeder/app/convertvideo"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
@@ -36,7 +37,10 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 }
 
 func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) string {
-	audioFile := filepath.Join(path, fmt.Sprintf("%s.mp3", filepath.Base(videoFile)))
+	fileName := filepath.Base(videoFile)
+	fileNameWithoutExtension := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+	audioFile := filepath.Join(path, fmt.Sprintf("%s.mp3", fileNameWithoutExtension))
+	
 	err := convertvideo.ConvertVideoToAudio(videoFile, audioFile)
 	if err != nil {
 		return ""
