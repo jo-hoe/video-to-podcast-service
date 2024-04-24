@@ -1,18 +1,21 @@
-# go-audio-rss-feeder
+# Audio RSS Feeder
 
-```bash
-ffprobe -i .\video.mp4 -v quiet -of json -show_entries format
-```
-
-example podcast: <https://feeds.libsyn.com/230510/rss>
-ID3: <https://www.exiftool.org/TagNames/ID3.html>
+Converts video files to RSS audio podcast feeds.
 
 ## Example Requests
 
-### Add Playlist
+### Add Items
+
+#### Add Single Item
 
 ```bash
 curl -H "Content-Type: application/json" --data '{"url":"https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"}' http://localhost:8080/v1/addItem
+```
+
+#### Add Multiple Items
+
+```bash
+curl -H "Content-Type: application/json" --data '{"urls":["https://www.youtube.com/watch?v=BRnwg3dpboc", "https://www.youtube.com/watch?v=_fWrJ4WHz_g"]}' http://localhost:8080/v1/addItems
 ```
 
 ### Get All Feeds
@@ -20,3 +23,8 @@ curl -H "Content-Type: application/json" --data '{"url":"https://www.youtube.com
 ```bash
 curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 ```
+
+## Relevant Links
+
+- [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
+- [example podcast](https://feeds.libsyn.com/230510/rss)
