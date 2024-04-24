@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	defaultURL         = "127.0.0.1"
-	defaultPort        = "8080"
 	defaultURLSuffix   = "rss.xml"
 	defaultDescription = "Podcast Feed of"
 	mp3KeyAttribute    = "artist"
@@ -27,16 +25,19 @@ type FeedService struct {
 	audioSourceDirectory string
 	feedBaseUrl          string
 	feedBasePort         string
+	feedItemPath         string
 }
 
 func NewFeedService(
 	audioSourceDirectory string,
 	feedBaseUrl string,
-	feedBasePort string) *FeedService {
+	feedBasePort string,
+	feedItemPath string) *FeedService {
 	return &FeedService{
 		audioSourceDirectory: audioSourceDirectory,
 		feedBaseUrl:          feedBaseUrl,
 		feedBasePort:         feedBasePort,
+		feedItemPath:         feedItemPath,
 	}
 }
 
@@ -129,10 +130,8 @@ func (fp *FeedService) createFeed(author string) *feeds.Feed {
 
 func (fp *FeedService) getFeedUrl(author string) string {
 	urlEncodedTitle := url.PathEscape(author)
-	baseUrl := common.ValueOrDefault(fp.feedBaseUrl, defaultURL)
-	port := common.ValueOrDefault(fp.feedBasePort, defaultPort)
 
-	return fmt.Sprintf("%s:%s/feeds/%s/%s", baseUrl, port, urlEncodedTitle, defaultURLSuffix)
+	return fmt.Sprintf("%s:%s/%s/%s/%s", fp.feedBaseUrl, fp.feedBasePort, fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
 }
 
 func (fp *FeedService) getFeedItemUrl(author string, itemName string) string {

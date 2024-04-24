@@ -9,6 +9,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/feed"
 	"github.com/labstack/echo/v4"
@@ -18,6 +19,7 @@ import (
 var defaultResourcePath = ""
 
 const defaultPort = "8080"
+const defaultItemPath = "/v1/feeds"
 
 func getResourcePath() string {
 	if defaultResourcePath != "" {
@@ -42,9 +44,9 @@ func main() {
 
 	e.POST("/v1/addItem", addItemHandler)
 
-	e.GET("/v1/feeds", feedsHandler)
-	e.GET("/v1/feeds/:feedTitle/rss.xml", feedHandler)
-	e.GET("/v1/feeds/:feedTitle/:audioFileName", audioFileHandler)
+	e.GET(defaultItemPath, feedsHandler)
+	e.GET(fmt.Sprintf("%s%s", defaultItemPath, "/:feedTitle/rss.xml"), feedHandler)
+	e.GET(fmt.Sprintf("%s%s", defaultItemPath, "/:feedTitle/:audioFileName"), audioFileHandler)
 
 	e.GET("/", probeHandler)
 
@@ -79,8 +81,33 @@ func feedHandler(ctx echo.Context) (err error) {
 }
 
 func audioFileHandler(ctx echo.Context) (err error) {
-	
-	return ctx.File("")
+	feedTitle := ctx.Param("feedTitle")
+	if feedTitle == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
+	}
+	audioFileName := ctx.Param("audioFileName")
+	if audioFileName == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "audioFileName is required")
+	}
+
+	allAudioFiles, err := discovery.GetAudioFiles(getResourcePath())
+	if err != nil {
+		return err
+	}
+
+	foundFile := ""
+	for _, audioFile := range allAudioFiles {
+		if audioFile == filepath.Join(getResourcePath(), feedTitle, audioFileName) {
+			foundFile = audioFile
+			break
+		}
+	}
+
+	if foundFile == "" {
+		return echo.NewHTTPError(http.StatusNotFound, "audio file not found")
+	}
+
+	return ctx.File(foundFile)
 }
 
 func getFeed(feedTitle string) (result *feeds.RssFeed, err error) {
@@ -138,7 +165,7 @@ func getFeedService() *feed.FeedService {
 	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
-	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort)
+	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort, defaultItemPath)
 }
 
 type genericValidator struct {
