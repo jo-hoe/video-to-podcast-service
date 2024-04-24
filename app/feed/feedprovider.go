@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
@@ -105,10 +105,10 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
 
 	return &feeds.Item{
-		Title:       valueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
+		Title:       common.ValueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
 		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
-		Description: valueOrDefault(audioMetadata["Comment"], ""),
-		Author:      &feeds.Author{Name: valueOrDefault(audioMetadata[mp3KeyAttribute], "")},
+		Description: common.ValueOrDefault(audioMetadata["Comment"], ""),
+		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
 		Created:     fileInfo.ModTime(),
 	}, nil
 }
@@ -127,21 +127,11 @@ func (fp *FeedProvider) createFeed(author string) *feeds.Feed {
 func (fp *FeedProvider) getFeedUrl(author string) string {
 	urlEncodedTitle := url.PathEscape(author)
 
-	return fmt.Sprintf("%s/%s/%s", valueOrDefault(fp.feedBaseUrl, defaultURL), urlEncodedTitle, defaultURLSuffix)
+	return fmt.Sprintf("%s/%s/%s", common.ValueOrDefault(fp.feedBaseUrl, defaultURL), urlEncodedTitle, defaultURLSuffix)
 }
 
 func (fp *FeedProvider) getFeedItemUrl(author string, itemName string) string {
 	urlEncodedItemName := url.PathEscape(itemName)
 
 	return fmt.Sprintf("%s/%s", fp.getFeedUrl(author), urlEncodedItemName)
-}
-
-func valueOrDefault[T any](value, defaultValue T) T {
-	reflectedValue := reflect.ValueOf(value)
-	if reflectedValue.Kind() == reflect.Invalid {
-		return defaultValue
-	} else if reflectedValue.Kind() == reflect.String && reflectedValue.String() == "" {
-		return defaultValue
-	}
-	return value
 }
