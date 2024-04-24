@@ -40,6 +40,7 @@ func main() {
 	e.Validator = &genericValidator{Validator: validator.New()}
 
 	e.GET("/v1/feeds", feedsHandler)
+	e.GET("/v1/feeds/:feedName", feedHandler)
 	e.POST("/v1/addItem", addItemHandler)
 	e.GET("/", probeHandler)
 
@@ -53,7 +54,24 @@ func feedsHandler(ctx echo.Context) (err error) {
 	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
-	feeds, err := feed.NewFeedProvider(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
+	feeds, err := feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
+	if err != nil {
+		return err
+	}
+
+	result := make([]string, 0)
+	for _, feed := range feeds {
+		result = append(result, feed.Link)
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+func feedHandler(ctx echo.Context) (err error) {
+	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
+	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
+	audioSourceDirectory := getResourcePath()
+	feeds, err := feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
 	if err != nil {
 		return err
 	}
@@ -91,6 +109,13 @@ func addItemHandler(ctx echo.Context) (err error) {
 
 func probeHandler(ctx echo.Context) (err error) {
 	return ctx.NoContent(http.StatusOK)
+}
+
+func getFeedService() *feed.FeedService {
+	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
+	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
+	audioSourceDirectory := getResourcePath()
+	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort)
 }
 
 type genericValidator struct {
