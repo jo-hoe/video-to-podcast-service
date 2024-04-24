@@ -24,24 +24,24 @@ const (
 	mp3KeyAttribute    = "artist"
 )
 
-type FeedProvider struct {
+type FeedService struct {
 	audioSourceDirectory string
 	feedBaseUrl          string
 	feedBasePort         string
 }
 
-func NewFeedProvider(
+func NewFeedService(
 	audioSourceDirectory string,
 	feedBaseUrl string,
-	feedBasePort string) *FeedProvider {
-	return &FeedProvider{
+	feedBasePort string) *FeedService {
+	return &FeedService{
 		audioSourceDirectory: audioSourceDirectory,
 		feedBaseUrl:          feedBaseUrl,
 		feedBasePort:         feedBasePort,
 	}
 }
 
-func (fp *FeedProvider) GetFeeds() ([]*feeds.RssFeed, error) {
+func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 	feedCollector := make([]*feeds.Feed, 0)
 	audioFilePaths, err := discovery.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
@@ -87,7 +87,7 @@ func (fp *FeedProvider) GetFeeds() ([]*feeds.RssFeed, error) {
 	return results, nil
 }
 
-func (fp *FeedProvider) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {
+func (fp *FeedService) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {
 	for _, feed := range feeds {
 		if feed.Author.Name == author {
 			return feed
@@ -96,7 +96,7 @@ func (fp *FeedProvider) getFeedWithAuthor(author string, feeds []*feeds.Feed) *f
 	return nil
 }
 
-func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error) {
+func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error) {
 	audioMetadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
 	if err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (fp *FeedProvider) createFeedItem(audioFilePath string) (*feeds.Item, error
 	}, nil
 }
 
-func (fp *FeedProvider) createFeed(author string) *feeds.Feed {
+func (fp *FeedService) createFeed(author string) *feeds.Feed {
 	feed := &feeds.Feed{
 		Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, author),
 		Link:        &feeds.Link{Href: fp.getFeedUrl(author)},
@@ -128,7 +128,7 @@ func (fp *FeedProvider) createFeed(author string) *feeds.Feed {
 	return feed
 }
 
-func (fp *FeedProvider) getFeedUrl(author string) string {
+func (fp *FeedService) getFeedUrl(author string) string {
 	urlEncodedTitle := url.PathEscape(author)
 	baseUrl := common.ValueOrDefault(fp.feedBaseUrl, defaultURL)
 	port := common.ValueOrDefault(fp.feedBasePort, defaultPort)
@@ -136,7 +136,7 @@ func (fp *FeedProvider) getFeedUrl(author string) string {
 	return fmt.Sprintf("%s:%s/feeds/%s/%s", baseUrl, port, urlEncodedTitle, defaultURLSuffix)
 }
 
-func (fp *FeedProvider) getFeedItemUrl(author string, itemName string) string {
+func (fp *FeedService) getFeedItemUrl(author string, itemName string) string {
 	urlEncodedItemName := url.PathEscape(itemName)
 
 	return fmt.Sprintf("%s/%s", fp.getFeedUrl(author), urlEncodedItemName)

@@ -14,7 +14,7 @@ func TestCreateFeed(t *testing.T) {
 	defaultAuthor := "John Doe"
 	type fields struct {
 		feedBaseUrl          string
-		feedBasePort        string
+		feedBasePort         string
 		feedAuthor           string
 		audioSourceDirectory string
 	}
@@ -57,7 +57,7 @@ func TestCreateFeed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fp := &FeedProvider{
+			fp := &FeedService{
 				feedBaseUrl:          tt.fields.feedBaseUrl,
 				feedBasePort:         tt.fields.feedBasePort,
 				audioSourceDirectory: tt.fields.audioSourceDirectory,
@@ -69,7 +69,7 @@ func TestCreateFeed(t *testing.T) {
 	}
 }
 
-func TestNewFeedProvider(t *testing.T) {
+func TestNewFeedService(t *testing.T) {
 	type args struct {
 		audioSourceDirectory string
 		feedBaseUrl          string
@@ -78,7 +78,7 @@ func TestNewFeedProvider(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *FeedProvider
+		want *FeedService
 	}{
 		{
 			name: "init test",
@@ -87,7 +87,7 @@ func TestNewFeedProvider(t *testing.T) {
 				feedBaseUrl:          "testUrl",
 				feedBasePort:         "8080",
 			},
-			want: &FeedProvider{
+			want: &FeedService{
 				audioSourceDirectory: "testDir",
 				feedBaseUrl:          "testUrl",
 				feedBasePort:         "8080",
@@ -96,26 +96,26 @@ func TestNewFeedProvider(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewFeedProvider(tt.args.audioSourceDirectory, tt.args.feedBaseUrl, tt.args.feedBasePort); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewFeedProvider() = %v, want %v", got, tt.want)
+			if got := NewFeedService(tt.args.audioSourceDirectory, tt.args.feedBaseUrl, tt.args.feedBasePort); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewFeedService() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestFeedProvider_GetFeeds(t *testing.T) {
+func TestFeedService_GetFeeds(t *testing.T) {
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
 	tests := []struct {
 		name    string
-		fp      *FeedProvider
+		fp      *FeedService
 		wantErr bool
 	}{
 		{
 			name: "positive test",
-			fp: &FeedProvider{
+			fp: &FeedService{
 				feedBaseUrl:          defaultURL,
 				audioSourceDirectory: testFilePath,
 			},
@@ -123,7 +123,7 @@ func TestFeedProvider_GetFeeds(t *testing.T) {
 		},
 		{
 			name: "non existing directory",
-			fp: &FeedProvider{
+			fp: &FeedService{
 				feedBaseUrl:          defaultURL,
 				audioSourceDirectory: "testDir",
 			},
@@ -134,11 +134,11 @@ func TestFeedProvider_GetFeeds(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.fp.GetFeeds()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("FeedProvider.GetFeeds() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("FeedService.GetFeeds() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got == nil && !tt.wantErr {
-				t.Error("FeedProvider.GetFeeds() got = nil")
+				t.Error("FeedService.GetFeeds() got = nil")
 			}
 			if len(got) != 2 && !tt.wantErr {
 				t.Errorf("expected 2 feeds, got %d", len(got))
