@@ -1,5 +1,8 @@
 # Audio RSS Feeder
 
+[![Test Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/test/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=test)
+[![Lint Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/lint/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=lint)
+
 Converts video files to RSS audio podcast feeds.
 
 ## Example Requests
