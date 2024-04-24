@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/jo-hoe/go-audio-rss-feeder/app/feed"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -29,7 +30,7 @@ func main() {
 }
 
 func feedHandler(ctx echo.Context) (err error) {
-	NewFeedProvider("","","","","","","").GetFeed()
+	feed.NewFeedProvider("", "").GetFeed()
 
 	return nil
 }
