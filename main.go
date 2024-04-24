@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,7 +21,7 @@ import (
 var defaultResourcePath = ""
 
 const defaultPort = "8080"
-const defaultItemPath = "/v1/feeds"
+const defaultItemPath = "v1/feeds"
 
 func getResourcePath() string {
 	if defaultResourcePath != "" {
@@ -162,7 +164,7 @@ func probeHandler(ctx echo.Context) (err error) {
 }
 
 func getFeedService() *feed.FeedService {
-	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
+	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), getOutboundIP())
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
 	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort, defaultItemPath)
@@ -177,4 +179,16 @@ func (gv *genericValidator) Validate(i interface{}) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("received invalid request body: %v", err))
 	}
 	return nil
+}
+
+func getOutboundIP() string {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer conn.Close()
+
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+    return localAddr.IP.String()
 }
