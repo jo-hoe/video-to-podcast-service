@@ -16,16 +16,18 @@ import (
 
 var defaultResourcePath = ""
 
+const defaultPort = "8080"
+
 func getResourcePath() string {
 	if defaultResourcePath != "" {
 		return defaultResourcePath
 	}
 
 	ex, err := os.Executable()
-    if err != nil {
-        panic(err)
-    }
-    exPath := filepath.Dir(ex)
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(ex)
 	defaultResourcePath = common.ValueOrDefault(os.Getenv("BASE_PATH"), filepath.Join(exPath, "resources"))
 	return defaultResourcePath
 }
@@ -49,8 +51,9 @@ func main() {
 
 func feedsHandler(ctx echo.Context) (err error) {
 	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), "127.0.0.1")
+	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
-	feeds, err := feed.NewFeedProvider(audioSourceDirectory, baseUrl).GetFeeds()
+	feeds, err := feed.NewFeedProvider(audioSourceDirectory, baseUrl, defaultPort).GetFeeds()
 	if err != nil {
 		return err
 	}
@@ -82,7 +85,6 @@ func addItemHandler(ctx echo.Context) (err error) {
 	if err != nil {
 		return err
 	}
-
 
 	return ctx.NoContent(http.StatusOK)
 }

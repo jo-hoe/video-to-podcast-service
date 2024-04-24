@@ -14,6 +14,7 @@ func TestCreateFeed(t *testing.T) {
 	defaultAuthor := "John Doe"
 	type fields struct {
 		feedBaseUrl          string
+		feedBasePort        string
 		feedAuthor           string
 		audioSourceDirectory string
 	}
@@ -26,12 +27,13 @@ func TestCreateFeed(t *testing.T) {
 			name: "default values",
 			fields: fields{
 				feedBaseUrl:          "",
+				feedBasePort:         "",
 				feedAuthor:           defaultAuthor,
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
 				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
-				Link:        &feeds.Link{Href: "127.0.0.1:8080/John%20Doe/rss.xml"},
+				Link:        &feeds.Link{Href: "127.0.0.1:8080/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
 				Updated:     time.Time{},
@@ -40,13 +42,14 @@ func TestCreateFeed(t *testing.T) {
 		{
 			name: "custom values",
 			fields: fields{
-				feedBaseUrl:          "https://example.com/feed",
+				feedBaseUrl:          "https://example.com",
+				feedBasePort:         "443",
 				feedAuthor:           defaultAuthor,
 				audioSourceDirectory: "",
 			},
 			want: &feeds.Feed{
 				Title:       fmt.Sprintf("%s %s", defaultTitlePrefix, defaultAuthor),
-				Link:        &feeds.Link{Href: "https://example.com/feed/John%20Doe/rss.xml"},
+				Link:        &feeds.Link{Href: "https://example.com:443/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
 			},
@@ -56,6 +59,7 @@ func TestCreateFeed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fp := &FeedProvider{
 				feedBaseUrl:          tt.fields.feedBaseUrl,
+				feedBasePort:         tt.fields.feedBasePort,
 				audioSourceDirectory: tt.fields.audioSourceDirectory,
 			}
 			if got := fp.createFeed(tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
@@ -69,6 +73,7 @@ func TestNewFeedProvider(t *testing.T) {
 	type args struct {
 		audioSourceDirectory string
 		feedBaseUrl          string
+		feedBasePort         string
 	}
 	tests := []struct {
 		name string
@@ -80,16 +85,18 @@ func TestNewFeedProvider(t *testing.T) {
 			args: args{
 				audioSourceDirectory: "testDir",
 				feedBaseUrl:          "testUrl",
+				feedBasePort:         "8080",
 			},
 			want: &FeedProvider{
 				audioSourceDirectory: "testDir",
 				feedBaseUrl:          "testUrl",
+				feedBasePort:         "8080",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewFeedProvider(tt.args.audioSourceDirectory, tt.args.feedBaseUrl); !reflect.DeepEqual(got, tt.want) {
+			if got := NewFeedProvider(tt.args.audioSourceDirectory, tt.args.feedBaseUrl, tt.args.feedBasePort); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewFeedProvider() = %v, want %v", got, tt.want)
 			}
 		})
