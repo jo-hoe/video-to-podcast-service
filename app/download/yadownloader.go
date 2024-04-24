@@ -157,7 +157,8 @@ func downloadVideo(video *youtube.Video, path string) (string, error) {
 }
 
 func createVideoFromStream(stream io.ReadCloser, videoName string, path string) (string, error) {
-	fileName := fmt.Sprintf("%s.mp4", videoName)
+	sanitizedName := sanitizeFilename(videoName)
+	fileName := fmt.Sprintf("%s.mp4", sanitizedName)
 	filePath := filepath.Join(path, fileName)
 
 	file, err := os.Create(filePath)
