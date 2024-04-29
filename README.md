@@ -1,4 +1,4 @@
-# Audio RSS Feeder
+# Video To Podcast Service
 
 [![Test Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/test/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=test)
 [![Lint Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/lint/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=lint)
