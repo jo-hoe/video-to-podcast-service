@@ -31,3 +31,8 @@ curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
 - [example podcast](https://feeds.libsyn.com/230510/rss)
+
+## ToDo
+
+[] rename repository
+[] add length to items
