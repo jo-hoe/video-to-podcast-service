@@ -1,7 +1,7 @@
 # Video To Podcast Service
 
-[![Test Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/test/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=test)
-[![Lint Status](https://github.com/jo-hoe/go-audio-rss-feeder/workflows/lint/badge.svg)](https://github.com/jo-hoe/go-audio-rss-feeder/actions?workflow=lint)
+[![Test Status](https://github.com/jo-hoe/video-to-podcast-service/workflows/test/badge.svg)](https://github.com/jo-hoe/video-to-podcast-service/actions?workflow=test)
+[![Lint Status](https://github.com/jo-hoe/video-to-podcast-service/workflows/lint/badge.svg)](https://github.com/jo-hoe/video-to-podcast-service/actions?workflow=lint)
 
 Converts video files to RSS audio podcast feeds.
 
@@ -34,5 +34,4 @@ curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 
 ## ToDo
 
-[] rename repository
-[] add length to items
+[ ] add length to items
