@@ -77,7 +77,10 @@ func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
 	}
 	result["Artist"] = youtubeMetadata.Author
 	result["Title"] = youtubeMetadata.Title
-	result["Comment"] = youtubeMetadata.Description
+
+	description := strings.ReplaceAll(youtubeMetadata.Description, "\n", "`n")
+	description = strings.ReplaceAll(description, "\r", "`r")
+	result[PodcastDescriptionTag] = description
 
 	return result
 }
