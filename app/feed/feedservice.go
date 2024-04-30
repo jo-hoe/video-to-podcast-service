@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
@@ -108,11 +109,15 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 		return nil, err
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
+	description := common.ValueOrDefault(audioMetadata[download.PodcastDescriptionTag], "")
+	description = strings.ReplaceAll(description, "`n", "<br>")
+	description = strings.ReplaceAll(description, "`r", "")
+	description = fmt.Sprintf("<![CDATA[%s]]>", description)
 
 	return &feeds.Item{
 		Title:       common.ValueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
 		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
-		Description: common.ValueOrDefault(audioMetadata["Comment"], ""),
+		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
 		Created:     fileInfo.ModTime(),
 	}, nil

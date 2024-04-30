@@ -10,8 +10,11 @@ type AudioDownloader interface {
 	IsSupported(url string) bool
 }
 
-const ErrIsSupported = "this downloader is not responsible for this URL"
-const ThumbnailUrlTag = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
+const (
+	ErrIsSupported = "this downloader is not responsible for this URL"
+	ThumbnailUrlTag = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
+	PodcastDescriptionTag = "TDES"
+)
 
 func sanitizeFilename(filename string) string {
 	// Define a regex pattern for invalid characters.
