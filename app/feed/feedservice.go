@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
