@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -88,10 +89,19 @@ func audioFileHandler(ctx echo.Context) (err error) {
 	if feedTitle == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
+	decodedFeedTitle, err := url.QueryUnescape(feedTitle)
+	if err != nil {
+		return err
+	}
 	audioFileName := ctx.Param("audioFileName")
 	if audioFileName == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "audioFileName is required")
 	}
+	decodedAudioFileName, err := url.QueryUnescape(audioFileName)
+	if err != nil {
+		return err
+	}
+
 
 	allAudioFiles, err := discovery.GetAudioFiles(getResourcePath())
 	if err != nil {
@@ -100,7 +110,7 @@ func audioFileHandler(ctx echo.Context) (err error) {
 
 	foundFile := ""
 	for _, audioFile := range allAudioFiles {
-		if audioFile == filepath.Join(getResourcePath(), feedTitle, audioFileName) {
+		if audioFile == filepath.Join(getResourcePath(), decodedFeedTitle, decodedAudioFileName) {
 			foundFile = audioFile
 			break
 		}
