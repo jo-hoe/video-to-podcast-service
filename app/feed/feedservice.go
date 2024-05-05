@@ -48,6 +48,7 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		return nil, err
 	}
 
+	allItems := fp.createFeed("default")
 	for _, audioFilePath := range audioFilePaths {
 		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
 		if err != nil {
@@ -78,12 +79,18 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 				Link: metadata[download.ThumbnailUrlTag],
 			}
 		}
+		allItems.Items = append(allItems.Items, item)
 	}
 
 	results := make([]*feeds.RssFeed, 0)
 	for _, item := range feedCollector {
 		results = append(results, (&feeds.Rss{Feed: item}).RssFeed())
 	}
+
+	if allItems.Items != nil && len(allItems.Items) > 0 {
+		results = append(results, (&feeds.Rss{Feed: allItems}).RssFeed())
+	}
+
 
 	return results, nil
 }
