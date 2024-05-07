@@ -7,7 +7,7 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app
 
-FROM jrottenberg/ffmpeg:4.1-alpine
+FROM jrottenberg/ffmpeg:4.1-vaapi
 
 COPY --from=build /go/bin/app /
 
