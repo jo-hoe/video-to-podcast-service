@@ -7,7 +7,7 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app
 
-FROM gcr.io/distroless/static-debian11
+FROM jrottenberg/ffmpeg:4.1-alpine
 
 COPY --from=build /go/bin/app /
 

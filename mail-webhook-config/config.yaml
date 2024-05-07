@@ -4,7 +4,7 @@
   subjectSelectorRegex: "^V2P$"
   bodySelectorRegexList:
   - name: "url"
-    regex: "https?://(www.)?[-a-zA-Z0-9@:%._+~#=]{1,256}.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)"
+    regex: "https?://(www.)?[-a-zA-Z0-9@:%._+~#=]{1,256}.[a-zA-Z0-9()]{1,6}([-a-zA-Z0-9()@:%_+.~#?&//=]*)"
   callback:
-    url: "http://localhost:8080/v1/addItems"
+    url: "http://video-to-podcast-service:8080/v1/addItem"
     method: "POST"
