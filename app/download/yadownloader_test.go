@@ -30,6 +30,14 @@ func Test_getYoutubeVideoId(t *testing.T) {
 			want:    "",
 			wantErr: true,
 		},
+		{
+			name: "Short link",
+			args: args{
+				url: "https://youtu.be/DucriSA8ukw?feature=shared",
+			},
+			want:    "DucriSA8ukw",
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,6 +76,14 @@ func TestYoutubeAudioDownloader_IsSupported(t *testing.T) {
 			y:    &YoutubeAudioDownloader{},
 			args: args{
 				url: "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-",
+			},
+			want: true,
+		},
+		{
+			name: "test short video link",
+			y:    &YoutubeAudioDownloader{},
+			args: args{
+				url: "https://youtu.be/DucriSA8ukw?feature=shared",
 			},
 			want: true,
 		},

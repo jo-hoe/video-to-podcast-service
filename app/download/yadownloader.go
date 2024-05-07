@@ -16,6 +16,7 @@ import (
 
 const playlistRegex = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
 const videoRegex = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
+const videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
 
 type YoutubeAudioDownloader struct{}
 
@@ -86,7 +87,7 @@ func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
 }
 
 func (y *YoutubeAudioDownloader) IsSupported(url string) bool {
-	return regexp.MustCompile(playlistRegex).MatchString(url) || regexp.MustCompile(videoRegex).MatchString(url)
+	return regexp.MustCompile(playlistRegex).MatchString(url) || regexp.MustCompile(videoRegex).MatchString(url) || regexp.MustCompile(videoShortRegex).MatchString(url)
 }
 
 func getAllYoutubeMetadata(urlString string) (results []*youtube.Video, err error) {
@@ -179,7 +180,11 @@ func createVideoFromStream(stream io.ReadCloser, videoName string, path string) 
 }
 
 func getVideoId(urlString string) (id string, err error) {
-	return getId(urlString, videoRegex, "could not find video id in url '%s'")
+	id, err = getId(urlString, videoRegex, "could not find video id in url '%s'")
+	if err != nil {
+		id, err = getId(urlString, videoShortRegex, "could not find video id in url '%s'")
+	}
+	return id, err
 }
 
 func getPlaylistId(urlString string) (id string, err error) {

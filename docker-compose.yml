@@ -1,0 +1,8 @@
+services:
+  mail-webhook-service:
+    image: ghcr.io/jo-hoe/go-mail-webhook-service:latest
+    volumes:
+      - "./config/:/go/config"
+  video-to-podcast-service:
+    build: .
+    image: video-to-podcast-service
