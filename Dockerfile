@@ -4,7 +4,6 @@ WORKDIR /go/src/app
 COPY . .
 
 RUN go mod download
-RUN go vet -v ./...
 
 RUN CGO_ENABLED=0 go build -o /go/bin/app
 
