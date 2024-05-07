@@ -1,0 +1,10 @@
+- mailClientConfig: 
+    mail: "example@gmail.com"
+    credentialsPath: "config"
+  subjectSelectorRegex: "^V2P$"
+  bodySelectorRegexList:
+  - name: "url"
+    regex: "https?://(www.)?[-a-zA-Z0-9@:%._+~#=]{1,256}.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)"
+  callback:
+    url: "http://localhost:8080/v1/addItems"
+    method: "POST"

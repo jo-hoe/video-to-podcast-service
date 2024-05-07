@@ -2,7 +2,19 @@ services:
   mail-webhook-service:
     image: ghcr.io/jo-hoe/go-mail-webhook-service:latest
     volumes:
-      - "./config/:/go/config"
+      - "./mail-webhook-config/:/go/config"
+    restart: on-failure
+    depends_on:
+      video-to-podcast-service:
+        condition: service_healthy
   video-to-podcast-service:
     build: .
     image: video-to-podcast-service
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080"]
+      interval: 12s
+      retries: 8
+      start_period: 2s
+      timeout: 12s
