@@ -1,4 +1,4 @@
-package discovery
+package filemanagement
 
 import (
 	"net/http"

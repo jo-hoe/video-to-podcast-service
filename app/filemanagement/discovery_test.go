@@ -1,4 +1,4 @@
-package discovery
+package filemanagement
 
 import (
 	"path/filepath"
@@ -6,13 +6,12 @@ import (
 	"testing"
 )
 
-
 func Test_GetAudioFiles(t *testing.T) {
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	
+
 	type args struct {
 		directoryPath string
 	}
@@ -28,8 +27,8 @@ func Test_GetAudioFiles(t *testing.T) {
 				directoryPath: testFilePath,
 			},
 			wantResult: []string{
-				filepath.Join(testFilePath, "audio11.mp3"), 
-				filepath.Join(testFilePath, "audio12.mp3"), 
+				filepath.Join(testFilePath, "audio11.mp3"),
+				filepath.Join(testFilePath, "audio12.mp3"),
 				filepath.Join(testFilePath, "audio21.mp3"),
 			},
 			wantErr: false,
@@ -40,7 +39,7 @@ func Test_GetAudioFiles(t *testing.T) {
 				directoryPath: "test/non-existing-directory",
 			},
 			wantResult: make([]string, 0),
-			wantErr: true,
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {
