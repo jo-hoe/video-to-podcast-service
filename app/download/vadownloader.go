@@ -1,20 +1,31 @@
 package download
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
 
 type AudioDownloader interface {
 	Download(url string, path string) ([]string, error)
-	IsSupported(url string) bool
+	IsVideoSupported(url string) bool
+	IsVideoAvailable(url string) bool
 }
 
 const (
-	ErrIsSupported = "this downloader is not responsible for this URL"
-	ThumbnailUrlTag = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
+	ErrIsVideoSupported   = "this downloader is not responsible for this URL"
+	ThumbnailUrlTag       = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
 	PodcastDescriptionTag = "TDES"
 )
+
+func GetVideoDownloader(url string) (downloader AudioDownloader, err error) {
+	youtubeAudioDownloader := &YoutubeAudioDownloader{}
+	if youtubeAudioDownloader.IsVideoSupported(url) {
+		return youtubeAudioDownloader, nil
+	}
+
+	return nil, fmt.Errorf(ErrIsVideoSupported)
+}
 
 func sanitizeFilename(filename string) string {
 	// Define a regex pattern for invalid characters.

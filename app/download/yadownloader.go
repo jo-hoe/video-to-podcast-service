@@ -53,6 +53,18 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 	return results, nil
 }
 
+func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
+	return regexp.MustCompile(playlistRegex).MatchString(url) || regexp.MustCompile(videoRegex).MatchString(url) || regexp.MustCompile(videoShortRegex).MatchString(url)
+}
+
+func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
+	_, err := getAllYoutubeMetadata(urlString)
+	if err != nil {
+		log.Printf("error: %v when checking if url '%s' is available\n", err, urlString)
+	}
+	return err == nil
+}
+
 func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) (string, error) {
 	fileName := filepath.Base(videoFile)
 	fileNameWithoutExtension := strings.TrimSuffix(fileName, filepath.Ext(fileName))
@@ -98,10 +110,6 @@ func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
 	result[PodcastDescriptionTag] = description
 
 	return result
-}
-
-func (y *YoutubeAudioDownloader) IsSupported(url string) bool {
-	return regexp.MustCompile(playlistRegex).MatchString(url) || regexp.MustCompile(videoRegex).MatchString(url) || regexp.MustCompile(videoShortRegex).MatchString(url)
 }
 
 func getAllYoutubeMetadata(urlString string) (results []*youtube.Video, err error) {

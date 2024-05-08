@@ -53,7 +53,7 @@ func Test_getYoutubeVideoId(t *testing.T) {
 	}
 }
 
-func TestYoutubeAudioDownloader_IsSupported(t *testing.T) {
+func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
 	type args struct {
 		url string
 	}
@@ -98,8 +98,8 @@ func TestYoutubeAudioDownloader_IsSupported(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.y.IsSupported(tt.args.url); got != tt.want {
-				t.Errorf("YoutubeAudioDownloader.IsSupported() = %v, want %v", got, tt.want)
+			if got := tt.y.IsVideoSupported(tt.args.url); got != tt.want {
+				t.Errorf("YoutubeAudioDownloader.IsVideoSupported() = %v, want %v", got, tt.want)
 			}
 		})
 	}
