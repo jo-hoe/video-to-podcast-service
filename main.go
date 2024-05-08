@@ -169,12 +169,23 @@ func addItemHandler(ctx echo.Context) (err error) {
 }
 
 func downloadItemsHandler(url string) (err error) {
-	downloader := download.YoutubeAudioDownloader{}
-	audioSourceDirectory := getResourcePath()
-	_, err = downloader.Download(url, audioSourceDirectory)
+	downloader, err := download.GetVideoDownloader(url)
 	if err != nil {
 		return err
 	}
+	audioSourceDirectory := getResourcePath()
+	if !downloader.IsVideoAvailable(url) {
+		return fmt.Errorf("video %s is not available", url)
+	}
+	log.Printf("downloading '%s'", url)
+
+	go func() {
+		_, err := downloader.Download(url, audioSourceDirectory)
+		if err != nil {
+			log.Printf("failed to download '%s': %v", url, err)
+		}
+	}()
+	
 	return nil
 }
 
