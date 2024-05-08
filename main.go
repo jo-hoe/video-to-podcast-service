@@ -9,12 +9,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-playground/validator"
-	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/feed"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+
+	"github.com/go-playground/validator"
+	"github.com/gorilla/feeds"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -102,8 +103,7 @@ func audioFileHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-
-	allAudioFiles, err := discovery.GetAudioFiles(getResourcePath())
+	allAudioFiles, err := filemanagement.GetAudioFiles(getResourcePath())
 	if err != nil {
 		return err
 	}

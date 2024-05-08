@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/discovery"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+	
+	"github.com/gorilla/feeds"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
@@ -43,7 +44,7 @@ func NewFeedService(
 
 func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 	feedCollector := make([]*feeds.Feed, 0)
-	audioFilePaths, err := discovery.GetAudioFiles(fp.audioSourceDirectory)
+	audioFilePaths, err := filemanagement.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
 		return nil, err
 	}

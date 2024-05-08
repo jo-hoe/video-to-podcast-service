@@ -3,6 +3,7 @@ package download
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/jo-hoe/go-audio-rss-feeder/app/convertvideo"
+	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/kkdai/youtube/v2"
 )
@@ -28,6 +31,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 	results := make([]string, 0)
 	for _, videoMetadata := range videosMetadata {
 		videoFile, err := downloadVideo(videoMetadata, os.TempDir())
+		log.Printf("deleting video file '%s'\n", videoFile)
 		defer os.Remove(videoFile)
 		if err != nil {
 			return results, err
@@ -52,18 +56,28 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) (string, error) {
 	fileName := filepath.Base(videoFile)
 	fileNameWithoutExtension := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	audioFile := filepath.Join(path, fmt.Sprintf("%s.mp3", fileNameWithoutExtension))
+	audioFileName := fmt.Sprintf("%s.mp3", fileNameWithoutExtension)
+	tempAudioFilePath := filepath.Join(os.TempDir(), audioFileName)
 
-	err := convertvideo.ConvertVideoToAudio(videoFile, audioFile)
+	err := convertvideo.ConvertVideoToAudio(videoFile, tempAudioFilePath)
 	if err != nil {
 		return "", err
 	}
 	metadata := getAudioMetaData(youtubeMetadata)
-	err = mp3joiner.SetFFmpegMetadataTag(audioFile, metadata, make([]mp3joiner.Chapter, 0))
+	err = mp3joiner.SetFFmpegMetadataTag(tempAudioFilePath, metadata, make([]mp3joiner.Chapter, 0))
 	if err != nil {
 		return "", err
 	}
-	return audioFile, nil
+	log.Printf("converted video file '%s' to audio '%s'\n", youtubeMetadata.Title, audioFileName)
+
+	audioFilePath := filepath.Join(path, audioFileName)
+	log.Printf("moving audio file '%s' to '%s'\n", tempAudioFilePath, audioFilePath)
+	err = filemanagement.MoveFile(tempAudioFilePath, audioFilePath)
+	if err != nil {
+		return "", err
+	}
+
+	return audioFilePath, nil
 }
 
 func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
@@ -171,6 +185,7 @@ func createVideoFromStream(stream io.ReadCloser, videoName string, path string) 
 	}
 	defer file.Close()
 
+	log.Printf("downloading '%s' to '%s'\n", videoName, filePath)
 	_, err = io.Copy(file, stream)
 	if err != nil {
 		return "", err
