@@ -30,12 +30,18 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 	}
 	results := make([]string, 0)
 	for _, videoMetadata := range videosMetadata {
-		videoFile, err := downloadVideo(videoMetadata, os.TempDir())
-		log.Printf("deleting video file '%s'\n", videoFile)
-		defer os.Remove(videoFile)
+		videoFilePath, err := downloadVideo(videoMetadata, os.TempDir())
 		if err != nil {
 			return results, err
 		}
+
+		defer func() {
+			log.Printf("deleting video file '%s'\n", videoFilePath)
+			err := os.Remove(videoFilePath)
+			if err != nil {
+				log.Printf("error: %v when removing video file '%s'\n", err, videoFilePath)
+			}
+		}()
 
 		// create author specific path if not exist
 		calculatedPath := filepath.Join(path, videoMetadata.Author)
@@ -44,7 +50,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 			return results, err
 		}
 
-		audioPath, err := convertToAudio(videoFile, videoMetadata, calculatedPath)
+		audioPath, err := convertToAudio(videoFilePath, videoMetadata, calculatedPath)
 		if err != nil {
 			return results, err
 		}
