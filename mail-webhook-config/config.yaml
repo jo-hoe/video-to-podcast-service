@@ -1,10 +1,14 @@
 - mailClientConfig: 
     mail: "example@gmail.com"
     credentialsPath: "config"
+  runOnce: false
   subjectSelectorRegex: "^V2P$"
+  intervalBetweenExecutions: 30s
   bodySelectorRegexList:
   - name: "url"
     regex: "https?://(www.)?[-a-zA-Z0-9@:%._+~#=]{1,256}.[a-zA-Z0-9()]{1,6}([-a-zA-Z0-9()@:%_+.~#?&//=]*)"
   callback:
     url: "http://video-to-podcast-service:8080/v1/addItem"
     method: "POST"
+    timeout: 10s
+    retries: 3
