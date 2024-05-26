@@ -81,6 +81,24 @@ Use this API to get a list of all feeds.
 curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 ```
 
+## Linting
+
+Project used golangci-lint for linting.
+
+### Installation
+
+See <https://golangci-lint.run/usage/install/>
+
+### Execution
+
+Run the linting locally by executing
+
+```bash
+golangci-lint run ./...
+```
+
+in the working directory
+
 ## Relevant Links
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
