@@ -15,6 +15,16 @@ Currently the service only supports YouTube videos.
 
 - [Python](https://www.python.org/) (used only as starting script)
 
+Use `make` to run the project. Make is typically installed out of the box on Linux and Mac.
+
+If you do not have it and run on Windows, you can directly install it from [gnuwin32](https://gnuwin32.sourceforge.net/packages/make.htm) or via `winget`
+
+```PowerShell
+winget install GnuWin32.Make
+```
+
+If you want to run the project without Docker, you can install [Golang](https://go.dev/doc/install)
+
 ## How to Use
 
 ### Start only this Service
