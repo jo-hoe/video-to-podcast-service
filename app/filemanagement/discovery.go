@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-var supportedAudioFileExtensions = map[string]bool {
-    "mp3": true,
-    "wav": true,
-    "flac": true,
-    "ogg": true,
+var supportedAudioFileExtensions = map[string]bool{
+	"mp3":  true,
+	"wav":  true,
+	"flac": true,
+	"ogg":  true,
 	"mpeg": true,
 }
 
