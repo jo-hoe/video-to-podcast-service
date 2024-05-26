@@ -185,7 +185,7 @@ func downloadItemsHandler(url string) (err error) {
 			log.Printf("failed to download '%s': %v", url, err)
 		}
 	}()
-	
+
 	return nil
 }
 

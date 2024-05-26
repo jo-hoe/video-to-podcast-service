@@ -11,7 +11,7 @@ import (
 	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
 	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
-	
+
 	"github.com/gorilla/feeds"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
@@ -91,7 +91,6 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 	if allItems.Items != nil && len(allItems.Items) > 0 {
 		results = append(results, (&feeds.Rss{Feed: allItems}).RssFeed())
 	}
-
 
 	return results, nil
 }
