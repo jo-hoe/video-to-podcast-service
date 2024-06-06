@@ -101,6 +101,11 @@ golangci-lint run ./...
 
 in the working directory.
 
+## Future Work
+
+- one can implement itunes tags to get a pic for each podcast element (however, the lib does not support this, implementation requires generating the xml and not using lib)
+  - example `<itunes:image href="http://....png"/>`
+
 ## Relevant Links
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
