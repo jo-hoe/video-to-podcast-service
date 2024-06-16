@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/feeds v1.1.2
-	github.com/jo-hoe/mp3-joiner v0.0.0-20240611120314-70adf7a0f70a
+	github.com/jo-hoe/mp3-joiner v0.0.0-20240616122628-86989c19408a
 	github.com/kkdai/youtube/v2 v2.10.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/u2takey/ffmpeg-go v0.5.0
