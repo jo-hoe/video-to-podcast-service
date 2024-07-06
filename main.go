@@ -220,6 +220,8 @@ func getFeedService() *feed.FeedService {
 	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), getOutboundIP())
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
+	log.Printf("hosting server at %s:%s", baseUrl, defaultPort)
+
 	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort, defaultItemPath)
 }
 
