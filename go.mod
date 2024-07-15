@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.54.15 // indirect
+	github.com/aws/aws-sdk-go v1.54.19 // indirect
 	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/dlclark/regexp2 v1.11.2 // indirect
 	github.com/dop251/goja v0.0.0-20240610225006-393f6d42497b // indirect
