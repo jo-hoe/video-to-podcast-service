@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -80,7 +81,8 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 		}
 	}
 
-	outputFile, err := os.Create(targetPath)
+	tempFileName := fmt.Sprintf("%s.part", targetPath)
+	outputFile, err := os.Create(tempFileName)
 	if err != nil {
 		inputFile.Close()
 		return err
@@ -95,6 +97,14 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 
 		// check if copying was successful
 		if err != nil {
+			return
+		}
+
+		log.Printf("renaming file temp file to '%s'", targetPath)
+		// rename file to actual file name
+		err = os.Rename(tempFileName, targetPath)
+		if err != nil {
+			log.Printf("could not rename file %+v", err)
 			return
 		}
 
