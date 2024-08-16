@@ -13,7 +13,7 @@ type AudioDownloader interface {
 }
 
 const (
-	ErrIsVideoSupported   = "this downloader is not responsible for this URL"
+	ErrIsVideoSupported   = "this downloader is not responsible for this URL '%s'"
 	ThumbnailUrlTag       = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
 	PodcastDescriptionTag = "TDES"
 )
@@ -24,7 +24,7 @@ func GetVideoDownloader(url string) (downloader AudioDownloader, err error) {
 		return youtubeAudioDownloader, nil
 	}
 
-	return nil, fmt.Errorf(ErrIsVideoSupported)
+	return nil, fmt.Errorf(ErrIsVideoSupported, url)
 }
 
 func sanitizeFilename(filename string) string {

@@ -88,7 +88,7 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		results = append(results, (&feeds.Rss{Feed: item}).RssFeed())
 	}
 
-	if allItems.Items != nil && len(allItems.Items) > 0 {
+	if len(allItems.Items) > 0 {
 		results = append(results, (&feeds.Rss{Feed: allItems}).RssFeed())
 	}
 
