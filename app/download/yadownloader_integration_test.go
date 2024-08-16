@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	validYoutubeVideoUrl    = "https://www.youtube.com/watch?v=jNQXAC9IVRw&pp=ygUQb25lIHNlY29uZCB2aWRlbw%3D%3D"
+	validYoutubeVideoUrl    = "https://www.youtube.com/watch?v=SjE9R6f_leo"
 	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"
 )
 
@@ -36,7 +36,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo.mp3")},
+			want:    []string{filepath.Join(rootDirectory, "shortest", "shortest video.mp3")},
 			wantErr: false,
 		},
 		{
