@@ -25,7 +25,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v4
-    - uses: FedericoCarboni/setup-ffmpeg@v2
+    - uses: FedericoCarboni/setup-ffmpeg@v3
       id: setup-ffmpeg
     - run: ffmpeg -version
     - name: Run tests
