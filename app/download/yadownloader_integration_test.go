@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	validYoutubeVideoUrl    = "https://www.youtube.com/watch?v=esHMO2eQo74"
+	validYoutubeVideoUrl    = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
 	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"
 )
 
