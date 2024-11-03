@@ -183,9 +183,17 @@ func downloadItemsHandler(url string) (err error) {
 	log.Printf("downloading '%s'", url)
 
 	go func() {
-		_, err := downloader.Download(url, audioSourceDirectory)
-		if err != nil {
-			log.Printf("failed to download '%s': %v", url, err)
+		maxErrorCount := 4
+		errorCount := 0
+
+		for errorCount < maxErrorCount {
+			_, err := downloader.Download(url, audioSourceDirectory)
+			if err != nil {
+				log.Printf("failed to download '%s': %v", url, err)
+				errorCount++
+			} else {
+				break
+			}
 		}
 	}()
 

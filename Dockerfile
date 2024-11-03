@@ -16,6 +16,9 @@ RUN CGO_ENABLED=0 go build -o /go/bin/app
 # Runtime stage: use a minimal base image for runtime and set up a non-root user
 FROM jrottenberg/ffmpeg:7.1-ubuntu
 
+# Install ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
 # Create a non-root user and set up directories
 RUN useradd --create-home --shell /bin/bash appuser
 RUN mkdir -p /home/appuser/app/resources
