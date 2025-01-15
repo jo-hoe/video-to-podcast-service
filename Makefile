@@ -8,7 +8,7 @@ ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 .PHONY: update
 update: ## pulls git repo
 	@git -C ${ROOT_DIR} pull
-	go mod tidy
+	cd "${ROOT_DIR}" && go mod tidy
 
 .PHONY: test
 test: ## run golang test
