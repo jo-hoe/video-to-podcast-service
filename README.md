@@ -49,11 +49,6 @@ docker run --rm -p 8080:8080 v2p
 All downloaded resources will be placed in directories `resources`.
 Podcasts will be structured in directories with the name of the channel the video belongs to.
 
-### Start with EMail Webhook
-
-This option allows you to start an additional service that continuously pulls an email address and uses the mail link in the content of unread mails as input for the service.
-The configuration of this service is described [here](https://github.com/jo-hoe/video-to-podcast-service).
-
 ## Example Requests
 
 Below are a few examples of requests to the service.
@@ -82,6 +77,11 @@ Use this API to get a list of all feeds.
 ```bash
 curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 ```
+
+### Start with EMail Webhook
+
+This option allows you to start an additional service that continuously pulls an email address and uses the mail link in the content of unread mails as input for the service.
+The configuration of this service is described [here](https://github.com/jo-hoe/video-to-podcast-service/blob/main/mail-webhook-config/config.yaml).
 
 ## Linting
 
