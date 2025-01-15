@@ -113,5 +113,5 @@ in the working directory.
 
 ## ToDo
 
-- cut out youtube ads (use [Superblock API](https://wiki.sponsor.ajay.app/w/API_Docs#GET_/api/skipSegments)
+- cut out youtube ads (use [Superblock API](https://wiki.sponsor.ajay.app/w/API_Docs#GET_/api/skipSegments))
   - example call `https://sponsor.ajay.app/api/skipSegments?videoID=U8z-1Bqn4Rs&categories=[%22sponsor%22,%22selfpromo%22,%22interaction%22,%22intro%22,%22outro%22,%22preview%22,%22music_offtopic%22,%22filler%22]`
