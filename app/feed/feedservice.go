@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/app/common"
+	"github.com/jo-hoe/video-to-podcast-service/app/download"
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 
 	"github.com/gorilla/feeds"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"

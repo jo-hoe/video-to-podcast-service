@@ -9,10 +9,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jo-hoe/go-audio-rss-feeder/app/common"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/download"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/feed"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/app/common"
+	"github.com/jo-hoe/video-to-podcast-service/app/download"
+	"github.com/jo-hoe/video-to-podcast-service/app/feed"
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/feeds"
