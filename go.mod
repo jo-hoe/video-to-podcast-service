@@ -1,4 +1,4 @@
-module github.com/jo-hoe/go-audio-rss-feeder
+module github.com/jo-hoe/video-to-podcast-service
 
 go 1.23
 

@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jo-hoe/go-audio-rss-feeder/app/convertvideo"
-	"github.com/jo-hoe/go-audio-rss-feeder/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/app/convertvideo"
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/kkdai/youtube/v2"
