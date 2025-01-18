@@ -101,6 +101,14 @@ golangci-lint run ./...
 
 in the working directory.
 
+## Limitations
+
+Google blocks certain IPs.
+This includes IPs form hyperscalers (such as AWS).
+Trying to download youtube videos from such a IP results in an error such as `403`.
+The lib used in this project returns `Error:can't bypass age restriction: login required to confirm your age`.
+You can find more details regarding this issue [here](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479).
+
 ## Future Work
 
 - one can implement itunes tags to get a pic for each podcast element (however, the lib does not support this, implementation requires generating the xml and not using lib)

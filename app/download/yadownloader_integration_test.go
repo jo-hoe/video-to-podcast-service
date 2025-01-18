@@ -11,7 +11,18 @@ const (
 	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"
 )
 
+// Skips integration test if requirements are not meet
+func checkPrerequisites(t *testing.T) {
+	// Some servers/IPs are blocked by Youtube and the test will fail
+	// this includes Github Actions servers
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		t.Skip("Test will be skipped in Github Context")
+	}
+}
+
 func Test_YoutubeAudioDownloader_Download(t *testing.T) {
+	checkPrerequisites(t)
+
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
@@ -65,6 +76,8 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 }
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
+	checkPrerequisites(t)
+	
 	type args struct {
 		urlString string
 	}
