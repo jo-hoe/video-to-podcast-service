@@ -8,7 +8,7 @@ import (
 
 const (
 	validYoutubeVideoUrl    = "https://www.youtube.com/watch?v=jNQXAC9IVRw"
-	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"
+	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLHJH2BlYG-EEBtw2y1njWpDukJSTs8Qqx"
 )
 
 // Skips integration test if requirements are not meet
@@ -55,7 +55,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 			y:    &YoutubeAudioDownloader{},
 			args: args{
 				urlString: validYoutubePlaylistUrl,
-				path:      filepath.Join(rootDirectory, "Successman"),
+				path:      filepath.Join(rootDirectory, "Cat"),
 			},
 			want:    make([]string, 10),
 			wantErr: false,
