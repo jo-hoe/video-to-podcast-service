@@ -75,40 +75,22 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}
 }
 
+func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
+	checkPrerequisites(t)
+	downloader := &YoutubeAudioDownloader{}
+
+	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
+	if isAvailable {
+		t.Errorf("Video is reported to available but should not be accessible")
+	}
+}
+
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
 	checkPrerequisites(t)
-	
-	type args struct {
-		urlString string
-	}
-	tests := []struct {
-		name string
-		y    *YoutubeAudioDownloader
-		args args
-		want bool
-	}{
-		{
-			name: "Check valid url",
-			y:    &YoutubeAudioDownloader{},
-			args: args{
-				urlString: validYoutubeVideoUrl,
-			},
-			want: true,
-		},
-		{
-			name: "Check invalid url",
-			y:    &YoutubeAudioDownloader{},
-			args: args{
-				urlString: "https://www.youtube.com/watch?v=invalid_url",
-			},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.y.IsVideoAvailable(tt.args.urlString); got != tt.want {
-				t.Errorf("YoutubeAudioDownloader.IsVideoAvailable() = %v, want %v", got, tt.want)
-			}
-		})
+	downloader := &YoutubeAudioDownloader{}
+
+	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
+	if !isAvailable {
+		t.Errorf("Video is reported to not available")
 	}
 }
