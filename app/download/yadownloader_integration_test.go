@@ -42,7 +42,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}{
 		{
 			name: "Video Download Test",
-			y:    &YoutubeAudioDownloader{},
+			y:    NewYoutubeAudioDownloader(),
 			args: args{
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
@@ -52,7 +52,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 		},
 		{
 			name: "Playlist Download Test",
-			y:    &YoutubeAudioDownloader{},
+			y:    NewYoutubeAudioDownloader(),
 			args: args{
 				urlString: validYoutubePlaylistUrl,
 				path:      filepath.Join(rootDirectory, "Cat"),
@@ -77,7 +77,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := &YoutubeAudioDownloader{}
+	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
 	if isAvailable {
@@ -87,7 +87,7 @@ func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := &YoutubeAudioDownloader{}
+	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
 	if !isAvailable {
