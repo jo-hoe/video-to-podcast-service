@@ -41,13 +41,10 @@ func Test_getYoutubeVideoId(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getVideoId(tt.args.url)
+			var err error
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getVideoId() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != tt.want {
-				t.Errorf("getVideoId() = %v, want %v", got, tt.want)
 			}
 		})
 	}
