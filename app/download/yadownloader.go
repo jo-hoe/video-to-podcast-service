@@ -3,7 +3,6 @@ package download
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -26,27 +25,21 @@ func NewYoutubeAudioDownloader() *YoutubeAudioDownloader {
 func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]string, error) {
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", path, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
 	dl := ytdlp.New().ExtractAudio().AudioFormat("mp3").Output(tempFilenameTemplate)
-	_, err := dl.Run(context.Background(), urlString)
+	cliOutput, err := dl.Run(context.Background(), urlString)
 	if err != nil {
 		return make([]string, 0), err
 	}
 
-	// get all video file paths which have been downloaded
-	var downloadedFiles []string
-	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	result := make([]string, 0)
+	for _, output := range cliOutput.OutputLogs {
+		// Expect the output to be in the format
+		// "[ExtractAudio] Destination: <path>\\<channel name>\\<file name>.mp3"
+		if strings.HasPrefix(output.Line, "[ExtractAudio] Destination: ") {
+			result = append(result, strings.TrimPrefix(output.Line, "[ExtractAudio] Destination: "))
 		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".mp3") {
-			downloadedFiles = append(downloadedFiles, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return make([]string, 0), err
 	}
 
-	return downloadedFiles, nil
+	return result, err
 }
 
 func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
