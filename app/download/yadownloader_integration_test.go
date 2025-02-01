@@ -57,7 +57,16 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: validYoutubePlaylistUrl,
 				path:      filepath.Join(rootDirectory, "Cat"),
 			},
-			want:    make([]string, 10),
+			want: []string{
+				filepath.Join(rootDirectory, "Shortest Video on Youtube.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 2.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 3.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 4.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 5.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 6.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 7.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 8.mp3"),
+			},
 			wantErr: false,
 		},
 	}

@@ -4,52 +4,6 @@ import (
 	"testing"
 )
 
-func Test_getYoutubeVideoId(t *testing.T) {
-	type args struct {
-		url string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		{
-			name: "Positive test case",
-			args: args{
-				url: "https://www.youtube.com/watch?v=BaW_jenozKc",
-			},
-			want:    "BaW_jenozKc",
-			wantErr: false,
-		},
-		{
-			name: "Negative test case",
-			args: args{
-				url: "garbage",
-			},
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name: "Short link",
-			args: args{
-				url: "https://youtu.be/DucriSA8ukw?feature=shared",
-			},
-			want:    "DucriSA8ukw",
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var err error
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getVideoId() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-		})
-	}
-}
-
 func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
 	type args struct {
 		url string
