@@ -6,7 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
+	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 	"github.com/lrstanley/go-ytdlp"
 	"golang.org/x/net/context"
@@ -33,17 +35,67 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 	defer os.RemoveAll(tempPath)
 
+	log.Printf("downloading from '%s' to '%s'", urlString, tempPath)
 	tempResults, err := download(tempPath, urlString)
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("done downloading %d files", len(tempResults))
 
+	log.Printf("setting metadata")
+	err = setMetadata(tempResults)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("set all metadata")
+
+	log.Printf("moving files to target folder")
 	results, err = moveToTarget(tempResults, targetPath)
 	if err != nil {
 		return results, err
 	}
+	log.Printf("completed moving all relevant files")
 
 	return results, err
+}
+
+func setMetadata(tempResults []string) (err error) {
+	for _, fullFilePath := range tempResults {
+		metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
+		if err != nil {
+			return err
+		}
+		chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
+		if err != nil {
+			return err
+		}
+		metadata[PodcastDescriptionTag] = metadata["description"]
+		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
+		if err != nil {
+			return err
+		}
+		metadata[ThumbnailUrlTag] = thumbnailUrl
+		mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
+	}
+
+	return err
+}
+
+func getThumbnailUrl(videoUrl string) (result string, err error) {
+	dl := ytdlp.New().GetThumbnail()
+
+	cliOutput, err := dl.Run(context.Background(), videoUrl)
+	if err != nil {
+		log.Printf("error getting thumbnail rul from '%s': '%v'", videoUrl, err)
+		return result, err
+	}
+	for _, output := range cliOutput.OutputLogs {
+		if strings.HasPrefix(output.Line, "https") {
+			result = output.Line
+		}
+	}
+
+	return result, err
 }
 
 func moveToTarget(tempResults []string, targetPath string) (results []string, err error) {
@@ -74,20 +126,17 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 	dl := ytdlp.New().
 		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
 		EmbedMetadata().                   // adds metadata such as artist to the file
-		Output(tempFilenameTemplate)       // set output path
+		ParseMetadata("description:TDES").
+		Output(tempFilenameTemplate) // set output path
 
 	// download
-	log.Printf("downloading from '%s' to '%s'", urlString, targetDirectory)
 	_, err := dl.Run(context.Background(), urlString)
 	if err != nil {
 		return result, err
 	}
-	log.Printf("completed downloaded from '%s' to '%s'", urlString, targetDirectory)
 
 	// get file names
 	result, err = filemanagement.GetAudioFiles(targetDirectory)
-	log.Printf("downloaded files: %v", result)
-
 	return result, err
 }
 
