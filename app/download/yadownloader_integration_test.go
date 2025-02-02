@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
 const (
@@ -17,6 +19,42 @@ func checkPrerequisites(t *testing.T) {
 	// this includes Github Actions servers
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
 		t.Skip("Test will be skipped in Github Context")
+	}
+}
+
+func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
+	checkPrerequisites(t)
+
+	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
+	defer os.RemoveAll(rootDirectory)
+	if err != nil {
+		t.Error("could not create folder")
+	}
+
+	y := NewYoutubeAudioDownloader()
+	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	if len(result) == 0 {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", result)
+	}
+	if len(result) > 1 {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want only one", result)
+	}
+
+	metadata, err := mp3joiner.GetFFmpegMetadataTag(result[0])
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	expectedArtist := "jawed"
+	if metadata["artist"] != expectedArtist {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
+	}
+
+	expectedFilename := "Me at the zoo.mp3"
+	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
 	}
 }
 
@@ -47,7 +85,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "kids", "kids video.mp3")},
+			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo.mp3")},
 			wantErr: false,
 		},
 		{
