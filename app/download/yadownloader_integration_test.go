@@ -52,19 +52,27 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	if metadata["artist"] != expectedArtist {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
 	}
-	thumbnailUrlTag := "WXXX"
+	thumbnailUrlTag := ThumbnailUrlTag
 	if metadata[thumbnailUrlTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", metadata[thumbnailUrlTag])
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[thumbnailUrlTag])
 	}
-	podcastDescriptionTag := "TDES"
+	podcastDescriptionTag := PodcastDescriptionTag
 	if metadata[podcastDescriptionTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", metadata[podcastDescriptionTag])
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[podcastDescriptionTag])
 	}
 
 	// check if file is saved in correct location
 	expectedFilename := "Me at the zoo.mp3"
 	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
+	}
+
+	chapters, err := mp3joiner.GetChapterMetadata(result[0])
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	if len(chapters) < 1 {
+		t.Error("YoutubeAudioDownloader.Download() no chapters have been found", err)
 	}
 }
 
