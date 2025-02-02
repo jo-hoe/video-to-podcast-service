@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
 const (
@@ -17,6 +19,61 @@ func checkPrerequisites(t *testing.T) {
 	// this includes Github Actions servers
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
 		t.Skip("Test will be skipped in Github Context")
+	}
+}
+
+func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
+	checkPrerequisites(t)
+
+	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
+	defer os.RemoveAll(rootDirectory)
+	if err != nil {
+		t.Error("could not create folder")
+	}
+
+	y := NewYoutubeAudioDownloader()
+	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	if len(result) == 0 {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", result)
+	}
+	if len(result) > 1 {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want only one", result)
+	}
+
+	// check if metadata is set
+	metadata, err := mp3joiner.GetFFmpegMetadataTag(result[0])
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	expectedArtist := "jawed"
+	if metadata["artist"] != expectedArtist {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
+	}
+	if metadata[ThumbnailUrlTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[ThumbnailUrlTag])
+	}
+	if metadata[PodcastDescriptionTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[PodcastDescriptionTag])
+	}
+	if metadata[DateTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[DateTag])
+	}
+
+	// check if file is saved in correct location
+	expectedFilename := "Me at the zoo.mp3"
+	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
+	}
+
+	chapters, err := mp3joiner.GetChapterMetadata(result[0])
+	if err != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+	}
+	if len(chapters) < 1 {
+		t.Error("YoutubeAudioDownloader.Download() no chapters have been found", err)
 	}
 }
 
@@ -42,22 +99,31 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}{
 		{
 			name: "Video Download Test",
-			y:    &YoutubeAudioDownloader{},
+			y:    NewYoutubeAudioDownloader(),
 			args: args{
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "kids", "kids video.mp3")},
+			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo.mp3")},
 			wantErr: false,
 		},
 		{
 			name: "Playlist Download Test",
-			y:    &YoutubeAudioDownloader{},
+			y:    NewYoutubeAudioDownloader(),
 			args: args{
 				urlString: validYoutubePlaylistUrl,
 				path:      filepath.Join(rootDirectory, "Cat"),
 			},
-			want:    make([]string, 10),
+			want: []string{
+				filepath.Join(rootDirectory, "Shortest Video on Youtube.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 2.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 3.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 4.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 5.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 6.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 7.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 8.mp3"),
+			},
 			wantErr: false,
 		},
 	}
@@ -77,7 +143,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := &YoutubeAudioDownloader{}
+	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
 	if isAvailable {
@@ -87,7 +153,7 @@ func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := &YoutubeAudioDownloader{}
+	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
 	if !isAvailable {

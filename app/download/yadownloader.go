@@ -2,19 +2,17 @@ package download
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/jo-hoe/video-to-podcast-service/app/convertvideo"
-	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
+	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
-	"github.com/kkdai/youtube/v2"
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
+	"github.com/lrstanley/go-ytdlp"
+	"golang.org/x/net/context"
 )
 
 const playlistRegex = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
@@ -23,40 +21,132 @@ const videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
 
 type YoutubeAudioDownloader struct{}
 
-func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]string, error) {
-	videosMetadata, err := getAllYoutubeMetadata(urlString)
-	if err != nil {
-		return make([]string, 0), err
-	}
+func NewYoutubeAudioDownloader() *YoutubeAudioDownloader {
+	ytdlp.MustInstall(context.Background(), nil)
+
+	return &YoutubeAudioDownloader{}
+}
+
+func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
 	results := make([]string, 0)
-	for _, videoMetadata := range videosMetadata {
-		videoFilePath, err := downloadVideo(videoMetadata, os.TempDir())
-		if err != nil {
-			return results, err
-		}
-
-		defer func() {
-			log.Printf("deleting video file '%s'\n", videoFilePath)
-			err := os.Remove(videoFilePath)
-			if err != nil {
-				log.Printf("error: %v when removing video file '%s'\n", err, videoFilePath)
-			}
-		}()
-
-		// create author specific path if not exist
-		calculatedPath := filepath.Join(path, videoMetadata.Author)
-		err = os.MkdirAll(calculatedPath, os.ModePerm)
-		if err != nil {
-			return results, err
-		}
-
-		audioPath, err := convertToAudio(videoFilePath, videoMetadata, calculatedPath)
-		if err != nil {
-			return results, err
-		}
-		results = append(results, audioPath)
+	// create temp directory
+	tempPath, err := os.MkdirTemp("", "")
+	if err != nil {
+		return results, err
 	}
-	return results, nil
+	defer os.RemoveAll(tempPath)
+
+	log.Printf("downloading from '%s' to '%s'", urlString, tempPath)
+	tempResults, err := download(tempPath, urlString)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("done downloading %d files", len(tempResults))
+
+	log.Printf("setting metadata")
+	err = setMetadata(tempResults)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("set all metadata")
+
+	log.Printf("moving files to target folder")
+	results, err = moveToTarget(tempResults, targetPath)
+	if err != nil {
+		return results, err
+	}
+	log.Printf("completed moving all relevant files")
+
+	return results, err
+}
+
+func setMetadata(tempResults []string) (err error) {
+	for _, fullFilePath := range tempResults {
+		metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
+		if err != nil {
+			return err
+		}
+		chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
+		if err != nil {
+			return err
+		}
+		metadata[PodcastDescriptionTag] = metadata["description"]
+		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
+		if err != nil {
+			return err
+		}
+		metadata[ThumbnailUrlTag] = thumbnailUrl
+		metadata[DateTag] = metadata["date"]
+
+		err = mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func getThumbnailUrl(videoUrl string) (result string, err error) {
+	dl := ytdlp.New().GetThumbnail()
+
+	cliOutput, err := dl.Run(context.Background(), videoUrl)
+	if err != nil {
+		log.Printf("error getting thumbnail rul from '%s': '%v'", videoUrl, err)
+		return result, err
+	}
+	for _, output := range cliOutput.OutputLogs {
+		if strings.HasPrefix(output.Line, "https") {
+			result = output.Line
+		}
+	}
+
+	return result, err
+}
+
+func moveToTarget(tempResults []string, targetPath string) (results []string, err error) {
+	results = make([]string, 0)
+	for _, fullFilePath := range tempResults {
+		directoryName := filepath.Base(filepath.Dir(fullFilePath))
+		targetSubDirectory := filepath.Join(targetPath, directoryName)
+		err = os.MkdirAll(targetSubDirectory, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		targetFilename := filepath.Base(fullFilePath)
+		targetPath := filepath.Join(targetSubDirectory, targetFilename)
+		err = filemanagement.MoveFile(fullFilePath, targetPath)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, targetPath)
+	}
+	return results, err
+}
+
+func download(targetDirectory string, urlString string) ([]string, error) {
+	result := make([]string, 0)
+	// set download behavior
+	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
+	dl := ytdlp.New().
+		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
+		EmbedMetadata().                   // adds metadata such as artist to the file
+		ParseMetadata("description:TDES").
+		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
+			log.Printf("download progress '%s' - %.1f", *prog.Info.Title, prog.Percent())
+		}).
+		Output(tempFilenameTemplate) // set output path
+
+	// download
+	_, err := dl.Run(context.Background(), urlString)
+	if err != nil {
+		return result, err
+	}
+
+	// get file names
+	result, err = filemanagement.GetAudioFiles(targetDirectory)
+	return result, err
 }
 
 func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
@@ -64,176 +154,11 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 }
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
-	_, err := getAllYoutubeMetadata(urlString)
+	log.Printf("checking if video from '%s' can be downloaded", urlString)
+	dl, err := ytdlp.New().Simulate().Quiet().Run(context.Background(), urlString)
 	if err != nil {
-		log.Printf("error: %v when checking if url '%s' is available\n", err, urlString)
+		log.Printf("error checking video availability: '%v'", err)
+		return false
 	}
-	return err == nil
-}
-
-func convertToAudio(videoFile string, youtubeMetadata *youtube.Video, path string) (string, error) {
-	fileName := filepath.Base(videoFile)
-	fileNameWithoutExtension := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-	audioFileName := fmt.Sprintf("%s.mp3", fileNameWithoutExtension)
-	tempAudioFilePath := filepath.Join(os.TempDir(), audioFileName)
-
-	err := convertvideo.ConvertVideoToAudio(videoFile, tempAudioFilePath)
-	if err != nil {
-		return "", err
-	}
-	metadata := getAudioMetaData(youtubeMetadata)
-	err = mp3joiner.SetFFmpegMetadataTag(tempAudioFilePath, metadata, make([]mp3joiner.Chapter, 0))
-	if err != nil {
-		return "", err
-	}
-	log.Printf("converted video file '%s' to audio '%s'\n", youtubeMetadata.Title, audioFileName)
-
-	audioFilePath := filepath.Join(path, audioFileName)
-	log.Printf("moving audio file '%s' to '%s'\n", tempAudioFilePath, audioFilePath)
-	err = filemanagement.MoveFile(tempAudioFilePath, audioFilePath)
-	if err != nil {
-		return "", err
-	}
-
-	return audioFilePath, nil
-}
-
-func getAudioMetaData(youtubeMetadata *youtube.Video) map[string]string {
-	result := make(map[string]string)
-
-	thumbnailMaxSize := uint(0)
-	for i, thumbnail := range youtubeMetadata.Thumbnails {
-		if thumbnail.Width > thumbnailMaxSize {
-			result[ThumbnailUrlTag] = youtubeMetadata.Thumbnails[i].URL
-		}
-
-	}
-	result["Artist"] = youtubeMetadata.Author
-	result["Title"] = youtubeMetadata.Title
-
-	description := strings.ReplaceAll(youtubeMetadata.Description, "\n", "`n")
-	description = strings.ReplaceAll(description, "\r", "`r")
-	result[PodcastDescriptionTag] = description
-
-	return result
-}
-
-func getAllYoutubeMetadata(urlString string) (results []*youtube.Video, err error) {
-	results = make([]*youtube.Video, 0)
-
-	playlistId, err := getPlaylistId(urlString)
-	if err == nil {
-		results, err = getAllYoutubeMetadataInPlaylist(playlistId)
-	} else {
-		var videoId string
-		videoId, err = getVideoId(urlString)
-		if err != nil {
-			return make([]*youtube.Video, 0), err
-		}
-		var video *youtube.Video
-		video, err = getYoutubeMetadata(videoId)
-		if err != nil {
-			return make([]*youtube.Video, 0), err
-		}
-		results = append(results, video)
-	}
-
-	return results, err
-}
-
-func getYoutubeMetadata(videoId string) (video *youtube.Video, err error) {
-	client := youtube.Client{}
-	video, err = client.GetVideo(videoId)
-	if err != nil {
-		return nil, err
-	}
-
-	return video, nil
-}
-
-func getAllYoutubeMetadataInPlaylist(playlistId string) ([]*youtube.Video, error) {
-	client := youtube.Client{}
-	playlist, err := client.GetPlaylist(playlistId)
-	if err != nil {
-		return make([]*youtube.Video, 0), err
-	}
-
-	videos := make([]*youtube.Video, 0)
-	for _, video := range playlist.Videos {
-		video, err := getYoutubeMetadata(video.ID)
-		if err != nil {
-			return make([]*youtube.Video, 0), err
-		}
-		videos = append(videos, video)
-	}
-
-	return videos, nil
-}
-
-func downloadVideo(video *youtube.Video, path string) (string, error) {
-	client := youtube.Client{}
-	formats := video.Formats.WithAudioChannels()
-	// TODO: formats define the quality
-	// come up with a better strategy to select the best format
-	stream, _, err := client.GetStream(video, &formats[0])
-	if err != nil {
-		return "", err
-	}
-	defer stream.Close()
-	path, err = createVideoFromStream(stream, video.Title, path)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
-}
-
-func createVideoFromStream(stream io.ReadCloser, videoName string, path string) (string, error) {
-	sanitizedName := sanitizeFilename(videoName)
-	fileName := fmt.Sprintf("%s.mp4", sanitizedName)
-	filePath := filepath.Join(path, fileName)
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	log.Printf("downloading '%s' to '%s'\n", videoName, filePath)
-	_, err = io.Copy(file, stream)
-	if err != nil {
-		return "", err
-	}
-
-	return filePath, nil
-}
-
-func getVideoId(urlString string) (id string, err error) {
-	id, err = getId(urlString, videoRegex, "could not find video id in url '%s'")
-	if err != nil {
-		id, err = getId(urlString, videoShortRegex, "could not find video id in url '%s'")
-	}
-	return id, err
-}
-
-func getPlaylistId(urlString string) (id string, err error) {
-	return getId(urlString, playlistRegex, "could not find playlist id in url '%s'")
-}
-
-func getId(urlString string, regex string, errorMessage string) (id string, err error) {
-	if !isValidUrl(urlString) {
-		return "", fmt.Errorf("url '%s' is not a valid youtube video url", urlString)
-	}
-	expression := regexp.MustCompile(regex)
-	matches := expression.FindStringSubmatch(urlString)
-	if len(matches) == 2 {
-		return matches[1], nil
-	} else {
-		return "", fmt.Errorf(errorMessage, urlString)
-	}
-}
-
-func isValidUrl(urlString string) bool {
-	_, err := url.ParseRequestURI(urlString)
-	return err == nil
+	return dl != nil
 }
