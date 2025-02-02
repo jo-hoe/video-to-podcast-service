@@ -24,7 +24,7 @@ func NewYoutubeAudioDownloader() *YoutubeAudioDownloader {
 	return &YoutubeAudioDownloader{}
 }
 
-func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]string, error) {
+func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
 	results := make([]string, 0)
 	// create temp directory
 	tempPath, err := os.MkdirTemp("", "")
@@ -38,9 +38,19 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 		return nil, err
 	}
 
+	results, err = moveToTarget(tempResults, targetPath)
+	if err != nil {
+		return results, err
+	}
+
+	return results, err
+}
+
+func moveToTarget(tempResults []string, targetPath string) (results []string, err error) {
+	results = make([]string, 0)
 	for _, fullFilePath := range tempResults {
 		directoryName := filepath.Base(filepath.Dir(fullFilePath))
-		targetSubDirectory := filepath.Join(path, directoryName)
+		targetSubDirectory := filepath.Join(targetPath, directoryName)
 		err = os.MkdirAll(targetSubDirectory, os.ModePerm)
 		if err != nil {
 			return nil, err
@@ -54,7 +64,6 @@ func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]stri
 		}
 		results = append(results, targetPath)
 	}
-
 	return results, err
 }
 
