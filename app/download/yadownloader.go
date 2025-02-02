@@ -70,7 +70,9 @@ func setMetadata(tempResults []string) (err error) {
 		if err != nil {
 			return err
 		}
-		metadata[PodcastDescriptionTag] = metadata["description"]
+		description := strings.ReplaceAll(metadata["description"], "\n", "`n")
+		description = strings.ReplaceAll(description, "\r", "`r")
+		metadata[PodcastDescriptionTag] = description
 		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
 		if err != nil {
 			return err
@@ -134,7 +136,7 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		EmbedMetadata().                   // adds metadata such as artist to the file
 		ParseMetadata("description:TDES").
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
-			log.Printf("download progress '%s' - %.1f", *prog.Info.Title, prog.Percent())
+			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
 		Output(tempFilenameTemplate) // set output path
 
