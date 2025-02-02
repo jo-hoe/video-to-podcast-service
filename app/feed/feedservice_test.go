@@ -130,8 +130,8 @@ func TestFeedService_GetFeeds(t *testing.T) {
 			if got == nil && !tt.wantErr {
 				t.Error("FeedService.GetFeeds() got = nil")
 			}
-			if len(got) != 3 && !tt.wantErr {
-				t.Errorf("expected 3 feeds, got %d", len(got))
+			if len(got) != 2 && !tt.wantErr {
+				t.Errorf("expected 2 feeds, got %d", len(got))
 			}
 		})
 	}

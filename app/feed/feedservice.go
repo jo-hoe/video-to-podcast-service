@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jo-hoe/video-to-podcast-service/app/common"
 	"github.com/jo-hoe/video-to-podcast-service/app/download"
@@ -51,20 +52,13 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 
 	allItems := fp.createFeed("default")
 	for _, audioFilePath := range audioFilePaths {
-		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
-		if err != nil {
-			return nil, err
-		}
-
-		if metadata[mp3KeyAttribute] == "" {
-			log.Printf("no '%s' found for file '%s' - skipping file", mp3KeyAttribute, filepath.Base(audioFilePath))
-			continue
-		}
+		directoryPath := filepath.Dir(audioFilePath)
+		directoryName := filepath.Base(directoryPath)
 
 		// either returns already created feed or nil
-		feed := fp.getFeedWithAuthor(metadata[mp3KeyAttribute], feedCollector)
+		feed := fp.getFeedWithAuthor(directoryName, feedCollector)
 		if feed == nil {
-			feed = fp.createFeed(metadata[mp3KeyAttribute])
+			feed = fp.createFeed(directoryName)
 			feedCollector = append(feedCollector, feed)
 		}
 
@@ -73,6 +67,10 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 			return nil, err
 		}
 
+		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
+		if err != nil {
+			return nil, err
+		}
 		feed.Items = append(feed.Items, item)
 		if feed.Image == nil {
 			feed.Image = &feeds.Image{
@@ -120,12 +118,18 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	description = strings.ReplaceAll(description, "`r", "")
 	description = fmt.Sprintf("<![CDATA[%s]]>", description)
 
+	uploadTime, err := time.Parse("20060102", audioMetadata[download.DateTag])
+	if err != nil {
+		log.Printf("could not parse date tag, reverting to default. error: %v", err)
+		uploadTime = fileInfo.ModTime()
+	}
+
 	return &feeds.Item{
 		Title:       common.ValueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
 		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
 		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
-		Created:     fileInfo.ModTime(),
+		Created:     uploadTime,
 	}, nil
 }
 
