@@ -77,7 +77,11 @@ func setMetadata(tempResults []string) (err error) {
 		}
 		metadata[ThumbnailUrlTag] = thumbnailUrl
 		metadata[DateTag] = metadata["date"]
-		mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
+
+		err = mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
