@@ -9,14 +9,6 @@ A service that can download video files, transform them into audio files, and th
 
 Currently, the service only supports YouTube videos.
 
-## TODO
-
-- files need to be in a temp folder than transported to the final location
-- set metadata in mp3 file
-- more logging please
-- linux container does not work
-- remove dependency on "artist" as key
-
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/engine/install/)
