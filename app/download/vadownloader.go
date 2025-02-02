@@ -16,6 +16,7 @@ const (
 	ErrIsVideoSupported   = "this downloader is not responsible for this URL '%s'"
 	ThumbnailUrlTag       = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
 	PodcastDescriptionTag = "TDES"
+	DateTag               = "TDA"
 )
 
 func GetVideoDownloader(url string) (downloader AudioDownloader, err error) {

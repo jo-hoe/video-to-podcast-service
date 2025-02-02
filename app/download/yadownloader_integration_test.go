@@ -52,13 +52,14 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	if metadata["artist"] != expectedArtist {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
 	}
-	thumbnailUrlTag := ThumbnailUrlTag
-	if metadata[thumbnailUrlTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[thumbnailUrlTag])
+	if metadata[ThumbnailUrlTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[ThumbnailUrlTag])
 	}
-	podcastDescriptionTag := PodcastDescriptionTag
-	if metadata[podcastDescriptionTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[podcastDescriptionTag])
+	if metadata[PodcastDescriptionTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[PodcastDescriptionTag])
+	}
+	if metadata[DateTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[DateTag])
 	}
 
 	// check if file is saved in correct location

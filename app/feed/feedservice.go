@@ -2,10 +2,12 @@ package feed
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jo-hoe/video-to-podcast-service/app/common"
 	"github.com/jo-hoe/video-to-podcast-service/app/download"
@@ -116,12 +118,18 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	description = strings.ReplaceAll(description, "`r", "")
 	description = fmt.Sprintf("<![CDATA[%s]]>", description)
 
+	uploadTime, err := time.Parse("20060102", audioMetadata[download.DateTag])
+	if err != nil {
+		log.Printf("could not parse date tag, reverting to default. error: %v", err)
+		uploadTime = fileInfo.ModTime()
+	}
+
 	return &feeds.Item{
 		Title:       common.ValueOrDefault(audioMetadata["Title"], fileNameWithoutExtension),
 		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
 		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
-		Created:     fileInfo.ModTime(),
+		Created:     uploadTime,
 	}, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
@@ -75,6 +76,7 @@ func setMetadata(tempResults []string) (err error) {
 			return err
 		}
 		metadata[ThumbnailUrlTag] = thumbnailUrl
+		metadata[DateTag] = metadata["date"]
 		mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 	}
 
@@ -127,6 +129,9 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
 		EmbedMetadata().                   // adds metadata such as artist to the file
 		ParseMetadata("description:TDES").
+		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
+			log.Printf("download progress '%s' - %.1f", *prog.Info.Title, prog.Percent())
+		}).
 		Output(tempFilenameTemplate) // set output path
 
 	// download
@@ -145,6 +150,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 }
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
+	log.Printf("checking if video from '%s' can be downloaded", urlString)
 	dl, err := ytdlp.New().Simulate().Quiet().Run(context.Background(), urlString)
 	if err != nil {
 		log.Printf("error checking video availability: '%v'", err)
