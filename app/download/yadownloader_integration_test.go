@@ -43,6 +43,7 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want only one", result)
 	}
 
+	// check if metadata is set
 	metadata, err := mp3joiner.GetFFmpegMetadataTag(result[0])
 	if err != nil {
 		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
@@ -51,7 +52,16 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	if metadata["artist"] != expectedArtist {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
 	}
+	thumbnailUrlTag := "WXXX"
+	if metadata[thumbnailUrlTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", metadata[thumbnailUrlTag])
+	}
+	podcastDescriptionTag := "TDES"
+	if metadata[podcastDescriptionTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", metadata[podcastDescriptionTag])
+	}
 
+	// check if file is saved in correct location
 	expectedFilename := "Me at the zoo.mp3"
 	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))

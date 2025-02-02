@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
-	"strings"
 
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 	"github.com/lrstanley/go-ytdlp"
 	"golang.org/x/net/context"
 )
@@ -24,29 +25,58 @@ func NewYoutubeAudioDownloader() *YoutubeAudioDownloader {
 }
 
 func (y *YoutubeAudioDownloader) Download(urlString string, path string) ([]string, error) {
-	tempFilenameTemplate := fmt.Sprintf("%s%c%s", path, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
+	results := make([]string, 0)
+	// create temp directory
+	tempPath, err := os.MkdirTemp("", "")
+	if err != nil {
+		return results, err
+	}
+	defer os.RemoveAll(tempPath)
+
+	tempResults, err := download(tempPath, urlString)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fullFilePath := range tempResults {
+		directoryName := filepath.Base(filepath.Dir(fullFilePath))
+		targetSubDirectory := filepath.Join(path, directoryName)
+		err = os.MkdirAll(targetSubDirectory, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		targetFilename := filepath.Base(fullFilePath)
+		targetPath := filepath.Join(targetSubDirectory, targetFilename)
+		err = filemanagement.MoveFile(fullFilePath, targetPath)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, targetPath)
+	}
+
+	return results, err
+}
+
+func download(targetDirectory string, urlString string) ([]string, error) {
+	result := make([]string, 0)
+	// set download behavior
+	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
 	dl := ytdlp.New().
 		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
 		EmbedMetadata().                   // adds metadata such as artist to the file
 		Output(tempFilenameTemplate)       // set output path
 
-	log.Printf("downloading from '%s' to '%s'", urlString, path)
-	cliOutput, err := dl.Run(context.Background(), urlString)
+	// download
+	log.Printf("downloading from '%s' to '%s'", urlString, targetDirectory)
+	_, err := dl.Run(context.Background(), urlString)
 	if err != nil {
-		log.Printf("error downloading from '%s' to '%s': '%v'", urlString, path, err)
-		return make([]string, 0), err
+		return result, err
 	}
-	log.Printf("completed downloaded from '%s' to '%s'", urlString, path)
+	log.Printf("completed downloaded from '%s' to '%s'", urlString, targetDirectory)
 
-	result := make([]string, 0)
-	for _, output := range cliOutput.OutputLogs {
-		// Expect the output to be in the format
-		// "[ExtractAudio] Destination: <path>\\<channel name>\\<file name>.mp3"
-		if strings.HasPrefix(output.Line, "[ExtractAudio] Destination: ") {
-			result = append(result, strings.TrimPrefix(output.Line, "[ExtractAudio] Destination: "))
-		}
-	}
-
+	// get file names
+	result, err = filemanagement.GetAudioFiles(targetDirectory)
 	log.Printf("downloaded files: %v", result)
 
 	return result, err
