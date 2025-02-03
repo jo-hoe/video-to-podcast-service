@@ -44,12 +44,14 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 	log.Printf("done downloading %d files", len(tempResults))
 
-	log.Printf("setting metadata")
-	err = setMetadata(tempResults)
-	if err != nil {
-		return nil, err
+	for _, filePath := range tempResults {
+		log.Printf("setting metadata for '%s'", filePath)
+		err = setMetadata(filePath)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("set metadata for '%s'", filePath)
 	}
-	log.Printf("set all metadata")
 
 	log.Printf("moving files to target folder")
 	results, err = moveToTarget(tempResults, targetPath)
@@ -61,33 +63,30 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	return results, err
 }
 
-func setMetadata(tempResults []string) (err error) {
-	for _, fullFilePath := range tempResults {
-		metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
-		if err != nil {
-			return err
-		}
-		chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
-		if err != nil {
-			return err
-		}
-		description := strings.ReplaceAll(metadata["description"], "\n", "`n")
-		description = strings.ReplaceAll(description, "\r", "`r")
-		metadata[downloader.PodcastDescriptionTag] = description
-		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
-		if err != nil {
-			return err
-		}
-		metadata[downloader.ThumbnailUrlTag] = thumbnailUrl
-		metadata[downloader.DateTag] = metadata["date"]
-
-		err = mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
-		if err != nil {
-			return err
-		}
+func setMetadata(fullFilePath string) (err error) {
+	metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
+	if err != nil {
+		return err
+	}
+	chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
+	if err != nil {
+		return err
 	}
 
-	return err
+	videoUrl := metadata["purl"]
+	metadata[downloader.PodcastDescriptionTag], err = getDescription(videoUrl)
+	if err != nil {
+		return err
+	}
+	thumbnailUrl, err := getThumbnailUrl(videoUrl)
+	if err != nil {
+		return err
+	}
+
+	metadata[downloader.ThumbnailUrlTag] = thumbnailUrl
+	metadata[downloader.DateTag] = metadata["date"]
+
+	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
 
 func getThumbnailUrl(videoUrl string) (result string, err error) {
@@ -103,6 +102,24 @@ func getThumbnailUrl(videoUrl string) (result string, err error) {
 			result = output.Line
 		}
 	}
+
+	return result, err
+}
+
+func getDescription(videoUrl string) (result string, err error) {
+	dl := ytdlp.New().GetDescription()
+
+	cliOutput, err := dl.Run(context.Background(), videoUrl)
+	if err != nil {
+		log.Printf("error getting thumbnail rul from '%s': '%v'", videoUrl, err)
+		return result, err
+	}
+
+	sb := strings.Builder{}
+	for _, output := range cliOutput.OutputLogs {
+		sb.WriteString(output.Line)
+	}
+	result = sb.String()
 
 	return result, err
 }
