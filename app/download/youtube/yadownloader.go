@@ -1,4 +1,4 @@
-package download
+package youtube
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
+	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
 	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 	"github.com/lrstanley/go-ytdlp"
 	"golang.org/x/net/context"
@@ -72,13 +73,13 @@ func setMetadata(tempResults []string) (err error) {
 		}
 		description := strings.ReplaceAll(metadata["description"], "\n", "`n")
 		description = strings.ReplaceAll(description, "\r", "`r")
-		metadata[PodcastDescriptionTag] = description
+		metadata[downloader.PodcastDescriptionTag] = description
 		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
 		if err != nil {
 			return err
 		}
-		metadata[ThumbnailUrlTag] = thumbnailUrl
-		metadata[DateTag] = metadata["date"]
+		metadata[downloader.ThumbnailUrlTag] = thumbnailUrl
+		metadata[downloader.DateTag] = metadata["date"]
 
 		err = mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 		if err != nil {
