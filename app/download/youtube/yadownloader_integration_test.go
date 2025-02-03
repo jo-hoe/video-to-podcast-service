@@ -1,4 +1,4 @@
-package download
+package youtube
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
+	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
 )
 
 const (
@@ -52,14 +53,14 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	if metadata["artist"] != expectedArtist {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
 	}
-	if metadata[ThumbnailUrlTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[ThumbnailUrlTag])
+	if metadata[downloader.ThumbnailUrlTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[downloader.ThumbnailUrlTag])
 	}
-	if metadata[PodcastDescriptionTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[PodcastDescriptionTag])
+	if metadata[downloader.PodcastDescriptionTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[downloader.PodcastDescriptionTag])
 	}
-	if metadata[DateTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[DateTag])
+	if metadata[downloader.DateTag] == "" {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[downloader.DateTag])
 	}
 
 	// check if file is saved in correct location

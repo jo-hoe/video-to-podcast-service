@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/jo-hoe/video-to-podcast-service/app/common"
-	"github.com/jo-hoe/video-to-podcast-service/app/download"
+	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
 	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 
 	"github.com/gorilla/feeds"
@@ -74,8 +74,8 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		feed.Items = append(feed.Items, item)
 		if feed.Image == nil {
 			feed.Image = &feeds.Image{
-				Url:  metadata[download.ThumbnailUrlTag],
-				Link: metadata[download.ThumbnailUrlTag],
+				Url:  metadata[downloader.ThumbnailUrlTag],
+				Link: metadata[downloader.ThumbnailUrlTag],
 			}
 		}
 		allItems.Items = append(allItems.Items, item)
@@ -113,11 +113,11 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 		return nil, err
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
-	description := common.ValueOrDefault(audioMetadata[download.PodcastDescriptionTag], "")
+	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
 	description = strings.ReplaceAll(description, "`n", "<br>")
 	description = strings.ReplaceAll(description, "`r", "")
 
-	uploadTime, err := time.Parse("20060102", audioMetadata[download.DateTag])
+	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
 		log.Printf("could not parse date tag, reverting to default. error: %v", err)
 		uploadTime = fileInfo.ModTime()
