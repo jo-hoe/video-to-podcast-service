@@ -44,6 +44,7 @@ func main() {
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Pre(middleware.RemoveTrailingSlash())
 	e.Validator = &genericValidator{Validator: validator.New()}
 
 	e.POST("/v1/addItem", addItemHandler)
