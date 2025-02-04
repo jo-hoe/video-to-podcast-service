@@ -79,12 +79,10 @@ func setMetadata(fullFilePath string) (err error) {
 	}
 
 	videoUrl := metadata["purl"]
-	description, err := getDescription(videoUrl)
+	metadata[downloader.PodcastDescriptionTag], err = getDescription(videoUrl)
 	if err != nil {
 		return err
 	}
-
-	metadata[downloader.PodcastDescriptionTag] = description
 	thumbnailUrl, err := getThumbnailUrl(videoUrl)
 	if err != nil {
 		return err
@@ -125,7 +123,6 @@ func getDescription(videoUrl string) (result string, err error) {
 	sb := strings.Builder{}
 	for _, output := range cliOutput.OutputLogs {
 		sb.WriteString(output.Line)
-		sb.WriteString("`n")
 	}
 	result = sb.String()
 
@@ -158,9 +155,10 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
 	dl := ytdlp.New().
-		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
-		EmbedMetadata().                            // adds metadata such as artist to the file
-		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
+		ExtractAudio().AudioFormat("mp3").                                              // convert get mp3 after downloading the video
+		EmbedMetadata().                                                                // adds metadata such as artist to the file
+		ParseMetadata(fmt.Sprintf("description:%s", downloader.PodcastDescriptionTag)). // map description to TDES
+		SponsorblockRemove(sponsorBlockCategories).                                     // delete unneeded segments (e.g. sponsor, intro etc.)
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
