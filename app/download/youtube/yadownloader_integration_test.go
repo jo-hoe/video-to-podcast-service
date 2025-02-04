@@ -14,7 +14,18 @@ const (
 	validYoutubePlaylistUrl = "https://www.youtube.com/playlist?list=PLHJH2BlYG-EEBtw2y1njWpDukJSTs8Qqx"
 )
 
+// Skips integration test if requirements are not meet
+func checkPrerequisites(t *testing.T) {
+	// Some servers/IPs are blocked by Youtube and the test will fail
+	// this includes Github Actions servers
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		t.Skip("Test will be skipped in Github Context")
+	}
+}
+
 func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
+	checkPrerequisites(t)
+
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
@@ -68,6 +79,8 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 }
 
 func Test_YoutubeAudioDownloader_Download(t *testing.T) {
+	checkPrerequisites(t)
+
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
 	defer os.RemoveAll(rootDirectory)
 	if err != nil {
@@ -130,6 +143,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 }
 
 func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
+	checkPrerequisites(t)
 	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
@@ -139,6 +153,7 @@ func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 }
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
+	checkPrerequisites(t)
 	downloader := NewYoutubeAudioDownloader()
 
 	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
