@@ -59,9 +59,12 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 
 	log.Printf("moving files to target folder")
-	results, err = moveToTarget(tempResults, targetPath)
-	if err != nil {
-		return results, err
+	for _, filePath := range tempResults {
+		movedItem, err := moveToTarget(filePath, targetPath)
+		if err != nil {
+			return results, err
+		}
+		results = append(results, movedItem)
 	}
 	log.Printf("completed moving all relevant files")
 
@@ -132,25 +135,21 @@ func getDescription(videoUrl string) (result string, err error) {
 	return result, err
 }
 
-func moveToTarget(tempResults []string, targetPath string) (results []string, err error) {
-	results = make([]string, 0)
-	for _, fullFilePath := range tempResults {
-		directoryName := filepath.Base(filepath.Dir(fullFilePath))
-		targetSubDirectory := filepath.Join(targetPath, directoryName)
-		err = os.MkdirAll(targetSubDirectory, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
-
-		targetFilename := filepath.Base(fullFilePath)
-		targetPath := filepath.Join(targetSubDirectory, targetFilename)
-		err = filemanagement.MoveFile(fullFilePath, targetPath)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, targetPath)
+func moveToTarget(sourcePath, targetRootPath string) (results string, err error) {
+	directoryName := filepath.Base(filepath.Dir(sourcePath))
+	targetSubDirectory := filepath.Join(targetRootPath, directoryName)
+	err = os.MkdirAll(targetSubDirectory, os.ModePerm)
+	if err != nil {
+		return results, err
 	}
-	return results, err
+
+	targetFilename := filepath.Base(sourcePath)
+	targetPath := filepath.Join(targetSubDirectory, targetFilename)
+	err = filemanagement.MoveFile(sourcePath, targetPath)
+	if err != nil {
+		return results, err
+	}
+	return targetPath, err
 }
 
 func download(targetDirectory string, urlString string) ([]string, error) {
