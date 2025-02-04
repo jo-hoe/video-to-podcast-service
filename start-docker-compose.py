@@ -3,6 +3,7 @@ import subprocess
 import socket
 import argparse
 
+
 def get_local_ip():
     # Create a socket that connects to an external address
     # This helps us determine which network interface is used for external connections
@@ -19,9 +20,13 @@ def get_local_ip():
     finally:
         s.close()
 
-parser = argparse.ArgumentParser(description='starts docker compose and sets host IP as environment variable')
+
+parser = argparse.ArgumentParser(
+    description='starts docker compose and sets host IP as environment variable')
 parser.add_argument('--rebuild', dest='rebuild', action=argparse.BooleanOptionalAction,
                     help='specifies if docker compose should be rebuilt')
+parser.add_argument('--services', dest='services', type=str, nargs='*',
+                    help='specify one or more services to run (space-separated)')
 args = parser.parse_args()
 
 # Get the local network IP
@@ -33,7 +38,20 @@ else:
     print("Failed to get local IP address")
     exit(1)
 
+# Base command
+cmd = ["docker-compose", "up"]
+
+# Add --build flag if rebuild is specified
 if args.rebuild:
-    subprocess.run(["docker-compose", "up", "--build"])
-else:
-    subprocess.run(["docker-compose", "up"])
+    cmd.append("--build")
+
+# Add specific services if provided
+if args.services:
+    cmd.extend(args.services)
+
+# Run the command
+try:
+    subprocess.run(cmd, check=True)
+except subprocess.CalledProcessError as e:
+    print(f"Error running docker-compose: {e}")
+    exit(1)
