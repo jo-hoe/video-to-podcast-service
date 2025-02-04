@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
+	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
 )
 
 type SuperBlockResponse struct {
@@ -56,11 +57,47 @@ func RemoveAds(httpClient http.Client, filePath string) error {
 		return err
 	}
 
-	// invert list
-	// create new temp file
-	// replace old with new file
+	// Sort segments by start time
+	slices.SortFunc(segmentsToRemove, func(a, b SuperBlockResponse) int {
+		if a.Segment[0] < b.Segment[0] {
+			return -1
+		}
+		if a.Segment[0] > b.Segment[0] {
+			return 1
+		}
+		return 0
+	})
 
-	return err
+	// get video duration
+	videoDuration := segmentsToRemove[0].VideoDuration
+	// create segments to keep (invert the ad segments)
+	segmentsToAddToAudioFile := make([][]float64, 2)
+	currentTime := 0.0
+
+	for _, segment := range segmentsToRemove {
+		// add segment from current time to start of ad
+		if segment.Segment[0] > currentTime {
+			segmentsToAddToAudioFile = append(segmentsToAddToAudioFile, []float64{currentTime, segment.Segment[0]})
+		}
+		currentTime = segment.Segment[1]
+	}
+
+	// add final segment if there's remaining content
+	if currentTime < videoDuration {
+		segmentsToAddToAudioFile = append(segmentsToAddToAudioFile, []float64{currentTime, videoDuration})
+	}
+
+	builder := mp3joiner.NewMP3Builder()
+	for _, segment := range segmentsToAddToAudioFile {
+		builder.Append(filePath, segment[0], segment[1])
+	}
+	tempFilename := fmt.Sprintf("%s_temp", filePath)
+	err = builder.Build(tempFilename)
+	if err != nil {
+		return err
+	}
+
+	return filemanagement.MoveFile(tempFilename, filePath)
 }
 
 func getVideoId(filePath string) (result string, err error) {
