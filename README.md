@@ -101,26 +101,13 @@ golangci-lint run ./...
 
 in the working directory.
 
-## Limitations
-
-Google blocks certain IPs.
-This includes IPs form hyperscalers (such as AWS).
-Trying to download youtube videos from such a IP results in an error such as `403`.
-The lib used in this project returns `Error:can't bypass age restriction: login required to confirm your age`.
-You can find more details regarding this issue [here](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479).
-
 ## Future Work
 
 - one can implement itunes tags to get a pic for each podcast element (however, the lib does not support this, implementation requires generating the xml and not using lib)
   - example `<itunes:image href="http://....png"/>`
+- create `index.html` with all podcasts and qr codes
 
 ## Relevant Links
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
 - [example podcast](https://feeds.libsyn.com/230510/rss)
-
-## ToDo
-
-- cut out youtube ads (use [Superblock API](https://wiki.sponsor.ajay.app/w/API_Docs#GET_/api/skipSegments))
-  - example call `https://sponsor.ajay.app/api/skipSegments?videoID=U8z-1Bqn4Rs&categories=[%22sponsor%22,%22selfpromo%22,%22interaction%22,%22intro%22,%22outro%22,%22preview%22,%22music_offtopic%22,%22filler%22]`
-- create `index.html` with all podcasts and qr codes
