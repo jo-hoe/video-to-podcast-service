@@ -58,7 +58,7 @@ func main() {
 	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
 
 	log.Print("starting server")
-	log.Printf("go to http://%s:%s/%s to explore available podcast URLs", getOutboundIP(), port, defaultItemPath)
+	log.Printf("go to http://%s:%s/%s to explore available podcast URLs", common.ValueOrDefault(os.Getenv("BASE_URL"), getOutboundIP()), port, defaultItemPath)
 
 	// start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
