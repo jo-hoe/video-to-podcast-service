@@ -16,9 +16,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-const playlistRegex = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
-const videoRegex = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
-const videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+const (
+	playlistRegex   = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
+	videoRegex      = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
+	videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+	// types taken from API description
+	// https://wiki.sponsor.ajay.app/w/Types
+	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
+)
 
 type YoutubeAudioDownloader struct{}
 
@@ -44,12 +49,14 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 	log.Printf("done downloading %d files", len(tempResults))
 
-	log.Printf("setting metadata")
-	err = setMetadata(tempResults)
-	if err != nil {
-		return nil, err
+	for _, filePath := range tempResults {
+		log.Printf("setting metadata for '%s'", filePath)
+		err = setMetadata(filePath)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("set metadata for '%s'", filePath)
 	}
-	log.Printf("set all metadata")
 
 	log.Printf("moving files to target folder")
 	results, err = moveToTarget(tempResults, targetPath)
@@ -61,33 +68,30 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	return results, err
 }
 
-func setMetadata(tempResults []string) (err error) {
-	for _, fullFilePath := range tempResults {
-		metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
-		if err != nil {
-			return err
-		}
-		chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
-		if err != nil {
-			return err
-		}
-		description := strings.ReplaceAll(metadata["description"], "\n", "`n")
-		description = strings.ReplaceAll(description, "\r", "`r")
-		metadata[downloader.PodcastDescriptionTag] = description
-		thumbnailUrl, err := getThumbnailUrl(metadata["purl"])
-		if err != nil {
-			return err
-		}
-		metadata[downloader.ThumbnailUrlTag] = thumbnailUrl
-		metadata[downloader.DateTag] = metadata["date"]
-
-		err = mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
-		if err != nil {
-			return err
-		}
+func setMetadata(fullFilePath string) (err error) {
+	metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
+	if err != nil {
+		return err
+	}
+	chapters, err := mp3joiner.GetChapterMetadata(fullFilePath)
+	if err != nil {
+		return err
 	}
 
-	return err
+	videoUrl := metadata["purl"]
+	metadata[downloader.PodcastDescriptionTag], err = getDescription(videoUrl)
+	if err != nil {
+		return err
+	}
+	thumbnailUrl, err := getThumbnailUrl(videoUrl)
+	if err != nil {
+		return err
+	}
+
+	metadata[downloader.ThumbnailUrlTag] = thumbnailUrl
+	metadata[downloader.DateTag] = metadata["date"]
+
+	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
 
 func getThumbnailUrl(videoUrl string) (result string, err error) {
@@ -103,6 +107,24 @@ func getThumbnailUrl(videoUrl string) (result string, err error) {
 			result = output.Line
 		}
 	}
+
+	return result, err
+}
+
+func getDescription(videoUrl string) (result string, err error) {
+	dl := ytdlp.New().GetDescription()
+
+	cliOutput, err := dl.Run(context.Background(), videoUrl)
+	if err != nil {
+		log.Printf("error getting thumbnail rul from '%s': '%v'", videoUrl, err)
+		return result, err
+	}
+
+	sb := strings.Builder{}
+	for _, output := range cliOutput.OutputLogs {
+		sb.WriteString(output.Line)
+	}
+	result = sb.String()
 
 	return result, err
 }
@@ -133,9 +155,10 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
 	dl := ytdlp.New().
-		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
-		EmbedMetadata().                   // adds metadata such as artist to the file
-		ParseMetadata("description:TDES").
+		ExtractAudio().AudioFormat("mp3").                                              // convert get mp3 after downloading the video
+		EmbedMetadata().                                                                // adds metadata such as artist to the file
+		ParseMetadata(fmt.Sprintf("description:%s", downloader.PodcastDescriptionTag)). // map description to TDES
+		SponsorblockRemove(sponsorBlockCategories).                                     // delete unneeded segments (e.g. sponsor, intro etc.)
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
