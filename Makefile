@@ -11,8 +11,8 @@ update: ## pulls git repo
 	go mod tidy
 
 .PHONY: test
-test: ## run golang test
-	go test ./...
+test: ## run golang test (including integration tests)
+	go test -timeout 0  ./...
 
 .PHONY: start
 start: ## start via docker
