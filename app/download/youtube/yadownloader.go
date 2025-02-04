@@ -16,9 +16,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-const playlistRegex = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
-const videoRegex = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
-const videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+const (
+	playlistRegex   = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
+	videoRegex      = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
+	videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+	// types taken from API description
+	// https://wiki.sponsor.ajay.app/w/Types
+	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
+)
 
 type YoutubeAudioDownloader struct{}
 
@@ -150,9 +155,10 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
 	dl := ytdlp.New().
-		ExtractAudio().AudioFormat("mp3"). // convert get mp3 after downloading the video
-		EmbedMetadata().                   // adds metadata such as artist to the file
-		ParseMetadata("description:TDES").
+		ExtractAudio().AudioFormat("mp3").                                              // convert get mp3 after downloading the video
+		EmbedMetadata().                                                                // adds metadata such as artist to the file
+		ParseMetadata(fmt.Sprintf("description:%s", downloader.PodcastDescriptionTag)). // map description to TDES
+		SponsorblockRemove(sponsorBlockCategories).                                     // delete unneeded segments (e.g. sponsor, intro etc.)
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
