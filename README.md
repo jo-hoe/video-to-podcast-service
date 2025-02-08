@@ -114,6 +114,7 @@ You can find more details regarding this issue [here](https://github.com/kkdai/y
 - one can implement itunes tags to get a pic for each podcast element (however, the lib does not support this, implementation requires generating the xml and not using lib)
   - example `<itunes:image href="http://....png"/>`
 - create `index.html` with all podcasts and qr codes
+- provide ticketing return/progression via api
 
 ## Relevant Links
 
