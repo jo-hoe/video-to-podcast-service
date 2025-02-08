@@ -115,6 +115,7 @@ You can find more details regarding this issue [here](https://github.com/kkdai/y
   - example `<itunes:image href="http://....png"/>`
 - create `index.html` with all podcasts and qr codes
 - provide ticketing return/progression via api
+- set length in podcast
 
 ## Relevant Links
 
