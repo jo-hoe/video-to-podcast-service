@@ -1,7 +1,6 @@
 module github.com/jo-hoe/video-to-podcast-service
 
 go 1.23
-
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/feeds v1.2.0
@@ -29,7 +28,7 @@ require (
 	github.com/u2takey/go-utils v0.3.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
