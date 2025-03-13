@@ -116,6 +116,7 @@ You can find more details regarding this issue [here](https://github.com/kkdai/y
 - create `index.html` with all podcasts and qr codes
 - provide ticketing return/progression via api
 - set length in podcast
+- allow to set the target name of the podcast channel via api
 
 ## Relevant Links
 
