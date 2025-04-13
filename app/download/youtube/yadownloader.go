@@ -40,7 +40,11 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	if err != nil {
 		return results, err
 	}
-	defer os.RemoveAll(tempPath)
+	defer func() {
+		if err := os.RemoveAll(tempPath); err != nil {
+			log.Printf("Error removing temp directory: %v", err)
+		}
+	}()
 
 	log.Printf("downloading from '%s' to '%s'", urlString, tempPath)
 	tempResults, err := download(tempPath, urlString)

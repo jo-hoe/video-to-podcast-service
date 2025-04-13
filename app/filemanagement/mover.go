@@ -16,7 +16,11 @@ func calculateFileHash(filePath string) ([]byte, error) {
 	if err != nil {
 		return make([]byte, 0), err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, file); err != nil {
@@ -48,6 +52,11 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err := inputFile.Close(); err != nil {
+			log.Printf("Error closing input file: %v", err)
+		}
+	}()
 	fileName := filepath.Base(inputFile.Name())
 
 	if doesFileExist(targetPath) {

@@ -1,7 +1,6 @@
 module github.com/jo-hoe/video-to-podcast-service
 
-go 1.23
-toolchain go1.24.1
+go 1.24
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible

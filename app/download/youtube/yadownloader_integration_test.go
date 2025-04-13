@@ -27,7 +27,11 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	checkPrerequisites(t)
 
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
-	defer os.RemoveAll(rootDirectory)
+	defer func() {
+		if err := os.RemoveAll(rootDirectory); err != nil {
+			t.Errorf("Error removing temp directory: %v", err)
+		}
+	}()
 	if err != nil {
 		t.Error("could not create folder")
 	}
@@ -82,7 +86,11 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	checkPrerequisites(t)
 
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
-	defer os.RemoveAll(rootDirectory)
+	defer func() {
+		if err := os.RemoveAll(rootDirectory); err != nil {
+			t.Errorf("Error removing temp directory: %v", err)
+		}
+	}()
 	if err != nil {
 		t.Error("could not create folder")
 	}
