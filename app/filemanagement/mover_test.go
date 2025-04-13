@@ -76,6 +76,9 @@ func TestMoveFileOnToExistingFile(t *testing.T) {
 		t.Error("could not create file")
 	}
 	file.Close()
+	if err != nil {
+		t.Errorf("Error closing file: %v", err)
+	}
 
 	err = MoveFile(origin, target)
 	if err != nil {
@@ -110,6 +113,9 @@ func TestMoveFileOnToCorruptExistingFile(t *testing.T) {
 		t.Error("could not write to file")
 	}
 	file.Close()
+	if err != nil {
+		t.Errorf("Error closing file: %v", err)
+	}
 
 	err = MoveFile(origin, target)
 	if err != nil {

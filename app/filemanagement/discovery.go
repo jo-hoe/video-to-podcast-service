@@ -1,6 +1,7 @@
 package filemanagement
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -47,7 +48,11 @@ func isSupportedAudioFile(filePath string) bool {
 	if err != nil {
 		return false
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Printf("Error closing file: %v", err)
+		}
+	}()
 	buffer := make([]byte, 512)
 	_, err = file.Read(buffer)
 	if err != nil {

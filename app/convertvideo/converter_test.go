@@ -8,7 +8,11 @@ import (
 
 func Test_convertVideoToAudio(t *testing.T) {
 	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
-	defer os.RemoveAll(rootDirectory)
+	defer func() {
+		if err := os.RemoveAll(rootDirectory); err != nil {
+			t.Errorf("Error removing temp directory: %v", err)
+		}
+	}()
 	if err != nil {
 		t.Error("could not create folder")
 	}
