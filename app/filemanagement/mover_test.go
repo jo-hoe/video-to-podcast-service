@@ -26,10 +26,8 @@ func setupTestMoveEnvironment(t *testing.T) (rootDirectory string, leftDirectory
 		t.Error("could not create file")
 	}
 	fileName = filepath.Base(file.Name())
-	file.Close()
-
-	if err != nil {
-		t.Errorf("could not close file %+v", err)
+	if err := file.Close(); err != nil {
+		t.Errorf("Error closing file: %v", err)
 	}
 
 	return rootDirectory, leftDirectory, rightDirectory, fileName
@@ -75,8 +73,7 @@ func TestMoveFileOnToExistingFile(t *testing.T) {
 	if err != nil {
 		t.Error("could not create file")
 	}
-	file.Close()
-	if err != nil {
+	if err := file.Close(); err != nil {
 		t.Errorf("Error closing file: %v", err)
 	}
 
@@ -112,8 +109,7 @@ func TestMoveFileOnToCorruptExistingFile(t *testing.T) {
 	if err != nil {
 		t.Error("could not write to file")
 	}
-	file.Close()
-	if err != nil {
+	if err := file.Close(); err != nil {
 		t.Errorf("Error closing file: %v", err)
 	}
 

@@ -93,7 +93,9 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	tempFileName := fmt.Sprintf("%s.part", targetPath)
 	outputFile, err := os.Create(tempFileName)
 	if err != nil {
-		inputFile.Close()
+		if err := inputFile.Close(); err != nil {
+			log.Printf("Error closing input file: %v", err)
+		}
 		return err
 	}
 	defer func() {
@@ -132,7 +134,9 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 
 	// actual file copy
 	_, err = io.Copy(outputFile, inputFile)
-	inputFile.Close()
+	if err := inputFile.Close(); err != nil {
+		log.Printf("Error closing input file: %v", err)
+	}
 	if err != nil {
 		return err
 	}
