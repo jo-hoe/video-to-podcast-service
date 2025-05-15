@@ -92,6 +92,32 @@ func TestNewFeedService(t *testing.T) {
 	}
 }
 
+func Test_hashFileNameToUUIDv4(t *testing.T) {
+	result := hashFileNameToUUIDv4("my_demo_file.mp3")
+	result2 := hashFileNameToUUIDv4("my_demo_file'.mp3")
+
+	//the that result is a valid UUIDv4
+	if result == "" {
+		t.Errorf("hashFileNameToUUIDv4() returned empty string")
+	}
+
+	if len(result) != 36 {
+		t.Errorf("hashFileNameToUUIDv4() returned string of length %d, want 36", len(result))
+	}
+
+	// Basic UUIDv4 format check: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+	if result[14] != '4' {
+		t.Errorf("hashFileNameToUUIDv4() returned string with wrong version: %s", result)
+	}
+	if result[19] != '8' && result[19] != '9' && result[19] != 'a' && result[19] != 'b' {
+		t.Errorf("hashFileNameToUUIDv4() returned string with wrong variant: %s", result)
+	}
+
+	if result2 == result {
+		t.Errorf("hashFileNameToUUIDv4() returned same UUID for different input: %s", result)
+	}
+}
+
 func TestFeedService_GetFeeds(t *testing.T) {
 	defaultURL := "127.0.0.1"
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))

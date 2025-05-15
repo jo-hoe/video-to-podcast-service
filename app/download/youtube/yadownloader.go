@@ -159,7 +159,7 @@ func moveToTarget(sourcePath, targetRootPath string) (results string, err error)
 func download(targetDirectory string, urlString string) ([]string, error) {
 	result := make([]string, 0)
 	// set download behavior
-	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s.%(ext)s")
+	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
 	dl := ytdlp.New().
 		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
 		EmbedMetadata().                            // adds metadata such as artist to the file
