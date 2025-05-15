@@ -68,7 +68,7 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	}
 
 	// check if file is saved in correct location
-	expectedFilename := "Me at the zoo.mp3"
+	expectedFilename := "Me at the zoo_jNQXAC9IVRw.mp3"
 	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
 	}
