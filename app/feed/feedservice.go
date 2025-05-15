@@ -137,7 +137,6 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
 	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
-	description = strings.ReplaceAll(description, "`n", "<br>")
 
 	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
