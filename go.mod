@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/feeds v1.2.0
 	github.com/jo-hoe/mp3-joiner v0.0.0-20240816144805-0e151d4eda80
-	github.com/labstack/echo/v4 v4.13.3
+	github.com/labstack/echo/v4 v4.13.4
 	github.com/lrstanley/go-ytdlp v0.0.0-20250131232431-973bd5e3acef
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.40.0
