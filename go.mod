@@ -6,14 +6,14 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/feeds v1.2.0
 	github.com/jo-hoe/mp3-joiner v0.0.0-20240816144805-0e151d4eda80
-	github.com/labstack/echo/v4 v4.13.3
+	github.com/labstack/echo/v4 v4.13.4
 	github.com/lrstanley/go-ytdlp v0.0.0-20250131232431-973bd5e3acef
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.40.0
 )
 
 require (
-	github.com/ProtonMail/go-crypto v1.2.0 // indirect
+	github.com/ProtonMail/go-crypto v1.3.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
