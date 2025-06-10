@@ -81,7 +81,7 @@ curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
 ### Start with EMail Webhook
 
 This option allows you to start an additional service that continuously pulls an email address and uses the mail link in the content of unread mails as input for the service.
-The configuration of this service is described [here](https://github.com/jo-hoe/video-to-podcast-service/blob/main/mail-webhook-config/config.yaml).
+The configuration of this service is described [in this .yaml](https://github.com/jo-hoe/video-to-podcast-service/blob/main/mail-webhook-config/config.yaml).
 
 ## Linting
 
@@ -107,7 +107,7 @@ Google blocks certain IPs.
 This includes IPs form hyperscalers (such as AWS).
 Trying to download youtube videos from such a IP results in an error such as `403`.
 The lib used in this project returns `Error:can't bypass age restriction: login required to confirm your age`.
-You can find more details regarding this issue [here](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479).
+You can find more details regarding this issue [in this github issue](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479).
 
 ## Future Work
 
@@ -117,6 +117,7 @@ You can find more details regarding this issue [here](https://github.com/kkdai/y
 - provide ticketing return/progression via api
 - set length in podcast
 - allow to set the target name of the podcast channel via api
+- auto chapterize videos without chapters
 
 ## Relevant Links
 
