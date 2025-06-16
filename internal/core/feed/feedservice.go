@@ -48,7 +48,6 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		return nil, err
 	}
 
-	allItems := fp.createFeed("default")
 	for _, audioFilePath := range audioFilePaths {
 		directoryPath := filepath.Dir(audioFilePath)
 		directoryName := filepath.Base(directoryPath)
@@ -76,16 +75,11 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 				Link: metadata[downloader.ThumbnailUrlTag],
 			}
 		}
-		allItems.Items = append(allItems.Items, item)
 	}
 
 	results := make([]*feeds.RssFeed, 0)
 	for _, item := range feedCollector {
 		results = append(results, (&feeds.Rss{Feed: item}).RssFeed())
-	}
-
-	if len(allItems.Items) > 0 {
-		results = append(results, (&feeds.Rss{Feed: allItems}).RssFeed())
 	}
 
 	return results, nil
@@ -133,7 +127,9 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 		return nil, err
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
-	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
+
+	title := wrapCharacterData(common.ValueOrDefault(audioMetadata["title"], fileNameWithoutExtension))
+	description := wrapCharacterData(common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], ""))
 
 	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
@@ -142,7 +138,7 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	}
 
 	return &feeds.Item{
-		Title:       common.ValueOrDefault(audioMetadata["title"], fileNameWithoutExtension),
+		Title:       title,
 		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
 		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
@@ -152,11 +148,18 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	}, nil
 }
 
+func wrapCharacterData(input string) string {
+	if input == "" {
+		return ""
+	}
+	return "<![CDATA[" + input + "]]>"
+}
+
 func (fp *FeedService) createFeed(author string) *feeds.Feed {
 	feed := &feeds.Feed{
 		Title:       author,
 		Link:        &feeds.Link{Href: fp.getFeedUrl(author)},
-		Description: fmt.Sprintf("%s %s", defaultDescription, author),
+		Description: wrapCharacterData(fmt.Sprintf("%s %s", defaultDescription, author)),
 		Author:      &feeds.Author{Name: author},
 	}
 
