@@ -22,7 +22,10 @@ import (
 var defaultResourcePath = ""
 
 const defaultPort = "8080"
-const defaultItemPath = "v1/feeds"
+const apiVersion = "v1/"
+const feedsPath = apiVersion + "feeds"
+const addItemPath = apiVersion + "addItem"
+const addItemPaths = apiVersion + "addItems"
 
 func getResourcePath() string {
 	if defaultResourcePath != "" {
@@ -45,23 +48,34 @@ func main() {
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Validator = &genericValidator{Validator: validator.New()}
+	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
 
-	e.POST("/v1/addItem", addItemHandler)
-	e.POST("/v1/addItems", addItemsHandler)
+	e.GET("/index.html", indexHandler)
 
-	e.GET(defaultItemPath, feedsHandler)
-	e.GET(fmt.Sprintf("%s%s", defaultItemPath, "/:feedTitle/rss.xml"), feedHandler)
-	e.GET(fmt.Sprintf("%s%s", defaultItemPath, "/:feedTitle/:audioFileName"), audioFileHandler)
+	// API routes
+	e.POST(addItemPath, addItemHandler)
+	e.POST(addItemPaths, addItemsHandler)
+
+	e.GET(feedsPath, feedsHandler)
+	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), feedHandler)
+	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), audioFileHandler)
 
 	e.GET("/", probeHandler)
 
-	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
-
 	log.Print("starting server")
-	log.Printf("go to http://localhost:%s/%s to explore available podcast URLs", port, defaultItemPath)
+	log.Printf("go to http://localhost:%s/%s to explore available podcast URLs", port, feedsPath)
 
 	// start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
+}
+
+func indexHandler(ctx echo.Context) (err error) {
+	// Serve the index.html file
+	indexFilePath := filepath.Join(getResourcePath(), "index.html")
+	if _, err := os.Stat(indexFilePath); os.IsNotExist(err) {
+		return echo.NewHTTPError(http.StatusNotFound, "index.html not found")
+	}
+	return ctx.File(indexFilePath)
 }
 
 func feedsHandler(ctx echo.Context) (err error) {
@@ -231,7 +245,7 @@ func getFeedService() *feed.FeedService {
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
 
-	return feed.NewFeedService(audioSourceDirectory, defaultPort, defaultItemPath)
+	return feed.NewFeedService(audioSourceDirectory, defaultPort, feedsPath)
 }
 
 type genericValidator struct {
