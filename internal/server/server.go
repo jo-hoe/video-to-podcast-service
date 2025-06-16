@@ -215,6 +215,10 @@ func addItemsHandler(ctx echo.Context) (err error) {
 	return ctx.NoContent(http.StatusOK)
 }
 
+func probeHandler(ctx echo.Context) (err error) {
+	return ctx.NoContent(http.StatusOK)
+}
+
 // New handler for HTMX single URL form
 func htmxAddItemHandler(ctx echo.Context) error {
 	type SingleUrl struct {
@@ -228,10 +232,6 @@ func htmxAddItemHandler(ctx echo.Context) error {
 		return ctx.HTML(http.StatusInternalServerError, "<span style='color:red'>Failed to process: "+req.URL+"</span>")
 	}
 	return ctx.HTML(http.StatusOK, "<span style='color:green'>Submitted successfully!</span>")
-}
-
-func probeHandler(ctx echo.Context) (err error) {
-	return ctx.NoContent(http.StatusOK)
 }
 
 func getFeedService() *feed.FeedService {
