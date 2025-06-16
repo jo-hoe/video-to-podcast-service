@@ -34,7 +34,7 @@ func TestCreateFeed(t *testing.T) {
 			},
 			want: &feeds.Feed{
 				Title:       defaultAuthor,
-				Link:        &feeds.Link{Href: "https://example.com:443/v1/feeds/John%20Doe/rss.xml"},
+				Link:        &feeds.Link{Href: "/v1/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
 			},
