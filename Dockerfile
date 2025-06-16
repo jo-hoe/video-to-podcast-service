@@ -8,7 +8,7 @@ RUN go mod download
 # Copy the rest of the code and build the application
 COPY . ./
 # Build with no CGO and output to a specific location
-RUN CGO_ENABLED=0 go build -o /go/bin/app
+RUN CGO_ENABLED=0 go build -o /go/bin/app ./internal/server
 
 # Runtime stage: use a minimal base image for runtime and set up a non-root user
 FROM jrottenberg/ffmpeg:7.1-ubuntu
@@ -54,4 +54,4 @@ USER appuser
 ENV HOME=/home/appuser
 
 # ENTRYPOINT should point to the executable
-ENTRYPOINT ["./internal/core"]
+ENTRYPOINT ["./app"]

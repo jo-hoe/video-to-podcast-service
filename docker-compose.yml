@@ -18,4 +18,3 @@ services:
       timeout: 12s
     environment:
       PORT: "8080"
-      BASE_URL: "${BASE_URL}"
