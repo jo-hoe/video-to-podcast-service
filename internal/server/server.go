@@ -59,7 +59,7 @@ func StartServer(resourcePath string) {
 	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
 	log.Print("starting server")
 	log.Printf("UI available at http://localhost:%s/%s", port, mainPageName)
-	log.Printf("API available at http://localhost:%s/%s ", port, apiVersion)
+	log.Printf("Explore all feeds via API at http://localhost:%s/%s ", port, feedsPath)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
 }
 
