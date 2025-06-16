@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -59,7 +58,7 @@ func main() {
 	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
 
 	log.Print("starting server")
-	log.Printf("go to http://%s:%s/%s to explore available podcast URLs", common.ValueOrDefault(os.Getenv("BASE_URL"), getOutboundIP()), port, defaultItemPath)
+	log.Printf("go to http://localhost:%s/%s to explore available podcast URLs", port, defaultItemPath)
 
 	// start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
@@ -229,12 +228,10 @@ func probeHandler(ctx echo.Context) (err error) {
 }
 
 func getFeedService() *feed.FeedService {
-	baseUrl := common.ValueOrDefault(os.Getenv("BASE_URL"), getOutboundIP())
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
 	audioSourceDirectory := getResourcePath()
-	log.Printf("hosting server at %s:%s", baseUrl, defaultPort)
 
-	return feed.NewFeedService(audioSourceDirectory, baseUrl, defaultPort, defaultItemPath)
+	return feed.NewFeedService(audioSourceDirectory, defaultPort, defaultItemPath)
 }
 
 type genericValidator struct {
@@ -246,20 +243,4 @@ func (gv *genericValidator) Validate(i interface{}) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("received invalid request body: %v", err))
 	}
 	return nil
-}
-
-func getOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Printf("Error closing connection: %v", err)
-		}
-	}()
-
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP.String()
 }

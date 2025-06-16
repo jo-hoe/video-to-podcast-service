@@ -21,12 +21,12 @@ start: ## start via docker
 
 .PHONY: start-service
 start-service: ## start service
-	python ${ROOT_DIR}start-docker-compose.py --services video-to-podcast-service
+	docker-compose up video-to-podcast-service
 
 .PHONY: start-service-rebuild
 start-service-rebuild: ## rebuild and start service
-	python ${ROOT_DIR}start-docker-compose.py --rebuild --services video-to-podcast-service
+	docker-compose up --build video-to-podcast-service
 
 .PHONY: start-services-rebuild
 start-services-rebuild: ## start service with webhook
-	python ${ROOT_DIR}start-docker-compose.py --rebuild --services video-to-podcast-service mail-webhook-service
+	docker-compose up --build video-to-podcast-service mail-webhook-service

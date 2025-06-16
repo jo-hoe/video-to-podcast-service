@@ -26,19 +26,16 @@ const (
 
 type FeedService struct {
 	audioSourceDirectory string
-	feedBaseUrl          string
 	feedBasePort         string
 	feedItemPath         string
 }
 
 func NewFeedService(
 	audioSourceDirectory string,
-	feedBaseUrl string,
 	feedBasePort string,
 	feedItemPath string) *FeedService {
 	return &FeedService{
 		audioSourceDirectory: audioSourceDirectory,
-		feedBaseUrl:          feedBaseUrl,
 		feedBasePort:         feedBasePort,
 		feedItemPath:         feedItemPath,
 	}
@@ -169,7 +166,7 @@ func (fp *FeedService) createFeed(author string) *feeds.Feed {
 func (fp *FeedService) getFeedUrl(author string) string {
 	urlEncodedTitle := url.PathEscape(author)
 
-	return fmt.Sprintf("%s:%s/%s/%s/%s", fp.feedBaseUrl, fp.feedBasePort, fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
+	return fmt.Sprintf("/%s/%s/%s", fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
 }
 
 func (fp *FeedService) getFeedItemUrl(author string, itemName string) string {
