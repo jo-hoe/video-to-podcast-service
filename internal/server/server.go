@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
@@ -25,6 +26,8 @@ const feedsPath = apiVersion + "feeds"
 const addItemPath = apiVersion + "addItem"
 const addItemPaths = apiVersion + "addItems"
 
+const mainPageName = "index.html"
+
 var defaultResourcePath string
 
 func StartServer(resourcePath string) {
@@ -36,34 +39,32 @@ func StartServer(resourcePath string) {
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
 	e.Validator = &genericValidator{Validator: validator.New()}
-	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
+	e.Renderer = &Template{
+		templates: template.Must(template.ParseFS(templateFS, viewsPattern)),
+	}
 
-	e.GET("/index.html", indexHandler)
+	// Set UI routes
+	e.GET(mainPageName, indexHandler)
 
 	// API routes
-	e.POST(addItemPath, addItemHandler)
 	e.POST(addItemPaths, addItemsHandler)
-
 	e.GET(feedsPath, feedsHandler)
 	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), feedHandler)
 	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), audioFileHandler)
 
+	// Set probe route
 	e.GET("/", probeHandler)
 
-	log.Print("starting server")
-	log.Printf("go to http://localhost:%s/%s to explore available podcast URLs", port, feedsPath)
-
 	// start server
+	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
+	log.Print("starting server")
+	log.Printf("UI available at http://localhost:%s/%s", port, mainPageName)
+	log.Printf("API available at http://localhost:%s/%s ", port, apiVersion)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
 }
 
 func indexHandler(ctx echo.Context) (err error) {
-	// Serve the index.html file
-	indexFilePath := filepath.Join(defaultResourcePath, "index.html")
-	if _, err := os.Stat(indexFilePath); os.IsNotExist(err) {
-		return echo.NewHTTPError(http.StatusNotFound, "index.html not found")
-	}
-	return ctx.File(indexFilePath)
+	return ctx.Render(http.StatusOK, "index", nil)
 }
 
 func feedsHandler(ctx echo.Context) (err error) {
@@ -154,23 +155,6 @@ func getFeed(feedTitle string) (result *feeds.RssFeed, err error) {
 
 type DownloadItem struct {
 	URL string `json:"url" validate:"required"`
-}
-
-func addItemHandler(ctx echo.Context) (err error) {
-	downloadItem := new(DownloadItem)
-	if err = ctx.Bind(downloadItem); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	if err = ctx.Validate(downloadItem); err != nil {
-		return err
-	}
-
-	err = downloadItemsHandler(downloadItem.URL)
-	if err != nil {
-		return err
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 func downloadItemsHandler(url string) (err error) {
