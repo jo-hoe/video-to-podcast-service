@@ -6,7 +6,6 @@
     <title></title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/simpledotcss/simple.min.css">
     <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
 </head>
@@ -28,7 +27,14 @@
                 xhr.open('POST', '/v1/addItems');
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.onload = function () {
-                    document.getElementById('result').innerHTML = xhr.responseText;
+                    if (xhr.status === 200) {
+                        document.getElementById('result').innerHTML = xhr.responseText || 'Success!';
+                    } else if (xhr.status >= 400) {
+                        document.getElementById('result').innerHTML = '<span style="color:red">An error occurred. Please try again.</span>';
+                    }
+                };
+                xhr.onerror = function () {
+                    document.getElementById('result').innerHTML = '<span style="color:red">A network error occurred.</span>';
                 };
                 xhr.send(JSON.stringify({ urls: [url] }));
             });
