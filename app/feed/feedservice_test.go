@@ -57,7 +57,6 @@ func TestCreateFeed(t *testing.T) {
 func TestNewFeedService(t *testing.T) {
 	type args struct {
 		audioSourceDirectory string
-		feedBaseUrl          string
 		feedBasePort         string
 		feedItemPath         string
 	}
