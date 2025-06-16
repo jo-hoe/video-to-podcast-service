@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jo-hoe/video-to-podcast-service/app/common"
-	"github.com/jo-hoe/video-to-podcast-service/app/download"
-	"github.com/jo-hoe/video-to-podcast-service/app/feed"
-	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/feeds"

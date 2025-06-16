@@ -7,7 +7,7 @@ import (
 )
 
 func Test_GetAudioFiles(t *testing.T) {
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "assets", "test"))
+	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test_assets"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}

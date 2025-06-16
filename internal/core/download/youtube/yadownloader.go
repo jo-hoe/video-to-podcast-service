@@ -10,8 +10,8 @@ import (
 	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
-	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
-	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 	"github.com/lrstanley/go-ytdlp"
 	"golang.org/x/net/context"
 )

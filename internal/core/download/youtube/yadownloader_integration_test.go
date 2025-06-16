@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
-	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 )
 
 const (

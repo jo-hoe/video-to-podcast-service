@@ -54,4 +54,4 @@ USER appuser
 ENV HOME=/home/appuser
 
 # ENTRYPOINT should point to the executable
-ENTRYPOINT ["./app"]
+ENTRYPOINT ["./internal/core"]

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jo-hoe/video-to-podcast-service/app/common"
-	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
-	"github.com/jo-hoe/video-to-podcast-service/app/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 
 	"github.com/gorilla/feeds"
 	mp3joiner "github.com/jo-hoe/mp3-joiner"

@@ -3,8 +3,8 @@ package download
 import (
 	"fmt"
 
-	"github.com/jo-hoe/video-to-podcast-service/app/download/downloader"
-	"github.com/jo-hoe/video-to-podcast-service/app/download/youtube"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/youtube"
 )
 
 const ErrIsVideoSupported = "this downloader is not responsible for this URL '%s'"
