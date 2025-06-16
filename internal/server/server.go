@@ -23,7 +23,6 @@ import (
 const defaultPort = "8080"
 const apiVersion = "v1/"
 const feedsPath = apiVersion + "feeds"
-const addItemPath = apiVersion + "addItem"
 const addItemPaths = apiVersion + "addItems"
 
 const mainPageName = "index.html"
