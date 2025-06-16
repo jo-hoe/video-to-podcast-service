@@ -13,32 +13,14 @@
 <body>
     <main>
         <h1>Video to Podcast Service</h1>
-        <form id="addItemsForm" hx-post="/v1/addItems" hx-target="#result" hx-swap="innerHTML" hx-trigger="submit">
+        <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
+            hx-encoding="json">
             <label for="videoUrl">Video URL:</label>
-            <input type="url" id="videoUrl" name="videoUrl" required placeholder="Enter video URL">
+            <input type="url" id="videoUrl" name="url" required placeholder="Enter video URL"
+                style="width:100%; box-sizing:border-box;">
             <button type="submit">Convert</button>
         </form>
         <section id="result"></section>
-        <script>
-            document.getElementById('addItemsForm').addEventListener('htmx:beforeRequest', function (event) {
-                event.preventDefault();
-                var url = document.getElementById('videoUrl').value;
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', '/v1/addItems');
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.onload = function () {
-                    if (xhr.status === 200) {
-                        document.getElementById('result').innerHTML = xhr.responseText || 'Success!';
-                    } else if (xhr.status >= 400) {
-                        document.getElementById('result').innerHTML = '<span style="color:red">An error occurred. Please try again.</span>';
-                    }
-                };
-                xhr.onerror = function () {
-                    document.getElementById('result').innerHTML = '<span style="color:red">A network error occurred.</span>';
-                };
-                xhr.send(JSON.stringify({ urls: [url] }));
-            });
-        </script>
     </main>
 </body>
 

@@ -47,6 +47,7 @@ func StartServer(resourcePath string) {
 
 	// API routes
 	e.POST(addItemPaths, addItemsHandler)
+	e.POST("/htmx/addItem", htmxAddItemHandler) // new HTMX endpoint
 	e.GET(feedsPath, feedsHandler)
 	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), feedHandler)
 	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), audioFileHandler)
@@ -206,6 +207,21 @@ func addItemsHandler(ctx echo.Context) (err error) {
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+// New handler for HTMX single URL form
+func htmxAddItemHandler(ctx echo.Context) error {
+	type SingleUrl struct {
+		URL string `json:"url" form:"url" validate:"required"`
+	}
+	var req SingleUrl
+	if err := ctx.Bind(&req); err != nil || req.URL == "" {
+		return ctx.HTML(http.StatusBadRequest, "<span style='color:red'>Invalid or missing URL.</span>")
+	}
+	if err := downloadItemsHandler(req.URL); err != nil {
+		return ctx.HTML(http.StatusInternalServerError, "<span style='color:red'>Failed to process: "+req.URL+"</span>")
+	}
+	return ctx.HTML(http.StatusOK, "<span style='color:green'>Submitted successfully!</span>")
 }
 
 func probeHandler(ctx echo.Context) (err error) {
