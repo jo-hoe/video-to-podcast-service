@@ -42,7 +42,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 	defer func() {
 		if err := os.RemoveAll(tempPath); err != nil {
-			log.Printf("Error removing temp directory: %v", err)
+			log.Printf("error removing temp directory: %v", err)
 		}
 	}()
 
@@ -116,6 +116,13 @@ func getThumbnailUrl(videoUrl string) (result string, err error) {
 }
 
 func moveToTarget(sourcePath, targetRootPath string) (results string, err error) {
+	// move file to target directory
+	// the target directory is created based on the source file's parent directory
+	//
+	// e.g.:
+	// sourcePath = /tmp/1234/5678/file.mp3
+	// targetRootPath = /podcasts
+	// results = /podcasts/5678/file.mp3
 	directoryName := filepath.Base(filepath.Dir(sourcePath))
 	targetSubDirectory := filepath.Join(targetRootPath, directoryName)
 	err = os.MkdirAll(targetSubDirectory, os.ModePerm)
