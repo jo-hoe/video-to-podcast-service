@@ -75,7 +75,7 @@ func feedsHandler(ctx echo.Context) (err error) {
 
 	result := make([]string, 0)
 	for _, feed := range feeds {
-		result = append(result, feed.Link)
+		result = append(result, feed.Link.Href)
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -88,7 +88,13 @@ func feedHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	return ctx.XML(http.StatusOK, result)
+	rss, err := result.ToRss()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to generate RSS: %v", err))
+	}
+	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationXMLCharsetUTF8)
+	_, err = ctx.Response().Writer.Write([]byte(rss))
+	return err
 }
 
 func audioFileHandler(ctx echo.Context) (err error) {
@@ -129,7 +135,7 @@ func audioFileHandler(ctx echo.Context) (err error) {
 	return ctx.File(foundFile)
 }
 
-func getFeed(feedTitle string) (result *feeds.RssFeed, err error) {
+func getFeed(feedTitle string) (result *feeds.Feed, err error) {
 	if feedTitle == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}

@@ -41,7 +41,7 @@ func NewFeedService(
 	}
 }
 
-func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
+func (fp *FeedService) GetFeeds() ([]*feeds.Feed, error) {
 	feedCollector := make([]*feeds.Feed, 0)
 	audioFilePaths, err := filemanagement.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
@@ -77,12 +77,7 @@ func (fp *FeedService) GetFeeds() ([]*feeds.RssFeed, error) {
 		}
 	}
 
-	results := make([]*feeds.RssFeed, 0)
-	for _, item := range feedCollector {
-		results = append(results, (&feeds.Rss{Feed: item}).RssFeed())
-	}
-
-	return results, nil
+	return feedCollector, nil
 }
 
 func (fp *FeedService) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {
@@ -128,8 +123,8 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
 
-	title := wrapCharacterData(common.ValueOrDefault(audioMetadata["title"], fileNameWithoutExtension))
-	description := wrapCharacterData(common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], ""))
+	title := common.ValueOrDefault(audioMetadata["title"], fileNameWithoutExtension)
+	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
 
 	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
@@ -148,18 +143,11 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 	}, nil
 }
 
-func wrapCharacterData(input string) string {
-	if input == "" {
-		return ""
-	}
-	return "<![CDATA[" + input + "]]>"
-}
-
 func (fp *FeedService) createFeed(author string) *feeds.Feed {
 	feed := &feeds.Feed{
 		Title:       author,
 		Link:        &feeds.Link{Href: fp.getFeedUrl(author)},
-		Description: wrapCharacterData(fmt.Sprintf("%s %s", defaultDescription, author)),
+		Description: fmt.Sprintf("%s %s", defaultDescription, author),
 		Author:      &feeds.Author{Name: author},
 	}
 
