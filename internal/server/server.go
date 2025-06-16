@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -19,29 +19,17 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-var defaultResourcePath = ""
-
 const defaultPort = "8080"
 const apiVersion = "v1/"
 const feedsPath = apiVersion + "feeds"
 const addItemPath = apiVersion + "addItem"
 const addItemPaths = apiVersion + "addItems"
 
-func getResourcePath() string {
-	if defaultResourcePath != "" {
-		return defaultResourcePath
-	}
+var defaultResourcePath string
 
-	ex, err := os.Executable()
-	if err != nil {
-		panic(err)
-	}
-	exPath := filepath.Dir(ex)
-	defaultResourcePath = common.ValueOrDefault(os.Getenv("BASE_PATH"), filepath.Join(exPath, "resources"))
-	return defaultResourcePath
-}
+func StartServer(resourcePath string) {
+	defaultResourcePath = resourcePath
 
-func main() {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -71,7 +59,7 @@ func main() {
 
 func indexHandler(ctx echo.Context) (err error) {
 	// Serve the index.html file
-	indexFilePath := filepath.Join(getResourcePath(), "index.html")
+	indexFilePath := filepath.Join(defaultResourcePath, "index.html")
 	if _, err := os.Stat(indexFilePath); os.IsNotExist(err) {
 		return echo.NewHTTPError(http.StatusNotFound, "index.html not found")
 	}
@@ -120,14 +108,14 @@ func audioFileHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	allAudioFiles, err := filemanagement.GetAudioFiles(getResourcePath())
+	allAudioFiles, err := filemanagement.GetAudioFiles(defaultResourcePath)
 	if err != nil {
 		return err
 	}
 
 	foundFile := ""
 	for _, audioFile := range allAudioFiles {
-		if audioFile == filepath.Join(getResourcePath(), decodedFeedTitle, decodedAudioFileName) {
+		if audioFile == filepath.Join(defaultResourcePath, decodedFeedTitle, decodedAudioFileName) {
 			foundFile = audioFile
 			break
 		}
@@ -190,7 +178,7 @@ func downloadItemsHandler(url string) (err error) {
 	if err != nil {
 		return err
 	}
-	audioSourceDirectory := getResourcePath()
+	audioSourceDirectory := defaultResourcePath
 	if !downloader.IsVideoAvailable(url) {
 		return fmt.Errorf("video %s is not available", url)
 	}
@@ -243,7 +231,7 @@ func probeHandler(ctx echo.Context) (err error) {
 
 func getFeedService() *feed.FeedService {
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
-	audioSourceDirectory := getResourcePath()
+	audioSourceDirectory := defaultResourcePath
 
 	return feed.NewFeedService(audioSourceDirectory, defaultPort, feedsPath)
 }
