@@ -68,7 +68,7 @@ func indexHandler(ctx echo.Context) (err error) {
 }
 
 func feedsHandler(ctx echo.Context) (err error) {
-	feeds, err := getFeedService().GetFeeds()
+	feeds, err := getFeedService().GetFeeds(ctx.Request().Host)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func feedsHandler(ctx echo.Context) (err error) {
 
 func feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
-	result, err := getFeed(feedTitle)
+	result, err := getFeed(ctx.Request().Host, feedTitle)
 	if err != nil {
 		return err
 	}
@@ -135,12 +135,12 @@ func audioFileHandler(ctx echo.Context) (err error) {
 	return ctx.File(foundFile)
 }
 
-func getFeed(feedTitle string) (result *feeds.Feed, err error) {
+func getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
 	if feedTitle == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
 
-	feedItems, err := getFeedService().GetFeeds()
+	feedItems, err := getFeedService().GetFeeds(host)
 	if err != nil {
 		return nil, err
 	}

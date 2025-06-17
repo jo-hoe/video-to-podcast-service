@@ -68,7 +68,7 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	}
 
 	// check if file is saved in correct location
-	expectedFilename := "Me_at_the_zoo_jNQXAC9IVRw.mp3"
+	expectedFilename := "Me at the zoo_jNQXAC9IVRw.mp3"
 	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
 	}
@@ -113,7 +113,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
 			},
-			want:    []string{filepath.Join(rootDirectory, "jawed", "Me_at_the_zoo_jNQXAC9IVRw.mp3")},
+			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo jNQXAC9IVRw.mp3")},
 			wantErr: false,
 		},
 		{
@@ -124,14 +124,14 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 				path:      filepath.Join(rootDirectory, "Cat"),
 			},
 			want: []string{
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_tPEE9ZwTmy0.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_2_a3HZ8S2H-GQ.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_3_3HFBR0UQPes.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_4_oiWWKumrLH8.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_5_Wi-HjAXdKoA.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_6_xLP9r6JeNzk.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_7_ALf5wpTokKA.mp3"),
-				filepath.Join(rootDirectory, "Shortest_Video_on_Youtube_Part_8_zSQbUV-u5Xo.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube_tPEE9ZwTmy0.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 2_a3HZ8S2H-GQ.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 3_3HFBR0UQPes.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 4_oiWWKumrLH8.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 5_Wi-HjAXdKoA.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 6_xLP9r6JeNzk.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 7_ALf5wpTokKA.mp3"),
+				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 8_zSQbUV-u5Xo.mp3"),
 			},
 			wantErr: false,
 		},

@@ -41,7 +41,7 @@ func NewFeedService(
 	}
 }
 
-func (fp *FeedService) GetFeeds() ([]*feeds.Feed, error) {
+func (fp *FeedService) GetFeeds(host string) ([]*feeds.Feed, error) {
 	feedCollector := make([]*feeds.Feed, 0)
 	audioFilePaths, err := filemanagement.GetAudioFiles(fp.audioSourceDirectory)
 	if err != nil {
@@ -59,7 +59,7 @@ func (fp *FeedService) GetFeeds() ([]*feeds.Feed, error) {
 			feedCollector = append(feedCollector, feed)
 		}
 
-		item, err := fp.createFeedItem(audioFilePath)
+		item, err := fp.createFeedItem(host, audioFilePath)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +111,7 @@ func hashFileNameToUUIDv4(filename string) string {
 	)
 }
 
-func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error) {
+func (fp *FeedService) createFeedItem(host, audioFilePath string) (*feeds.Item, error) {
 	audioMetadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func (fp *FeedService) createFeedItem(audioFilePath string) (*feeds.Item, error)
 
 	return &feeds.Item{
 		Title:       title,
-		Link:        &feeds.Link{Href: fp.getFeedItemUrl(audioMetadata[mp3KeyAttribute], fileInfo.Name())},
+		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, audioMetadata[mp3KeyAttribute], fileInfo.Name())},
 		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
 		Created:     uploadTime,
@@ -160,10 +160,10 @@ func (fp *FeedService) getFeedUrl(author string) string {
 	return fmt.Sprintf("/%s/%s/%s", fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
 }
 
-func (fp *FeedService) getFeedItemUrl(author string, itemName string) string {
+func (fp *FeedService) getFeedItemUrl(host string, author string, itemName string) string {
 	urlEncodedItemName := url.PathEscape(itemName)
 	// remove the suffix from the url
-	urlPath := strings.TrimSuffix(fp.getFeedUrl(author), fmt.Sprintf("/%s", defaultURLSuffix))
+	urlPath := strings.TrimSuffix(fp.getFeedUrl(author), defaultURLSuffix)
 
-	return fmt.Sprintf("%s/%s", urlPath, urlEncodedItemName)
+	return fmt.Sprintf("%s%s%s", host, urlPath, urlEncodedItemName)
 }

@@ -115,7 +115,8 @@ func Test_hashFileNameToUUIDv4(t *testing.T) {
 }
 
 func TestFeedService_GetFeeds(t *testing.T) {
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..","..", "test_assets"))
+	testHost := "localhost:8080"
+	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test_assets"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
@@ -141,7 +142,7 @@ func TestFeedService_GetFeeds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.fp.GetFeeds()
+			got, err := tt.fp.GetFeeds(testHost)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("FeedService.GetFeeds() error = %v, wantErr %v", err, tt.wantErr)
 				return

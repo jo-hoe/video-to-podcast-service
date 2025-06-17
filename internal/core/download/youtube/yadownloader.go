@@ -147,7 +147,6 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
 		EmbedMetadata().                            // adds metadata such as artist to the file
 		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
-		RestrictFilenames().                        // restrict filenames to ASCII characters
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
