@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
     - uses: actions/checkout@v4
-    - uses: FedericoCarboni/setup-ffmpeg@v3
+    - uses: AnimMouse/setup-ffmpeg@v1
       id: setup-ffmpeg
     - run: ffmpeg -version
     - name: Install Go
