@@ -9,40 +9,18 @@
     <link rel="stylesheet" href="https://unpkg.com/simpledotcss/simple.min.css">
     <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
     <style>
-        /* Simple CSS spinner */
+        /* Minimal spinner CSS for HTMX indicator */
         .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            vertical-align: middle;
-            visibility: hidden;
-            /* Hide by default, HTMX will set to visible */
+            display: none;
         }
 
         .spinner.htmx-request {
-            visibility: visible !important;
+            display: inline-block;
         }
 
-        .spinner:after {
-            content: " ";
-            display: block;
-            width: 16px;
-            height: 16px;
-            margin: 2px;
-            border-radius: 50%;
-            border: 2px solid #888;
-            border-color: #888 transparent #888 transparent;
-            animation: spinner-dual-ring 1s linear infinite;
-        }
-
-        @keyframes spinner-dual-ring {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+        .spinner img {
+            width: 20px;
+            height: 20px;
         }
     </style>
 </head>
@@ -56,7 +34,10 @@
             <input type="url" id="videoUrl" name="url" required placeholder="Enter video URL"
                 style="width:100%; box-sizing:border-box;">
             <button type="submit">Submit</button>
-            <span id="loading-indicator" class="spinner" aria-busy="true" style="margin-left:10px;"></span>
+            <span id="loading-indicator" class="spinner" aria-busy="true" style="margin-left:10px;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Gray_circles_rotate.gif"
+                    alt="Loading..." />
+            </span>
         </form>
         <section id="result"></section>
     </main>
