@@ -132,15 +132,24 @@ func (fp *FeedService) createFeedItem(host, audioFilePath string) (*feeds.Item, 
 		uploadTime = fileInfo.ModTime()
 	}
 
+	parentDirectory := getParentDirectory(audioFilePath, fp.audioSourceDirectory, fileInfo.Name())
+
 	return &feeds.Item{
 		Title:       title,
-		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, audioMetadata[mp3KeyAttribute], fileInfo.Name())},
+		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, parentDirectory, fileInfo.Name())},
 		Description: description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
 		Created:     uploadTime,
 		IsPermaLink: "false",
 		Id:          hashFileNameToUUIDv4(fileInfo.Name()),
 	}, nil
+}
+
+func getParentDirectory(audioFilePath string, rootFilePath string, fileName string) string {
+	parentDirectory := strings.ReplaceAll(audioFilePath, rootFilePath, "")
+	parentDirectory = strings.ReplaceAll(parentDirectory, fileName, "")
+	parentDirectory = strings.TrimPrefix(parentDirectory, string(os.PathSeparator))
+	return parentDirectory
 }
 
 func (fp *FeedService) createFeed(author string) *feeds.Feed {
@@ -160,10 +169,10 @@ func (fp *FeedService) getFeedUrl(author string) string {
 	return fmt.Sprintf("/%s/%s/%s", fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
 }
 
-func (fp *FeedService) getFeedItemUrl(host string, author string, itemName string) string {
+func (fp *FeedService) getFeedItemUrl(host string, parent_folder string, itemName string) string {
 	urlEncodedItemName := url.PathEscape(itemName)
 	// remove the suffix from the url
-	urlPath := strings.TrimSuffix(fp.getFeedUrl(author), defaultURLSuffix)
+	urlPath := strings.TrimSuffix(fp.getFeedUrl(parent_folder), defaultURLSuffix)
 
 	return fmt.Sprintf("%s%s%s", host, urlPath, urlEncodedItemName)
 }
