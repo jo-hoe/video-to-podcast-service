@@ -1,14 +1,16 @@
 # Build stage: build the Go application
-FROM golang:1.24.3-alpine3.20 AS build
+FROM golang:1.24.3 AS build
 # Set the working directory
 WORKDIR /app
 # Copy go.mod and go.sum to leverage caching for dependencies
 COPY go.mod go.sum ./
 RUN go mod download
+# Install build dependencies for CGO
+RUN apt-get update && apt-get install -y gcc libc6-dev && rm -rf /var/lib/apt/lists/*
 # Copy the rest of the code and build the application
 COPY . ./
-# Build with no CGO and output to a specific location
-RUN CGO_ENABLED=0 go build -o /go/bin/app ./
+# Build with CGO and output to a specific location
+RUN CGO_ENABLED=1 go build -o /go/bin/app ./
 
 # Runtime stage: use a minimal base image for runtime and set up a non-root user
 FROM jrottenberg/ffmpeg:7.1-ubuntu
