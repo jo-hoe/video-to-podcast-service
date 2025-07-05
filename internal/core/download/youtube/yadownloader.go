@@ -24,7 +24,7 @@ const (
 	// https://wiki.sponsor.ajay.app/w/Types
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
 	// ID3 tag youtube-dl uses to store the video URL
-	VideoUrlID3KeyAttribute = "Purl"
+	VideoUrlID3KeyAttribute = "purl"
 )
 
 type YoutubeAudioDownloader struct{}
