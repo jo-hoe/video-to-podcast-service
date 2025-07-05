@@ -91,15 +91,21 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 	}
 
 	parentDirectory := getParentDirectory(podcastItem.AudioFilePath, fp.coreservice.GetAudioSourceDirectory(), fileinfo.Name())
+	link := fp.getFeedItemUrl(host, parentDirectory, fileinfo.Name())
 
 	return &feeds.Item{
 		Id:          podcastItem.ID,
 		Title:       podcastItem.Title,
-		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, parentDirectory, fileinfo.Name())},
+		Link:        &feeds.Link{Href: link},
 		Description: podcastItem.Description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(podcastItem.Author, "")},
 		Created:     podcastItem.CreatedAt,
 		IsPermaLink: "false",
+		Enclosure: &feeds.Enclosure{
+			Url:    link,
+			Type:   "audio/mpeg",
+			Length: fmt.Sprintf("%d", podcastItem.DurationInMilliseconds),
+		},
 	}, nil
 }
 
