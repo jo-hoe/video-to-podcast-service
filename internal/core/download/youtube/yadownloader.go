@@ -23,6 +23,8 @@ const (
 	// types taken from API description
 	// https://wiki.sponsor.ajay.app/w/Types
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
+	// ID3 tag youtube-dl uses to store the video URL
+	VideoUrlID3KeyAttribute = "Purl"
 )
 
 type YoutubeAudioDownloader struct{}
@@ -87,6 +89,7 @@ func setMetadata(fullFilePath string) (err error) {
 
 	metadata[downloader.PodcastDescriptionTag] = strings.ReplaceAll(metadata["synopsis"], "\n", "<br>")
 	metadata[downloader.DateTag] = metadata["date"]
+	metadata[downloader.VideoDownloadLink] = metadata[VideoUrlID3KeyAttribute]
 
 	videoUrl := metadata["purl"]
 	thumbnailUrl, err := getThumbnailUrl(videoUrl)

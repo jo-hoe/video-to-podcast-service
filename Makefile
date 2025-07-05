@@ -5,6 +5,10 @@ ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
 .DEFAULT_GOAL := start-service
 
+.PHONY: build
+build: ## build binary
+	go build ${ROOT_DIR}
+
 .PHONY: update
 update: ## pulls git repo
 	@git -C ${ROOT_DIR} pull

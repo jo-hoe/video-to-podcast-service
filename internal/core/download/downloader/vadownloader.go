@@ -14,4 +14,9 @@ const (
 	ThumbnailUrlTag       = "WXXX" // see https://www.exiftool.org/TagNames/ID3.html for details
 	PodcastDescriptionTag = "TDES"
 	DateTag               = "TDA"
+	Title                 = "Title"
+	Artist                = "Artist"
+
+	// custom tags
+	VideoDownloadLink = "VIDEOLINK"
 )
