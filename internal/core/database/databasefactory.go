@@ -13,8 +13,6 @@ func NewDatabase(connectionString string, resourcePath string) (database Databas
 	switch dbType {
 	case "sqlite":
 		dbInstance = NewSQLiteDatabase(connectionString)
-	case "mock":
-		dbInstance = NewMockDatabase()
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", dbType)
 	}
@@ -39,9 +37,6 @@ func NewDatabase(connectionString string, resourcePath string) (database Databas
 func getDatabaseType(connectionString string) string {
 	if connectionString == "" {
 		return "sqlite"
-	}
-	if connectionString == "mock" {
-		return "mock"
 	}
 	if len(connectionString) > 7 && connectionString[:7] == "sqlite:" {
 		return "sqlite"
