@@ -43,12 +43,26 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 		errorCount := 0
 
 		for errorCount < maxErrorCount {
-			_, err := downloader.Download(url, cs.audioSourceDirectory)
+			filePaths, err := downloader.Download(url, cs.audioSourceDirectory)
 			if err != nil {
 				log.Printf("failed to download '%s': %v", url, err)
 				errorCount++
-			} else {
-				break
+			}
+
+			for _, filePath := range filePaths {
+				podcastItem, err := database.NewPodcastItem(filePath)
+				if err != nil {
+					log.Printf("failed to create podcast item for '%s': %v", filePath, err)
+					errorCount++
+					continue
+				}
+				err = cs.databaseService.CreatePodcastItem(podcastItem)
+				if err != nil {
+					log.Printf("failed to create podcast item for '%s': %v", filePath, err)
+					errorCount++
+				} else {
+					log.Printf("successfully created podcast item for '%s'", filePath)
+				}
 			}
 		}
 	}()
