@@ -1,21 +1,14 @@
-package server
+package ui
 
 import (
 	"net/http"
+	"text/template"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/labstack/echo/v4"
 )
 
-const mainPageName = "index.html"
-
-type DownloadItem struct {
-	URL string `json:"url" validate:"required"`
-}
-
-type DownloadItems struct {
-	URLS []string `json:"urls" validate:"required"`
-}
+const MainPageName = "index.html"
 
 type UIService struct {
 	coreservice *core.CoreService
@@ -27,9 +20,12 @@ func NewUIService(coreservice *core.CoreService) *UIService {
 	}
 }
 
-func (service *UIService) setUIRoutes(e *echo.Echo) {
+func (service *UIService) SetUIRoutes(e *echo.Echo) {
+	e.Renderer = &Template{
+		templates: template.Must(template.ParseFS(templateFS, viewsPattern)),
+	}
 	// Set UI routes
-	e.GET(mainPageName, service.indexHandler)
+	e.GET(MainPageName, service.indexHandler)
 	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
 }
 

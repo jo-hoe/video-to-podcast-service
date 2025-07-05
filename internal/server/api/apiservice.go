@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-playground/validator"
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
@@ -18,40 +17,40 @@ import (
 
 const (
 	apiVersion   = "v1/"
-	feedsPath    = apiVersion + "feeds"
 	addItemPaths = apiVersion + "addItems"
+
+	FeedsPath = apiVersion + "feeds"
 )
 
 type APIService struct {
 	coreservice *core.CoreService
+	defaultPort string
 }
 
-func NewAPIService(coreservice *core.CoreService) *APIService {
+type DownloadItem struct {
+	URL string `json:"url" validate:"required"`
+}
+
+type DownloadItems struct {
+	URLS []string `json:"urls" validate:"required"`
+}
+
+func NewAPIService(coreservice *core.CoreService, defaultPort string) *APIService {
 	return &APIService{
 		coreservice: coreservice,
+		defaultPort: defaultPort,
 	}
 }
 
-func (service *APIService) setAPIRoutes(e *echo.Echo) {
+func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	// API routes
 	e.POST(addItemPaths, service.addItemsHandler)
-	e.GET(feedsPath, service.feedsHandler)
-	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
-	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
+	e.GET(FeedsPath, service.feedsHandler)
+	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
+	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
 
 	// Set probe route
 	e.GET("/", service.probeHandler)
-}
-
-type genericValidator struct {
-	Validator *validator.Validate
-}
-
-func (gv *genericValidator) Validate(i interface{}) error {
-	if err := gv.Validator.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("received invalid request body: %v", err))
-	}
-	return nil
 }
 
 func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
@@ -121,14 +120,14 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	allAudioFiles, err := filemanagement.GetAudioFiles(defaultResourcePath)
+	allAudioFiles, err := filemanagement.GetAudioFiles(service.coreservice.GetAudioSourceDirectory())
 	if err != nil {
 		return err
 	}
 
 	foundFile := ""
 	for _, audioFile := range allAudioFiles {
-		if audioFile == filepath.Join(defaultResourcePath, decodedFeedTitle, decodedAudioFileName) {
+		if audioFile == filepath.Join(service.coreservice.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
 			foundFile = audioFile
 			break
 		}
@@ -170,7 +169,7 @@ func (service *APIService) probeHandler(ctx echo.Context) (err error) {
 }
 
 func (service *APIService) getFeedService() *feed.FeedService {
-	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
+	port := common.ValueOrDefault(os.Getenv("PORT"), service.defaultPort)
 
-	return feed.NewFeedService(service.coreservice, defaultPort, feedsPath)
+	return feed.NewFeedService(service.coreservice, port, FeedsPath)
 }
