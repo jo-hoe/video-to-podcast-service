@@ -56,12 +56,15 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 					errorCount++
 					continue
 				}
+
 				err = cs.databaseService.CreatePodcastItem(podcastItem)
 				if err != nil {
 					log.Printf("failed to create podcast item for '%s': %v", filePath, err)
 					errorCount++
+					continue
 				} else {
 					log.Printf("successfully created podcast item for '%s'", filePath)
+					break
 				}
 			}
 		}
