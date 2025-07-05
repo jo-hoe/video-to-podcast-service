@@ -11,7 +11,6 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 	"github.com/labstack/echo/v4"
 )
 
@@ -120,15 +119,15 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	allAudioFiles, err := filemanagement.GetAudioFiles(service.coreservice.GetAudioSourceDirectory())
+	pocastItems, err := service.coreservice.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
 		return err
 	}
 
 	foundFile := ""
-	for _, audioFile := range allAudioFiles {
-		if audioFile == filepath.Join(service.coreservice.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
-			foundFile = audioFile
+	for _, audioFile := range pocastItems {
+		if audioFile.AudioFilePath == filepath.Join(service.coreservice.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
+			foundFile = audioFile.AudioFilePath
 			break
 		}
 	}

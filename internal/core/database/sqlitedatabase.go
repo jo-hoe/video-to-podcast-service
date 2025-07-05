@@ -98,71 +98,8 @@ func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
 	return err
 }
 
-func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
-	stmt, err := s.db.Prepare(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s WHERE id = ?`, defaultDatabaseName))
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-	item := &PodcastItem{}
-	row := stmt.QueryRow(id)
-	err = row.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return item, nil
-}
-
 func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	rows, err := s.db.Query(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s`, defaultDatabaseName))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []*PodcastItem
-	for rows.Next() {
-		item := &PodcastItem{}
-		err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, item)
-	}
-	return items, nil
-}
-
-func (s *SQLiteDatabase) UpdatePodcastItem(item *PodcastItem) error {
-	stmt, err := s.db.Prepare(fmt.Sprintf(`UPDATE %s SET title=?, description=?, author=?, thumbnail=?, duration_in_milliseconds=?, video_url=?, audio_file_path=?, created_at=? WHERE id=?`, defaultDatabaseName))
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(
-		item.Title, item.Description, item.Author, item.Thumbnail, item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt, item.ID,
-	)
-	return err
-}
-
-func (s *SQLiteDatabase) DeletePodcastItem(id string) error {
-	stmt, err := s.db.Prepare(fmt.Sprintf(`DELETE FROM %s WHERE id = ?`, defaultDatabaseName))
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	_, err = stmt.Exec(id)
-	return err
-}
-
-func (s *SQLiteDatabase) GetPodcastItemsByAuthor(author string) ([]*PodcastItem, error) {
-	stmt, err := s.db.Prepare(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s WHERE author = ?`, defaultDatabaseName))
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-	rows, err := stmt.Query(author)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -25,7 +26,7 @@ func TestCreatePodcastItem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create podcast item: %v", err)
 	}
-	fetched, err := db.GetPodcastItemByID(item.ID)
+	fetched, err := getPodcastItemByID(t, db, item.ID)
 	if err != nil {
 		t.Fatalf("failed to fetch podcast item: %v", err)
 	}
@@ -62,16 +63,36 @@ func TestCreatePodcastItemTwice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to update podcast item: %v", err)
 	}
-	fetched, err := db.GetPodcastItemByID(testItemID)
+
+	foundItem, err := getPodcastItemByID(t, db, item.ID)
+
 	if err != nil {
 		t.Fatalf("failed to fetch podcast item: %v", err)
 	}
-	if fetched == nil {
+	if foundItem == nil {
 		t.Fatal("podcast item not found after update")
 	}
-	if fetched.DurationInMilliseconds != updated.DurationInMilliseconds {
-		t.Errorf("expected duration %d, got %d", updated.DurationInMilliseconds, fetched.DurationInMilliseconds)
+	if foundItem.DurationInMilliseconds != updated.DurationInMilliseconds {
+		t.Errorf("expected duration %d, got %d", updated.DurationInMilliseconds, foundItem.DurationInMilliseconds)
 	}
+}
+
+func getPodcastItemByID(t *testing.T, db *SQLiteDatabase, id string) (*PodcastItem, error) {
+	allItems, err := db.GetAllPodcastItems()
+	if err != nil {
+		return nil, err
+	}
+	foundItem := &PodcastItem{}
+	for _, fetched := range allItems {
+		if fetched.ID == id {
+			foundItem = fetched
+			break
+		}
+	}
+	if foundItem.ID == "" {
+		return nil, fmt.Errorf("podcast item with ID %s not found", id)
+	}
+	return foundItem, nil
 }
 
 func getDemoPodcastItem() *PodcastItem {
