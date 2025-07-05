@@ -60,6 +60,7 @@ func TestNewFeedService(t *testing.T) {
 		feedBasePort string
 		feedItemPath string
 	}
+	sharedCore := core.NewCoreService(&database.MockDatabase{}, "testDir")
 	tests := []struct {
 		name string
 		args args
@@ -68,12 +69,12 @@ func TestNewFeedService(t *testing.T) {
 		{
 			name: "init test",
 			args: args{
-				coreService:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
+				coreService:  sharedCore,
 				feedBasePort: "8080",
 				feedItemPath: "v1/path",
 			},
 			want: &FeedService{
-				coreservice:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
+				coreservice:  sharedCore,
 				feedBasePort: "8080",
 				feedItemPath: "v1/path",
 			},
@@ -86,7 +87,7 @@ func TestNewFeedService(t *testing.T) {
 				t.Errorf("NewFeedService() = %v, want %v", got, tt.want)
 			}
 			// Compare coreService by pointer address (since DeepEqual will fail on different instances)
-			if fmt.Sprintf("%p", got.coreservice) != fmt.Sprintf("%p", tt.want.coreservice) {
+			if got.coreservice != tt.want.coreservice {
 				t.Errorf("NewFeedService() coreService pointer mismatch")
 			}
 		})
