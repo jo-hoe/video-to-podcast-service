@@ -2,9 +2,12 @@ package database
 
 import (
 	"database/sql"
+	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+const defaultDatabaseName = "podcast_items"
 
 // SQLiteDatabase implements the Database interface using SQLite and prepared statements.
 type SQLiteDatabase struct {
@@ -12,18 +15,56 @@ type SQLiteDatabase struct {
 }
 
 // NewSQLiteDatabase creates a new SQLiteDatabase instance.
-func NewSQLiteDatabase(dataSourceName string) (*SQLiteDatabase, error) {
-	db, err := sql.Open("sqlite3", dataSourceName)
+// Implements Database interface
+func (s *SQLiteDatabase) InitializeDatabase(connectionString string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", connectionString)
 	if err != nil {
 		return nil, err
 	}
-	return &SQLiteDatabase{db: db}, nil
+	// Optionally, check if the connection is valid
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	s.db = db
+	return db, nil
+}
+
+func (s *SQLiteDatabase) CreateDatabase(connectionString string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", connectionString)
+	if err != nil {
+		return nil, err
+	}
+	createTableStmt := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+		id TEXT PRIMARY KEY,
+		title TEXT,
+		description TEXT,
+		author TEXT,
+		thumbnail TEXT,
+		duration_in_milliseconds INTEGER,
+		video_url TEXT,
+		audio_file_path TEXT,
+		created_at DATETIME
+	)`, defaultDatabaseName)
+	_, err = db.Exec(createTableStmt)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	s.db = db
+	return db, nil
+}
+
+func (s *SQLiteDatabase) DoesDatabaseExist() bool {
+	checkStatement := fmt.Sprintf(`SELECT name FROM sqlite_master WHERE type='table' AND name='%s'`, defaultDatabaseName)
+	_, err := s.db.Exec(checkStatement)
+	return err == nil
 }
 
 func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
-	stmt, err := s.db.Prepare(`INSERT INTO podcast_items (
+	stmt, err := s.db.Prepare(fmt.Sprintf(`INSERT INTO %s (
 		id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, defaultDatabaseName))
 	if err != nil {
 		return err
 	}
@@ -36,7 +77,7 @@ func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
 }
 
 func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
-	stmt, err := s.db.Prepare(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM podcast_items WHERE id = ?`)
+	stmt, err := s.db.Prepare(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s WHERE id = ?`, defaultDatabaseName))
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +95,7 @@ func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
 }
 
 func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
-	rows, err := s.db.Query(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM podcast_items`)
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s`, defaultDatabaseName))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +113,7 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 }
 
 func (s *SQLiteDatabase) UpdatePodcastItem(item *PodcastItem) error {
-	stmt, err := s.db.Prepare(`UPDATE podcast_items SET title=?, description=?, author=?, thumbnail=?, duration_in_milliseconds=?, video_url=?, audio_file_path=?, created_at=? WHERE id=?`)
+	stmt, err := s.db.Prepare(fmt.Sprintf(`UPDATE %s SET title=?, description=?, author=?, thumbnail=?, duration_in_milliseconds=?, video_url=?, audio_file_path=?, created_at=? WHERE id=?`, defaultDatabaseName))
 	if err != nil {
 		return err
 	}
@@ -84,7 +125,7 @@ func (s *SQLiteDatabase) UpdatePodcastItem(item *PodcastItem) error {
 }
 
 func (s *SQLiteDatabase) DeletePodcastItem(id string) error {
-	stmt, err := s.db.Prepare(`DELETE FROM podcast_items WHERE id = ?`)
+	stmt, err := s.db.Prepare(fmt.Sprintf(`DELETE FROM %s WHERE id = ?`, defaultDatabaseName))
 	if err != nil {
 		return err
 	}
@@ -94,7 +135,7 @@ func (s *SQLiteDatabase) DeletePodcastItem(id string) error {
 }
 
 func (s *SQLiteDatabase) GetPodcastItemsByAuthor(author string) ([]*PodcastItem, error) {
-	stmt, err := s.db.Prepare(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM podcast_items WHERE author = ?`)
+	stmt, err := s.db.Prepare(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s WHERE author = ?`, defaultDatabaseName))
 	if err != nil {
 		return nil, err
 	}

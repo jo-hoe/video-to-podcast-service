@@ -6,22 +6,34 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 )
 
-func NewDatabase(dbType string, dataSourceName string, resourcePath string) (database Database, err error) {
+func NewDatabase(dbType string, connectionString string) (database Database, err error) {
+	var dbInstance Database
+
 	switch dbType {
 	case "sqlite":
-		database, err = NewSQLiteDatabase(dataSourceName)
+		dbInstance = &SQLiteDatabase{}
 	default:
-		err = fmt.Errorf("unsupported database type: %s", dbType)
+		return nil, fmt.Errorf("unsupported database type: %s", dbType)
 	}
 
-	if err != nil {
-		initializeDatabase(database, resourcePath)
+	if !dbInstance.DoesDatabaseExist() {
+		_, err = dbInstance.CreateDatabase(connectionString)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create database: %w", err)
+		}
+	} else {
+		_, err = dbInstance.InitializeDatabase(connectionString)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize database: %w", err)
+		}
 	}
 
-	return database, err
+	addPreexistingElements(dbInstance, connectionString)
+
+	return dbInstance, nil
 }
 
-func initializeDatabase(database Database, resourcePath string) {
+func addPreexistingElements(database Database, resourcePath string) {
 	if database == nil {
 		return
 	}
