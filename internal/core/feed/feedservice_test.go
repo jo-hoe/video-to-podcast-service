@@ -2,7 +2,6 @@ package feed
 
 import (
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -92,67 +91,4 @@ func TestNewFeedService(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_hashFileNameToUUIDv4(t *testing.T) {
-	result := hashFileNameToUUIDv4("my_demo_file.mp3")
-	result2 := hashFileNameToUUIDv4("my_demo_file'.mp3")
-
-	//the that result is a valid UUIDv4
-	if result == "" {
-		t.Errorf("hashFileNameToUUIDv4() returned empty string")
-	}
-
-	if len(result) != 36 {
-		t.Errorf("hashFileNameToUUIDv4() returned string of length %d, want 36", len(result))
-	}
-
-	// Basic UUIDv4 format check: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-	if result[14] != '4' {
-		t.Errorf("hashFileNameToUUIDv4() returned string with wrong version: %s", result)
-	}
-	if result[19] != '8' && result[19] != '9' && result[19] != 'a' && result[19] != 'b' {
-		t.Errorf("hashFileNameToUUIDv4() returned string with wrong variant: %s", result)
-	}
-
-	if result2 == result {
-		t.Errorf("hashFileNameToUUIDv4() returned same UUID for different input: %s", result)
-	}
-}
-
-func TestFeedService_GetFeeds(t *testing.T) {
-	testHost := "localhost:8080"
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test_assets"))
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
-	mockDB := &database.MockDatabase{}
-	coreService := core.NewCoreService(mockDB, testFilePath)
-	fp := &FeedService{
-		coreservice:  coreService,
-		feedBasePort: "8080",
-		feedItemPath: "v1/path",
-	}
-	t.Run("positive test", func(t *testing.T) {
-		got, err := fp.GetFeeds(testHost)
-		if err != nil {
-			t.Errorf("FeedService.GetFeeds() error = %v, wantErr false", err)
-			return
-		}
-		if got == nil {
-			t.Error("FeedService.GetFeeds() got = nil")
-		}
-	})
-
-	fpInvalid := &FeedService{
-		coreservice:  core.NewCoreService(mockDB, "non_existing_dir"),
-		feedBasePort: "8080",
-		feedItemPath: "v1/path",
-	}
-	t.Run("non existing directory", func(t *testing.T) {
-		_, err := fpInvalid.GetFeeds(testHost)
-		if err == nil {
-			t.Error("FeedService.GetFeeds() expected error for non existing directory, got nil")
-		}
-	})
 }

@@ -1,7 +1,6 @@
 package feed
 
 import (
-	"crypto/md5"
 	"fmt"
 	"net/url"
 	"os"
@@ -80,28 +79,6 @@ func (fp *FeedService) getFeedWithAuthor(author string, feeds []*feeds.Feed) *fe
 		}
 	}
 	return nil
-}
-
-func hashFileNameToUUIDv4(filename string) string {
-	// take an audio file path and hash it to a UUIDv4
-	data := []byte(filename)
-	hash := md5.Sum(data)
-	hashBytes := hash[:]
-
-	uuid := make([]byte, 16)
-	copy(uuid, hashBytes)
-
-	// Set version (4) and variant bits according to RFC 4122
-	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
-	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
-
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		uuid[0:4],
-		uuid[4:6],
-		uuid[6:8],
-		uuid[8:10],
-		uuid[10:16],
-	)
 }
 
 func (fp *FeedService) createFeedItem(host string, podcastItem *database.PodcastItem) (*feeds.Item, error) {
