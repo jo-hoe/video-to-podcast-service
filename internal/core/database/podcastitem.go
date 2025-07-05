@@ -23,7 +23,8 @@ type PodcastItem struct {
 	DurationInMilliseconds int64     `json:"duration_in_milliseconds"` // Duration in seconds
 	VideoURL               string    `json:"video_url"`
 	AudioFilePath          string    `json:"audio_file_path"` // Path to the downloaded audio file
-	CreatedAt              time.Time `json:"created_at"`      // ISO 8601 format
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 }
 
 func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) {
@@ -62,6 +63,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 		VideoURL:               audioMetadata[downloader.VideoDownloadLink],
 		AudioFilePath:          audioFilePath,
 		CreatedAt:              uploadTime,
+		UpdatedAt:              time.Now(),
 	}
 
 	return podcastItem, err

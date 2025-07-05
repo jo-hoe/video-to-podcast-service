@@ -1,7 +1,6 @@
 package database
 
 import (
-	"os"
 	"testing"
 	"time"
 )
@@ -15,13 +14,13 @@ const (
 	testThumb    = "test_thumbnail.jpg"
 	testVideoURL = "http://example.com/video"
 	testAudio    = "audio.mp3"
+	duration     = 120000 // 2 minutes in milliseconds
 )
 
 func TestCreatePodcastItem(t *testing.T) {
-	defer cleanupTestDB(t)
 	db := setupTestDB(t)
-	defer closeDB(t, db)
-	item := getDemoPodcastItem(2)
+	defer cleanupTestDB(t, db)
+	item := getDemoPodcastItem()
 	err := db.CreatePodcastItem(item)
 	if err != nil {
 		t.Fatalf("failed to create podcast item: %v", err)
@@ -39,11 +38,21 @@ func TestCreatePodcastItem(t *testing.T) {
 }
 
 func TestCreatePodcastItemTwice(t *testing.T) {
-	defer cleanupTestDB(t)
 	db := setupTestDB(t)
-	defer closeDB(t, db)
-	item := getDemoPodcastItem(1)
-	updated := getDemoPodcastItem(2)
+	defer cleanupTestDB(t, db)
+	item := getDemoPodcastItem()
+	updated := &PodcastItem{
+		ID:                     item.ID,
+		Title:                  item.Title,
+		Description:            item.Description,
+		Author:                 item.Author,
+		Thumbnail:              item.Thumbnail,
+		DurationInMilliseconds: 150000, // Updated duration
+		VideoURL:               item.VideoURL,
+		AudioFilePath:          item.AudioFilePath,
+		CreatedAt:              item.CreatedAt,
+		UpdatedAt:              time.Now(), // Updated time
+	}
 
 	err := db.CreatePodcastItem(item)
 	if err != nil {
@@ -65,7 +74,7 @@ func TestCreatePodcastItemTwice(t *testing.T) {
 	}
 }
 
-func getDemoPodcastItem(duration int64) *PodcastItem {
+func getDemoPodcastItem() *PodcastItem {
 	return &PodcastItem{
 		ID:                     testItemID,
 		Title:                  testTitle,
@@ -76,28 +85,22 @@ func getDemoPodcastItem(duration int64) *PodcastItem {
 		VideoURL:               testVideoURL,
 		AudioFilePath:          testAudio,
 		CreatedAt:              time.Now(),
+		UpdatedAt:              time.Now(),
 	}
 }
 
 func setupTestDB(t *testing.T) *SQLiteDatabase {
-	db := &SQLiteDatabase{}
-	_, err := db.CreateDatabase(testDBFile)
+	db := NewSQLiteDatabase(testDBFile)
+	_, err := db.CreateDatabase()
 	if err != nil {
 		t.Fatalf("failed to create database: %v", err)
 	}
 	return db
 }
 
-func cleanupTestDB(t *testing.T) {
-	err := os.Remove(testDBFile)
-	if err != nil && !os.IsNotExist(err) {
-		t.Fatalf("failed to remove test database file: %v", err)
-	}
-}
-
-func closeDB(t *testing.T, db *SQLiteDatabase) {
-	err := db.Close()
+func cleanupTestDB(t *testing.T, db *SQLiteDatabase) {
+	err := db.DropDatabase()
 	if err != nil {
-		t.Fatalf("failed to close database: %v", err)
+		t.Fatalf("failed to drop database: %v", err)
 	}
 }

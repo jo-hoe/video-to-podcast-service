@@ -7,16 +7,17 @@ import (
 	"testing"
 
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 )
 
 func TestCreateFeed(t *testing.T) {
 	defaultAuthor := "John Doe"
 	type fields struct {
-		feedBaseUrl          string
-		feedBasePort         string
-		feedItemPath         string
-		feedAuthor           string
-		audioSourceDirectory string
+		feedBasePort string
+		feedItemPath string
+		feedAuthor   string
+		coreService  *core.CoreService
 	}
 	tests := []struct {
 		name   string
@@ -26,11 +27,10 @@ func TestCreateFeed(t *testing.T) {
 		{
 			name: "create feed test",
 			fields: fields{
-				feedBaseUrl:          "https://example.com",
-				feedBasePort:         "443",
-				feedItemPath:         "v1/feeds",
-				feedAuthor:           defaultAuthor,
-				audioSourceDirectory: "",
+				feedBasePort: "443",
+				feedItemPath: "v1/feeds",
+				feedAuthor:   defaultAuthor,
+				coreService:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
 			},
 			want: &feeds.Feed{
 				Title:       defaultAuthor,
@@ -43,9 +43,9 @@ func TestCreateFeed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fp := &FeedService{
-				feedBasePort:         tt.fields.feedBasePort,
-				audioSourceDirectory: tt.fields.audioSourceDirectory,
-				feedItemPath:         tt.fields.feedItemPath,
+				coreservice:  tt.fields.coreService,
+				feedBasePort: tt.fields.feedBasePort,
+				feedItemPath: tt.fields.feedItemPath,
 			}
 			if got := fp.createFeed(tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createFeed() = %v, want %v", got, tt.want)
@@ -56,9 +56,9 @@ func TestCreateFeed(t *testing.T) {
 
 func TestNewFeedService(t *testing.T) {
 	type args struct {
-		audioSourceDirectory string
-		feedBasePort         string
-		feedItemPath         string
+		coreService  *core.CoreService
+		feedBasePort string
+		feedItemPath string
 	}
 	tests := []struct {
 		name string
@@ -68,21 +68,26 @@ func TestNewFeedService(t *testing.T) {
 		{
 			name: "init test",
 			args: args{
-				audioSourceDirectory: "testDir",
-				feedBasePort:         "8080",
-				feedItemPath:         "v1/path",
+				coreService:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
+				feedBasePort: "8080",
+				feedItemPath: "v1/path",
 			},
 			want: &FeedService{
-				audioSourceDirectory: "testDir",
-				feedBasePort:         "8080",
-				feedItemPath:         "v1/path",
+				coreservice:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
+				feedBasePort: "8080",
+				feedItemPath: "v1/path",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewFeedService(tt.args.audioSourceDirectory, tt.args.feedBasePort, tt.args.feedItemPath); !reflect.DeepEqual(got, tt.want) {
+			got := NewFeedService(tt.args.coreService, tt.args.feedBasePort, tt.args.feedItemPath)
+			if got.feedBasePort != tt.want.feedBasePort || got.feedItemPath != tt.want.feedItemPath {
 				t.Errorf("NewFeedService() = %v, want %v", got, tt.want)
+			}
+			// Compare coreService by pointer address (since DeepEqual will fail on different instances)
+			if fmt.Sprintf("%p", got.coreservice) != fmt.Sprintf("%p", tt.want.coreservice) {
+				t.Errorf("NewFeedService() coreService pointer mismatch")
 			}
 		})
 	}
@@ -120,39 +125,33 @@ func TestFeedService_GetFeeds(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	tests := []struct {
-		name    string
-		fp      *FeedService
-		wantErr bool
-	}{
-		{
-			name: "positive test",
-			fp: &FeedService{
-				audioSourceDirectory: testFilePath,
-			},
-			wantErr: false,
-		},
-		{
-			name: "non existing directory",
-			fp: &FeedService{
-				audioSourceDirectory: "testDir",
-			},
-			wantErr: true,
-		},
+	mockDB := &database.MockDatabase{}
+	coreService := core.NewCoreService(mockDB, testFilePath)
+	fp := &FeedService{
+		coreservice:  coreService,
+		feedBasePort: "8080",
+		feedItemPath: "v1/path",
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.fp.GetFeeds(testHost)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("FeedService.GetFeeds() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got == nil && !tt.wantErr {
-				t.Error("FeedService.GetFeeds() got = nil")
-			}
-			if len(got) != 1 && !tt.wantErr {
-				t.Errorf("expected 1 feeds, got %d", len(got))
-			}
-		})
+	t.Run("positive test", func(t *testing.T) {
+		got, err := fp.GetFeeds(testHost)
+		if err != nil {
+			t.Errorf("FeedService.GetFeeds() error = %v, wantErr false", err)
+			return
+		}
+		if got == nil {
+			t.Error("FeedService.GetFeeds() got = nil")
+		}
+	})
+
+	fpInvalid := &FeedService{
+		coreservice:  core.NewCoreService(mockDB, "non_existing_dir"),
+		feedBasePort: "8080",
+		feedItemPath: "v1/path",
 	}
+	t.Run("non existing directory", func(t *testing.T) {
+		_, err := fpInvalid.GetFeeds(testHost)
+		if err == nil {
+			t.Error("FeedService.GetFeeds() expected error for non existing directory, got nil")
+		}
+	})
 }

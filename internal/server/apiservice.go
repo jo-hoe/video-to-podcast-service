@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -10,30 +9,53 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 	"github.com/labstack/echo/v4"
 )
 
-const apiVersion = "v1/"
-const feedsPath = apiVersion + "feeds"
-const addItemPaths = apiVersion + "addItems"
+const (
+	apiVersion   = "v1/"
+	feedsPath    = apiVersion + "feeds"
+	addItemPaths = apiVersion + "addItems"
+)
 
-func setAPIRoutes(e *echo.Echo) {
-	// API routes
-	e.POST(addItemPaths, addItemsHandler)
-	e.GET(feedsPath, feedsHandler)
-	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), feedHandler)
-	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), audioFileHandler)
-
-	// Set probe route
-	e.GET("/", probeHandler)
+type APIService struct {
+	coreservice *core.CoreService
 }
 
-func feedsHandler(ctx echo.Context) (err error) {
-	feeds, err := getFeedService().GetFeeds(ctx.Request().Host)
+func NewAPIService(coreservice *core.CoreService) *APIService {
+	return &APIService{
+		coreservice: coreservice,
+	}
+}
+
+func (service *APIService) setAPIRoutes(e *echo.Echo) {
+	// API routes
+	e.POST(addItemPaths, service.addItemsHandler)
+	e.GET(feedsPath, service.feedsHandler)
+	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
+	e.GET(fmt.Sprintf("%s%s", feedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
+
+	// Set probe route
+	e.GET("/", service.probeHandler)
+}
+
+type genericValidator struct {
+	Validator *validator.Validate
+}
+
+func (gv *genericValidator) Validate(i interface{}) error {
+	if err := gv.Validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("received invalid request body: %v", err))
+	}
+	return nil
+}
+
+func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
+	feeds, err := service.getFeedService().GetFeeds(ctx.Request().Host)
 	if err != nil {
 		return err
 	}
@@ -46,9 +68,28 @@ func feedsHandler(ctx echo.Context) (err error) {
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func feedHandler(ctx echo.Context) (err error) {
+func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
+	downloadItems := new(DownloadItems)
+	if err = ctx.Bind(downloadItems); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err = ctx.Validate(downloadItems); err != nil {
+		return err
+	}
+
+	for _, url := range downloadItems.URLS {
+		err = service.coreservice.DownloadItemsHandler(url)
+		if err != nil {
+			return err
+		}
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
-	result, err := getFeed(ctx.Request().Host, feedTitle)
+	result, err := service.getFeed(ctx.Request().Host, feedTitle)
 	if err != nil {
 		return err
 	}
@@ -62,7 +103,7 @@ func feedHandler(ctx echo.Context) (err error) {
 	return err
 }
 
-func audioFileHandler(ctx echo.Context) (err error) {
+func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
 	if feedTitle == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
@@ -100,12 +141,12 @@ func audioFileHandler(ctx echo.Context) (err error) {
 	return ctx.File(foundFile)
 }
 
-func getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
+func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
 	if feedTitle == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
 
-	feedItems, err := getFeedService().GetFeeds(host)
+	feedItems, err := service.getFeedService().GetFeeds(host)
 	if err != nil {
 		return nil, err
 	}
@@ -124,57 +165,12 @@ func getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
 	return result, nil
 }
 
-type DownloadItem struct {
-	URL string `json:"url" validate:"required"`
-}
-
-func downloadItemsHandler(url string) (err error) {
-	downloader, err := download.GetVideoDownloader(url)
-	if err != nil {
-		return err
-	}
-	audioSourceDirectory := defaultResourcePath
-	if !downloader.IsVideoAvailable(url) {
-		return fmt.Errorf("video %s is not available", url)
-	}
-	log.Printf("downloading '%s'", url)
-
-	go func() {
-		maxErrorCount := 4
-		errorCount := 0
-
-		for errorCount < maxErrorCount {
-			_, err := downloader.Download(url, audioSourceDirectory)
-			if err != nil {
-				log.Printf("failed to download '%s': %v", url, err)
-				errorCount++
-			} else {
-				break
-			}
-		}
-	}()
-
-	return nil
-}
-
-func probeHandler(ctx echo.Context) (err error) {
+func (service *APIService) probeHandler(ctx echo.Context) (err error) {
 	return ctx.NoContent(http.StatusOK)
 }
 
-func getFeedService() *feed.FeedService {
+func (service *APIService) getFeedService() *feed.FeedService {
 	defaultPort := common.ValueOrDefault(os.Getenv("PORT"), defaultPort)
-	audioSourceDirectory := defaultResourcePath
 
-	return feed.NewFeedService(audioSourceDirectory, defaultPort, feedsPath)
-}
-
-type genericValidator struct {
-	Validator *validator.Validate
-}
-
-func (gv *genericValidator) Validate(i interface{}) error {
-	if err := gv.Validator.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("received invalid request body: %v", err))
-	}
-	return nil
+	return feed.NewFeedService(service.coreservice, defaultPort, feedsPath)
 }

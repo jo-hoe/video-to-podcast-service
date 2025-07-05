@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -15,13 +16,18 @@ const (
 
 // SQLiteDatabase implements the Database interface using SQLite and prepared statements.
 type SQLiteDatabase struct {
-	db *sql.DB
+	db               *sql.DB
+	connectionString string
 }
 
-// NewSQLiteDatabase creates a new SQLiteDatabase instance.
-// Implements Database interface
-func (s *SQLiteDatabase) InitializeDatabase(connectionString string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", connectionString)
+func NewSQLiteDatabase(connectionString string) *SQLiteDatabase {
+	return &SQLiteDatabase{
+		connectionString: connectionString,
+	}
+}
+
+func (s *SQLiteDatabase) InitializeDatabase() (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", s.connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -34,12 +40,12 @@ func (s *SQLiteDatabase) InitializeDatabase(connectionString string) (*sql.DB, e
 	return db, nil
 }
 
-func (s *SQLiteDatabase) CreateDatabase(connectionString string) (*sql.DB, error) {
+func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
 	// Handle empty connection string by setting a default file-based database
-	if connectionString == "" {
-		connectionString = defaultDatabaseFileName
+	if s.connectionString == "" {
+		s.connectionString = defaultDatabaseFileName
 	}
-	db, err := sql.Open("sqlite3", connectionString)
+	db, err := sql.Open("sqlite3", s.connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +180,18 @@ func (s *SQLiteDatabase) GetPodcastItemsByAuthor(author string) ([]*PodcastItem,
 }
 
 // Close closes the database connection.
-func (s *SQLiteDatabase) Close() error {
+func (s *SQLiteDatabase) CloseConnection() error {
 	return s.db.Close()
+}
+
+func (s *SQLiteDatabase) DropDatabase() error {
+	if s.db == nil {
+		return fmt.Errorf("database connection is not initialized")
+	}
+	// Close the database connection before dropping it
+	if err := s.CloseConnection(); err != nil {
+		return err
+	}
+	// Remove the database file
+	return os.Remove(s.connectionString)
 }

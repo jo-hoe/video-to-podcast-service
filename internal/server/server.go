@@ -6,7 +6,9 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
@@ -17,7 +19,7 @@ const defaultPort = "8080"
 
 var defaultResourcePath string
 
-func StartServer(resourcePath string) {
+func StartServer(databaseService database.DatabaseService, resourcePath string) {
 	defaultResourcePath = resourcePath
 
 	e := echo.New()
@@ -30,8 +32,13 @@ func StartServer(resourcePath string) {
 		templates: template.Must(template.ParseFS(templateFS, viewsPattern)),
 	}
 
-	setAPIRoutes(e)
-	setUIRoutes(e)
+	coreService := core.NewCoreService(databaseService, defaultResourcePath)
+
+	apiService := NewAPIService(coreService)
+	apiService.setAPIRoutes(e)
+
+	uiService := NewUIService(coreService)
+	uiService.setUIRoutes(e)
 
 	// start server
 	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")

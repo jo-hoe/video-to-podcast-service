@@ -27,6 +27,10 @@ func getResourcePath() string {
 func main() {
 	defaultResourcePath := getResourcePath()
 
-	database.NewDatabase(common.ValueOrDefault(os.Getenv(connectionStringEnvVar), ""), defaultResourcePath)
-	server.StartServer(defaultResourcePath)
+	databaseService, err := database.NewDatabase(common.ValueOrDefault(os.Getenv(connectionStringEnvVar), ""), defaultResourcePath)
+	if err != nil {
+		panic(err)
+	}
+
+	server.StartServer(databaseService, defaultResourcePath)
 }

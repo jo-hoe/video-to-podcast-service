@@ -3,19 +3,16 @@ package feed
 import (
 	"crypto/md5"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 
 	"github.com/gorilla/feeds"
-	mp3joiner "github.com/jo-hoe/mp3-joiner"
 )
 
 const (
@@ -25,54 +22,50 @@ const (
 )
 
 type FeedService struct {
-	audioSourceDirectory string
-	feedBasePort         string
-	feedItemPath         string
+	coreservice  *core.CoreService
+	feedBasePort string
+	feedItemPath string
 }
 
 func NewFeedService(
-	audioSourceDirectory string,
+	coreService *core.CoreService,
 	feedBasePort string,
 	feedItemPath string) *FeedService {
 	return &FeedService{
-		audioSourceDirectory: audioSourceDirectory,
-		feedBasePort:         feedBasePort,
-		feedItemPath:         feedItemPath,
+		coreservice:  coreService,
+		feedBasePort: feedBasePort,
+		feedItemPath: feedItemPath,
 	}
 }
 
-func (fp *FeedService) GetFeeds(host string) ([]*feeds.Feed, error) {
-	feedCollector := make([]*feeds.Feed, 0)
-	audioFilePaths, err := filemanagement.GetAudioFiles(fp.audioSourceDirectory)
+func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err error) {
+	feedCollector = make([]*feeds.Feed, 0)
+
+	podcastItems, err := fp.coreservice.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get podcast items: %w", err)
 	}
 
-	for _, audioFilePath := range audioFilePaths {
-		directoryPath := filepath.Dir(audioFilePath)
-		directoryName := filepath.Base(directoryPath)
+	for _, podcastItem := range podcastItems {
 
-		// either returns already created feed or nil
+		// create feed item from podcast item
+		item, err := fp.createFeedItem(host, podcastItem)
+		if err != nil {
+			return nil, fmt.Errorf("could not create feed item: %w", err)
+		}
+
+		directoryName := filepath.Base(filepath.Dir(podcastItem.AudioFilePath))
 		feed := fp.getFeedWithAuthor(directoryName, feedCollector)
 		if feed == nil {
 			feed = fp.createFeed(directoryName)
 			feedCollector = append(feedCollector, feed)
 		}
-
-		item, err := fp.createFeedItem(host, audioFilePath)
-		if err != nil {
-			return nil, err
-		}
-
-		metadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
-		if err != nil {
-			return nil, err
-		}
 		feed.Items = append(feed.Items, item)
+
 		if feed.Image == nil {
 			feed.Image = &feeds.Image{
-				Url:  metadata[downloader.ThumbnailUrlTag],
-				Link: metadata[downloader.ThumbnailUrlTag],
+				Url:  podcastItem.Thumbnail,
+				Link: podcastItem.Thumbnail,
 			}
 		}
 	}
@@ -111,37 +104,25 @@ func hashFileNameToUUIDv4(filename string) string {
 	)
 }
 
-func (fp *FeedService) createFeedItem(host, audioFilePath string) (*feeds.Item, error) {
-	audioMetadata, err := mp3joiner.GetFFmpegMetadataTag(audioFilePath)
+func (fp *FeedService) createFeedItem(host string, podcastItem *database.PodcastItem) (*feeds.Item, error) {
+	fileinfo, err := os.Stat(podcastItem.AudioFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not get file info for %s: %w", podcastItem.AudioFilePath, err)
+	}
+	if fileinfo.IsDir() {
+		return nil, fmt.Errorf("expected file but got directory: %s", podcastItem.AudioFilePath)
 	}
 
-	fileInfo, err := os.Stat(audioFilePath)
-	if err != nil {
-		return nil, err
-	}
-	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
-
-	title := common.ValueOrDefault(audioMetadata["title"], fileNameWithoutExtension)
-	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
-
-	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
-	if err != nil {
-		log.Printf("could not parse date tag, reverting to default. error: %v", err)
-		uploadTime = fileInfo.ModTime()
-	}
-
-	parentDirectory := getParentDirectory(audioFilePath, fp.audioSourceDirectory, fileInfo.Name())
+	parentDirectory := getParentDirectory(podcastItem.AudioFilePath, fp.coreservice.GetAudioSourceDirectory(), fileinfo.Name())
 
 	return &feeds.Item{
-		Title:       title,
-		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, parentDirectory, fileInfo.Name())},
-		Description: description,
-		Author:      &feeds.Author{Name: common.ValueOrDefault(audioMetadata[mp3KeyAttribute], "")},
-		Created:     uploadTime,
+		Id:          podcastItem.ID,
+		Title:       podcastItem.Title,
+		Link:        &feeds.Link{Href: fp.getFeedItemUrl(host, parentDirectory, fileinfo.Name())},
+		Description: podcastItem.Description,
+		Author:      &feeds.Author{Name: common.ValueOrDefault(podcastItem.Author, "")},
+		Created:     podcastItem.CreatedAt,
 		IsPermaLink: "false",
-		Id:          hashFileNameToUUIDv4(fileInfo.Name()),
 	}, nil
 }
 
