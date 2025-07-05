@@ -7,7 +7,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const defaultDatabaseName = "podcast_items"
+const (
+	defaultDatabaseName     = "podcast_items"
+	defaultDatabaseExt      = ".db"
+	defaultDatabaseFileName = defaultDatabaseName + defaultDatabaseExt
+)
 
 // SQLiteDatabase implements the Database interface using SQLite and prepared statements.
 type SQLiteDatabase struct {
@@ -31,6 +35,10 @@ func (s *SQLiteDatabase) InitializeDatabase(connectionString string) (*sql.DB, e
 }
 
 func (s *SQLiteDatabase) CreateDatabase(connectionString string) (*sql.DB, error) {
+	// Handle empty connection string by setting a default file-based database
+	if connectionString == "" {
+		connectionString = defaultDatabaseFileName
+	}
 	db, err := sql.Open("sqlite3", connectionString)
 	if err != nil {
 		return nil, err
@@ -56,13 +64,21 @@ func (s *SQLiteDatabase) CreateDatabase(connectionString string) (*sql.DB, error
 }
 
 func (s *SQLiteDatabase) DoesDatabaseExist() bool {
-	checkStatement := fmt.Sprintf(`SELECT name FROM sqlite_master WHERE type='table' AND name='%s'`, defaultDatabaseName)
-	_, err := s.db.Exec(checkStatement)
-	return err == nil
+	// Check if the database file exists
+	if s.db == nil {
+		return false
+	}
+	var exists bool
+	// Check if the table exists in the database
+	err := s.db.QueryRow(fmt.Sprintf(`SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='%s')`, defaultDatabaseName)).Scan(&exists)
+	if err != nil {
+		return false
+	}
+	return exists
 }
 
 func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
-	stmt, err := s.db.Prepare(fmt.Sprintf(`INSERT INTO %s (
+	stmt, err := s.db.Prepare(fmt.Sprintf(`INSERT OR REPLACE INTO %s (
 		id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, defaultDatabaseName))
 	if err != nil {

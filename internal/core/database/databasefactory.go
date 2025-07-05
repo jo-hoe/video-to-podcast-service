@@ -6,8 +6,9 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 )
 
-func NewDatabase(dbType string, connectionString string) (database Database, err error) {
+func NewDatabase(connectionString string, resourcePath string) (database Database, err error) {
 	var dbInstance Database
+	dbType := getDatabaseType(connectionString)
 
 	switch dbType {
 	case "sqlite":
@@ -28,9 +29,22 @@ func NewDatabase(dbType string, connectionString string) (database Database, err
 		}
 	}
 
-	addPreexistingElements(dbInstance, connectionString)
+	addPreexistingElements(dbInstance, resourcePath)
 
 	return dbInstance, nil
+}
+
+func getDatabaseType(connectionString string) string {
+	if connectionString == "" {
+		return "sqlite"
+	}
+
+	if len(connectionString) > 7 && connectionString[:7] == "sqlite:" {
+		return "sqlite"
+	}
+
+	// Add more database types as needed
+	return "unknown"
 }
 
 func addPreexistingElements(database Database, resourcePath string) {
