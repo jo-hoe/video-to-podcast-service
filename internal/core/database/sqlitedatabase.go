@@ -33,7 +33,7 @@ func (s *SQLiteDatabase) InitializeDatabase() (*sql.DB, error) {
 	}
 	// Optionally, check if the connection is valid
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	s.db = db
@@ -62,7 +62,7 @@ func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
 	)`, defaultDatabaseName)
 	_, err = db.Exec(createTableStmt)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	s.db = db
@@ -90,7 +90,7 @@ func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 	_, err = stmt.Exec(
 		item.ID, item.Title, item.Description, item.Author, item.Thumbnail,
 		item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt,
@@ -103,7 +103,7 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var items []*PodcastItem
 	for rows.Next() {
 		item := &PodcastItem{}
