@@ -17,7 +17,7 @@ type UIService struct {
 	coreservice *core.CoreService
 }
 
-type IndexData struct {
+type PodcastItemList struct {
 	PodcastItems []*database.PodcastItem
 }
 
@@ -54,7 +54,7 @@ func (service *UIService) indexHandler(ctx echo.Context) (err error) {
 		return podcastItems[i].UpdatedAt.After(podcastItems[j].UpdatedAt)
 	})
 
-	data := IndexData{
+	data := PodcastItemList{
 		PodcastItems: podcastItems,
 	}
 
