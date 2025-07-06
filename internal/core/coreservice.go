@@ -29,6 +29,14 @@ func (cs *CoreService) GetAudioSourceDirectory() string {
 	return cs.audioSourceDirectory
 }
 
+func (cs *CoreService) GetLinkToFeed(host string, apiPath string, feedTitle string) string {
+	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, feedTitle)
+}
+
+func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioPath string, audioFileName string) string {
+	return fmt.Sprintf("http://%s/%s/%s%s", host, apiPath, audioPath, audioFileName)
+}
+
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	downloaderInstance, err := download.GetVideoDownloader(url)
 	if err != nil {

@@ -2,7 +2,6 @@ package feed
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,7 +89,7 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 	}
 
 	parentDirectory := getParentDirectory(podcastItem.AudioFilePath, fp.coreservice.GetAudioSourceDirectory(), fileinfo.Name())
-	link := fp.getFeedItemUrl(host, parentDirectory, fileinfo.Name())
+	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, parentDirectory, fileinfo.Name())
 
 	return &feeds.Item{
 		Id:          podcastItem.ID,
@@ -118,24 +117,10 @@ func getParentDirectory(audioFilePath string, rootFilePath string, fileName stri
 func (fp *FeedService) createFeed(host, author string) *feeds.Feed {
 	feed := &feeds.Feed{
 		Title:       author,
-		Link:        &feeds.Link{Href: fp.getFeedUrl(host, author)},
+		Link:        &feeds.Link{Href: fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, author)},
 		Description: fmt.Sprintf("%s %s", defaultDescription, author),
 		Author:      &feeds.Author{Name: author},
 	}
 
 	return feed
-}
-
-func (fp *FeedService) getFeedUrl(host, author string) string {
-	urlEncodedTitle := url.PathEscape(author)
-
-	return fmt.Sprintf("%s/%s/%s/%s", host, fp.feedItemPath, urlEncodedTitle, defaultURLSuffix)
-}
-
-func (fp *FeedService) getFeedItemUrl(host string, parent_folder string, itemName string) string {
-	urlEncodedItemName := url.PathEscape(itemName)
-	// remove the suffix from the url
-	urlPath := strings.TrimSuffix(fp.getFeedUrl(host, parent_folder), defaultURLSuffix)
-
-	return fmt.Sprintf("%s%s", urlPath, urlEncodedItemName)
 }
