@@ -8,6 +8,7 @@ import (
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
+	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,6 +20,8 @@ type UIService struct {
 
 type PodcastItemList struct {
 	PodcastItems []*database.PodcastItem
+	Host         string
+	APIPath      string
 }
 
 func NewUIService(coreservice *core.CoreService) *UIService {
@@ -31,8 +34,9 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	// Create template with helper functions
 	funcMap := template.FuncMap{
 		"formatDuration": formatDuration,
+		"getFeedLink":    service.getFeedLink,
 	}
-	
+
 	e.Renderer = &Template{
 		templates: template.Must(template.New("").Funcs(funcMap).ParseFS(templateFS, viewsPattern)),
 	}
@@ -54,8 +58,19 @@ func (service *UIService) indexHandler(ctx echo.Context) (err error) {
 		return podcastItems[i].UpdatedAt.After(podcastItems[j].UpdatedAt)
 	})
 
+	// reduce the number of results to 128 items
+	if len(podcastItems) > 128 {
+		podcastItems = podcastItems[:128]
+	}
+
+	// Get host and API path from the request
+	host := ctx.Request().Host
+	apiPath := "api" // You might want to make this configurable
+
 	data := PodcastItemList{
 		PodcastItems: podcastItems,
+		Host:         host,
+		APIPath:      apiPath,
 	}
 
 	return ctx.Render(http.StatusOK, "index", data)
@@ -87,4 +102,9 @@ func formatDuration(milliseconds int64) string {
 		return fmt.Sprintf("%d:%02d:%02d", hours, minutes, seconds)
 	}
 	return fmt.Sprintf("%d:%02d", minutes, seconds)
+}
+
+// Helper function to generate feed link for a podcast item
+func (service *UIService) getFeedLink(host, filePath string) string {
+	return service.coreservice.GetLinkToFeed(host, api.FeedsPath, filePath)
 }

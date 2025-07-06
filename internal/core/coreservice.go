@@ -32,15 +32,23 @@ func (cs *CoreService) GetAudioSourceDirectory() string {
 	return cs.audioSourceDirectory
 }
 
-func (cs *CoreService) GetLinkToFeed(host string, apiPath string, feedTitle string) string {
+func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
+	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
+	// get first part of the path as feed title
+	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
+	if len(parts) == 0 {
+		log.Printf("error: audio file path '%s' does not contain a valid feed title", audioFilePath)
+		return ""
+	}
+	feedTitle := parts[0]
+	// URL encode the feed title
 	urlEncodedFeedTitle := url.PathEscape(feedTitle)
 
 	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, urlEncodedFeedTitle)
 }
 
 func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFilePath string) string {
-	pathWithoutRoot := strings.TrimPrefix(audioFilePath, cs.audioSourceDirectory)
-	pathWithoutRoot = strings.TrimPrefix(pathWithoutRoot, string(os.PathSeparator))
+	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
 	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
 	for i, part := range parts {
 		parts[i] = url.PathEscape(part)
@@ -48,6 +56,12 @@ func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFile
 	audioUrlPath := strings.Join(parts, "/")
 
 	return fmt.Sprintf("http://%s/%s/%s", host, apiPath, audioUrlPath)
+}
+
+func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
+	pathWithoutRoot := strings.TrimPrefix(audioFilePath, cs.audioSourceDirectory)
+	pathWithoutRoot = strings.TrimPrefix(pathWithoutRoot, string(os.PathSeparator))
+	return pathWithoutRoot
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {

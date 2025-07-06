@@ -2,6 +2,7 @@ package feed
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -13,11 +14,12 @@ import (
 func TestCreateFeed(t *testing.T) {
 	defaultAuthor := "John Doe"
 	type fields struct {
-		feedBasePort string
-		feedItemPath string
-		feedAuthor   string
-		feedHost     string
-		coreService  *core.CoreService
+		feedBasePort      string
+		feedItemPath      string
+		feedAudioFilePath string
+		feedAuthor        string
+		feedHost          string
+		coreService       *core.CoreService
 	}
 	tests := []struct {
 		name   string
@@ -27,15 +29,16 @@ func TestCreateFeed(t *testing.T) {
 		{
 			name: "create feed test",
 			fields: fields{
-				feedBasePort: "443",
-				feedItemPath: "v1/feeds",
-				feedAuthor:   defaultAuthor,
-				feedHost:     "localhost",
-				coreService:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
+				feedBasePort:      "443",
+				feedItemPath:      "v1/feeds",
+				feedAuthor:        defaultAuthor,
+				feedHost:          "localhost",
+				feedAudioFilePath: filepath.Join("c", "testDir", "audio.mp3"),
+				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c")),
 			},
 			want: &feeds.Feed{
 				Title:       defaultAuthor,
-				Link:        &feeds.Link{Href: "localhost/v1/feeds/John%20Doe/rss.xml"},
+				Link:        &feeds.Link{Href: "http://localhost/v1/feeds/testDir/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
 			},
@@ -48,7 +51,7 @@ func TestCreateFeed(t *testing.T) {
 				feedBasePort: tt.fields.feedBasePort,
 				feedItemPath: tt.fields.feedItemPath,
 			}
-			if got := fp.createFeed(tt.fields.feedHost, tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
+			if got := fp.createFeed(tt.fields.feedHost, tt.fields.feedAuthor, tt.fields.feedAudioFilePath); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createFeed() = %v, want %v", got, tt.want)
 			}
 		})

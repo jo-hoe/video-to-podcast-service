@@ -66,6 +66,9 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	if metadata[downloader.DateTag] == "" {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[downloader.DateTag])
 	}
+	if metadata[downloader.VideoDownloadLink] != validYoutubeVideoUrl {
+		t.Errorf("YoutubeAudioDownloader.Download() = %v, video url tag was empty", metadata[downloader.VideoDownloadLink])
+	}
 
 	// check if file is saved in correct location
 	expectedFilename := "Me at the zoo_jNQXAC9IVRw.mp3"

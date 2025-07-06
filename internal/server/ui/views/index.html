@@ -57,6 +57,7 @@
                             <th>Duration</th>
                             <th>Updated</th>
                             <th>Video</th>
+                            <th>Feed</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,6 +77,13 @@
                             <td>
                                 {{if .VideoURL}}
                                     <a href="{{.VideoURL}}" target="_blank">View</a>
+                                {{else}}
+                                    -
+                                {{end}}
+                            </td>
+                            <td>
+                                {{if .Title}}
+                                    <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS</a>
                                 {{else}}
                                     -
                                 {{end}}

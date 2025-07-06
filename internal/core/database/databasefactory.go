@@ -73,4 +73,5 @@ func addPreexistingElements(database DatabaseService, resourcePath string) {
 			fmt.Printf("error saving podcast item for file %s: %v\n", file, err)
 		}
 	}
+	log.Printf("added %d preexisting podcast items to the database", len(filePaths))
 }

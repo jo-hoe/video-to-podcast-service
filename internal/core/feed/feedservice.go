@@ -53,7 +53,7 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err e
 		directoryName := filepath.Base(filepath.Dir(podcastItem.AudioFilePath))
 		feed := fp.getFeedWithAuthor(directoryName, feedCollector)
 		if feed == nil {
-			feed = fp.createFeed(host, directoryName)
+			feed = fp.createFeed(host, directoryName, podcastItem.AudioFilePath)
 			feedCollector = append(feedCollector, feed)
 		}
 		feed.Items = append(feed.Items, item)
@@ -105,10 +105,10 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 	}, nil
 }
 
-func (fp *FeedService) createFeed(host, author string) *feeds.Feed {
+func (fp *FeedService) createFeed(host string, author string, filepath string) *feeds.Feed {
 	feed := &feeds.Feed{
 		Title:       author,
-		Link:        &feeds.Link{Href: fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, author)},
+		Link:        &feeds.Link{Href: fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, filepath)},
 		Description: fmt.Sprintf("%s %s", defaultDescription, author),
 		Author:      &feeds.Author{Name: author},
 	}
