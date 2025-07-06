@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"log"
+	"net/url"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
@@ -30,11 +31,16 @@ func (cs *CoreService) GetAudioSourceDirectory() string {
 }
 
 func (cs *CoreService) GetLinkToFeed(host string, apiPath string, feedTitle string) string {
-	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, feedTitle)
+	urlEncodedFeedTitle := url.PathEscape(feedTitle)
+
+	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, urlEncodedFeedTitle)
 }
 
 func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioPath string, audioFileName string) string {
-	return fmt.Sprintf("http://%s/%s/%s%s", host, apiPath, audioPath, audioFileName)
+	urlEncodedAudioPath := url.PathEscape(audioPath)
+	urlEncodedAudioFileName := url.PathEscape(audioFileName)
+
+	return fmt.Sprintf("http://%s/%s/%s/%s", host, apiPath, urlEncodedAudioPath, urlEncodedAudioFileName)
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {

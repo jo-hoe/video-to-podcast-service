@@ -111,6 +111,7 @@ func getParentDirectory(audioFilePath string, rootFilePath string, fileName stri
 	parentDirectory := strings.ReplaceAll(audioFilePath, rootFilePath, "")
 	parentDirectory = strings.ReplaceAll(parentDirectory, fileName, "")
 	parentDirectory = strings.TrimPrefix(parentDirectory, string(os.PathSeparator))
+	parentDirectory = strings.TrimSuffix(parentDirectory, string(os.PathSeparator))
 	return parentDirectory
 }
 
