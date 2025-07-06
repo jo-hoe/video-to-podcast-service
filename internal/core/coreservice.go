@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
@@ -36,11 +38,16 @@ func (cs *CoreService) GetLinkToFeed(host string, apiPath string, feedTitle stri
 	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, urlEncodedFeedTitle)
 }
 
-func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioPath string, audioFileName string) string {
-	urlEncodedAudioPath := url.PathEscape(audioPath)
-	urlEncodedAudioFileName := url.PathEscape(audioFileName)
+func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFilePath string) string {
+	pathWithoutRoot := strings.TrimPrefix(audioFilePath, cs.audioSourceDirectory)
+	pathWithoutRoot = strings.TrimPrefix(pathWithoutRoot, string(os.PathSeparator))
+	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
+	for i, part := range parts {
+		parts[i] = url.PathEscape(part)
+	}
+	audioUrlPath := strings.Join(parts, "/")
 
-	return fmt.Sprintf("http://%s/%s/%s/%s", host, apiPath, urlEncodedAudioPath, urlEncodedAudioFileName)
+	return fmt.Sprintf("http://%s/%s/%s", host, apiPath, audioUrlPath)
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {

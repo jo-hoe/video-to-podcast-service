@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
@@ -88,8 +87,7 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 		return nil, fmt.Errorf("expected file but got directory: %s", podcastItem.AudioFilePath)
 	}
 
-	parentDirectory := getParentDirectory(podcastItem.AudioFilePath, fp.coreservice.GetAudioSourceDirectory(), fileinfo.Name())
-	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, parentDirectory, fileinfo.Name())
+	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, podcastItem.AudioFilePath)
 
 	return &feeds.Item{
 		Id:          podcastItem.ID,
@@ -105,14 +103,6 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 			Length: fmt.Sprintf("%d", podcastItem.DurationInMilliseconds),
 		},
 	}, nil
-}
-
-func getParentDirectory(audioFilePath string, rootFilePath string, fileName string) string {
-	parentDirectory := strings.ReplaceAll(audioFilePath, rootFilePath, "")
-	parentDirectory = strings.ReplaceAll(parentDirectory, fileName, "")
-	parentDirectory = strings.TrimPrefix(parentDirectory, string(os.PathSeparator))
-	parentDirectory = strings.TrimSuffix(parentDirectory, string(os.PathSeparator))
-	return parentDirectory
 }
 
 func (fp *FeedService) createFeed(host, author string) *feeds.Feed {
