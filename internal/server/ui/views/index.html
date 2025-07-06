@@ -3,24 +3,25 @@
 <html lang="en">
 
 <head>
-    <title></title>
+    <title>Video to Podcast Service</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/simpledotcss/simple.min.css">
     <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
     <style>
-        /* Minimal spinner CSS for HTMX indicator */
         .spinner {
             display: none;
         }
-
         .spinner.htmx-request {
             display: inline-block;
         }
-
         .spinner img {
             width: 20px;
             height: 20px;
+        }
+        .thumbnail {
+            width: 60px;
+            height: 45px;
         }
     </style>
 </head>
@@ -28,6 +29,8 @@
 <body>
     <main>
         <h1>Video to Podcast Service</h1>
+        
+        <!-- Form Section -->
         <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
             hx-encoding="json" hx-indicator="#loading-indicator">
             <label for="videoUrl">Video URL:</label>
@@ -40,6 +43,51 @@
             </span>
         </form>
         <section id="result"></section>
+
+        <!-- Podcast Items Table -->
+        <section>
+            <h2>Available Items</h2>
+            {{if .PodcastItems}}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thumbnail</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Duration</th>
+                            <th>Updated</th>
+                            <th>Video</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range .PodcastItems}}
+                        <tr>
+                            <td>
+                                {{if .Thumbnail}}
+                                    <img src="{{.Thumbnail}}" alt="Thumbnail" class="thumbnail">
+                                {{else}}
+                                    No Image
+                                {{end}}
+                            </td>
+                            <td>{{.Title}}</td>
+                            <td>{{.Author}}</td>
+                            <td>{{formatDuration .DurationInMilliseconds}}</td>
+                            <td>{{.UpdatedAt.Format "2006-01-02 15:04"}}</td>
+                            <td>
+                                {{if .VideoURL}}
+                                    <a href="{{.VideoURL}}" target="_blank">View</a>
+                                {{else}}
+                                    -
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            {{else}}
+                <p><em>No podcast items found. Add a video URL above to get started!</em></p>
+            {{end}}
+        </section>
     </main>
 </body>
 

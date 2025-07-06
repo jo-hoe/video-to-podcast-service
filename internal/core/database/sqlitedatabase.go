@@ -58,7 +58,8 @@ func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
 		duration_in_milliseconds INTEGER,
 		video_url TEXT,
 		audio_file_path TEXT,
-		created_at DATETIME
+		created_at DATETIME,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`, defaultDatabaseName)
 	_, err = db.Exec(createTableStmt)
 	if err != nil {
@@ -85,21 +86,21 @@ func (s *SQLiteDatabase) DoesDatabaseExist() bool {
 
 func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
 	stmt, err := s.db.Prepare(fmt.Sprintf(`INSERT OR REPLACE INTO %s (
-		id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, defaultDatabaseName))
+		id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at, updated_at
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, defaultDatabaseName))
 	if err != nil {
 		return err
 	}
 	defer func() { _ = stmt.Close() }()
 	_, err = stmt.Exec(
 		item.ID, item.Title, item.Description, item.Author, item.Thumbnail,
-		item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt,
+		item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt, item.UpdatedAt,
 	)
 	return err
 }
 
 func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
-	rows, err := s.db.Query(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at FROM %s`, defaultDatabaseName))
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at, updated_at FROM %s`, defaultDatabaseName))
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	var items []*PodcastItem
 	for rows.Next() {
 		item := &PodcastItem{}
-		err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt)
+		err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
