@@ -16,6 +16,7 @@ func TestCreateFeed(t *testing.T) {
 		feedBasePort string
 		feedItemPath string
 		feedAuthor   string
+		feedHost     string
 		coreService  *core.CoreService
 	}
 	tests := []struct {
@@ -29,11 +30,12 @@ func TestCreateFeed(t *testing.T) {
 				feedBasePort: "443",
 				feedItemPath: "v1/feeds",
 				feedAuthor:   defaultAuthor,
+				feedHost:     "localhost",
 				coreService:  core.NewCoreService(&database.MockDatabase{}, "testDir"),
 			},
 			want: &feeds.Feed{
 				Title:       defaultAuthor,
-				Link:        &feeds.Link{Href: "/v1/feeds/John%20Doe/rss.xml"},
+				Link:        &feeds.Link{Href: "localhost/v1/feeds/John%20Doe/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
 				Author:      &feeds.Author{Name: defaultAuthor},
 			},
@@ -46,7 +48,7 @@ func TestCreateFeed(t *testing.T) {
 				feedBasePort: tt.fields.feedBasePort,
 				feedItemPath: tt.fields.feedItemPath,
 			}
-			if got := fp.createFeed(tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
+			if got := fp.createFeed(tt.fields.feedHost, tt.fields.feedAuthor); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createFeed() = %v, want %v", got, tt.want)
 			}
 		})
