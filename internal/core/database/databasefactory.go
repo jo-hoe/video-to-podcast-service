@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 )
@@ -18,11 +19,13 @@ func NewDatabase(connectionString string, resourcePath string) (database Databas
 	}
 
 	if !dbInstance.DoesDatabaseExist() {
+		log.Print("database does not exist, creating new database")
 		_, err = dbInstance.CreateDatabase()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create database: %w", err)
 		}
 	} else {
+		log.Print("database already exists, skipping creation.")
 		_, err = dbInstance.InitializeDatabase()
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize database: %w", err)
@@ -50,23 +53,24 @@ func addPreexistingElements(database DatabaseService, resourcePath string) {
 		return
 	}
 
+	log.Print("discovering preexisting audio files in resource path: ", resourcePath)
 	filePaths, err := filemanagement.GetAudioFiles(resourcePath)
 
 	if err != nil {
-		fmt.Printf("Error initializing database while retrieving audio files: %v\n", err)
+		fmt.Printf("error initializing database while retrieving audio files: %v\n", err)
 		return
 	}
 
 	for _, file := range filePaths {
 		podcastItem, err := NewPodcastItem(file)
 		if err != nil {
-			fmt.Printf("Error creating podcast item for file %s: %v\n", file, err)
+			fmt.Printf("error creating podcast item for file %s: %v\n", file, err)
 			continue
 		}
 
 		err = database.CreatePodcastItem(podcastItem)
 		if err != nil {
-			fmt.Printf("Error saving podcast item for file %s: %v\n", file, err)
+			fmt.Printf("error saving podcast item for file %s: %v\n", file, err)
 		}
 	}
 }
