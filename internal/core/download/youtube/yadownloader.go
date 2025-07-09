@@ -102,11 +102,11 @@ func setMetadata(fullFilePath string) (err error) {
 }
 
 func getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := ytdlp.New().GetThumbnail()
+	dl := ytdlp.New().Print("thumbnail")
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
 	if err != nil {
-		log.Printf("error getting thumbnail rul from '%s': '%v'", videoUrl, err)
+		log.Printf("error getting thumbnail url from '%s': '%v'", videoUrl, err)
 		return result, err
 	}
 	for _, output := range cliOutput.OutputLogs {
