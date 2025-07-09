@@ -13,7 +13,6 @@ Video To Podcast Service is a backend service that downloads video files (curren
 - Organize audio files into podcast feeds (one feed per channel)
 - Serve podcast feeds as RSS for use in podcast apps
 - REST API for adding, listing, retrieving, and deleting podcast items
-- Automatic cleanup of empty feed directories
 - Dockerized for easy deployment
 
 ## How to Use
