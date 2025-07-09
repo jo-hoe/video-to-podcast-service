@@ -23,6 +23,16 @@
             height: 20px;
             vertical-align: middle;
         }
+
+        /* Style for the disabled button */
+        button.htmx-request {
+            pointer-events: none;
+            /* Disables click events */
+            opacity: 0.6;
+            /* Visually dims the button */
+            cursor: not-allowed;
+            /* Changes cursor to indicate it's not clickable */
+        }
     </style>
 </head>
 
@@ -31,17 +41,18 @@
         <h1>Video to Podcast Service</h1>
 
         <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
-            hx-encoding="json" hx-indicator="#loading-indicator">
+            hx-encoding="json" hx-indicator="#loading-indicator, #submit-button">
             <input type="url" id="videoUrl" name="url" required placeholder="Enter video URL">
-            <button type="submit">Submit</button>
+            <button type="submit" id="submit-button">Submit</button>
             <span id="loading-indicator" class="spinner" aria-busy="true" style="margin-left:10px;"></span>
         </form>
-        <section id="result"></section> <section>
+        <section id="result"></section>
+        <section>
             <h2>Available Items</h2>
             {{if .PodcastItems}}
             <div>
                 {{range .PodcastItems}}
-                <article id="podcast-{{.ID}}"> 
+                <article id="podcast-{{.ID}}">
                     <div>
                         {{if .Thumbnail}}
                         {{if .VideoURL}}
@@ -55,12 +66,12 @@
                         <p>No Image</p>
                         {{end}}
                     </div>
-                    
+
                     <h3>{{.Title}}</h3>
                     <p><strong>Author:</strong> {{.Author}}</p>
                     <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
                     <p><strong>Updated:</strong> {{.UpdatedAt.Format "2006-01-02 15:04"}}</p>
-                    
+
                     <div>
                         {{if .Title}}
                         <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS Feed</a>
