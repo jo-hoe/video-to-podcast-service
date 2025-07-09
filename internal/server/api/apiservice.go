@@ -13,7 +13,6 @@ import (
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
 	"github.com/labstack/echo/v4"
 )
@@ -220,14 +219,16 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to retrieve podcast items")
 	}
 
-	var result *database.PodcastItem
+	foundItem := false
+	// loop through all podcast items to find the one with the expected audio file path
+	// this can be optimized by introducing a dedicated method in the database service to find a podcast item by its audio file path
 	for _, item := range podcastItems {
 		if equalPath(item.AudioFilePath, expectedPath) {
-			result = item
+			foundItem = true
 			break
 		}
 	}
-	if result == nil {
+	if !foundItem {
 		log.Printf("audio file not found for feed %s and audio file %s", decodedFeedTitle, decodedAudioFileName)
 		return echo.NewHTTPError(http.StatusNotFound, "audio file not found")
 	}
