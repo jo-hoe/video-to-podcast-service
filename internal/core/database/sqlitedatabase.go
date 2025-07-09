@@ -130,6 +130,23 @@ func (m *SQLiteDatabase) DeletePodcastItem(id string) error {
 	return nil
 }
 
+func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
+	stmt, err := s.db.Prepare(fmt.Sprintf(`SELECT id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at, updated_at FROM %s WHERE id = ?`, defaultDatabaseName))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = stmt.Close() }()
+	item := &PodcastItem{}
+	err = stmt.QueryRow(id).Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("podcast item with id %s not found", id)
+		}
+		return nil, err
+	}
+	return item, nil
+}
+
 // Close closes the database connection.
 func (s *SQLiteDatabase) CloseConnection() error {
 	return s.db.Close()

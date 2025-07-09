@@ -80,6 +80,19 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	return nil
 }
 
+func (cs *CoreService) GetFeedDirectory(audioFilePath string) (string, error) {
+	if audioFilePath == "" {
+		return "", fmt.Errorf("audio file path is empty")
+	}
+	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
+	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
+	if len(parts) < 2 {
+		return "", fmt.Errorf("audio file path '%s' does not contain a valid parent folder", audioFilePath)
+	}
+	parentFolder := strings.Join(parts[:len(parts)-1], string(os.PathSeparator))
+	return parentFolder, nil
+}
+
 // handleDownload performs the download and podcast item creation with improved error handling and less nesting
 func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDownloader) {
 	const maxErrorCount = 4

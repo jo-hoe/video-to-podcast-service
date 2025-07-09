@@ -22,7 +22,7 @@ const (
 )
 
 type APIService struct {
-	coreservice *core.CoreService
+	coreService *core.CoreService
 	defaultPort string
 }
 
@@ -36,7 +36,7 @@ type DownloadItems struct {
 
 func NewAPIService(coreservice *core.CoreService, defaultPort string) *APIService {
 	return &APIService{
-		coreservice: coreservice,
+		coreService: coreservice,
 		defaultPort: defaultPort,
 	}
 }
@@ -47,9 +47,41 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.GET(FeedsPath, service.feedsHandler)
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
+	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.feedHandler)
 
 	// Set probe route
 	e.GET("/", service.probeHandler)
+}
+
+func (service *APIService) deleteFeedItem(ctx echo.Context) error {
+	// validate podcastItemID
+	podcastItemID := ctx.Param("podcastItemID")
+	if podcastItemID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "itemItemID is required")
+	}
+
+	databaseService := service.coreService.GetDatabaseService()
+	podcastItem, err := databaseService.GetPodcastItemByID(podcastItemID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("no podcast item found with ID %s", podcastItemID))
+	}
+
+	// validate feedTitle
+	feedTitle := ctx.Param("feedTitle")
+	if feedTitle == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
+	}
+	feedDirectory, err := service.coreService.GetFeedDirectory(podcastItem.AudioFilePath)
+	if err != nil || podcastItem == nil || feedTitle != feedDirectory {
+		return echo.NewHTTPError(http.StatusNotFound, "feed item not found")
+	}
+
+	err = databaseService.DeletePodcastItem(podcastItemID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to delete podcast item with ID %s", podcastItemID))
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
@@ -76,7 +108,7 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 	}
 
 	for _, url := range downloadItems.URLS {
-		err = service.coreservice.DownloadItemsHandler(url)
+		err = service.coreService.DownloadItemsHandler(url)
 		if err != nil {
 			return err
 		}
@@ -119,14 +151,14 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		return err
 	}
 
-	pocastItems, err := service.coreservice.GetDatabaseService().GetAllPodcastItems()
+	pocastItems, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
 		return err
 	}
 
 	foundFile := ""
 	for _, audioFile := range pocastItems {
-		if audioFile.AudioFilePath == filepath.Join(service.coreservice.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
+		if audioFile.AudioFilePath == filepath.Join(service.coreService.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
 			foundFile = audioFile.AudioFilePath
 			break
 		}
@@ -170,5 +202,5 @@ func (service *APIService) probeHandler(ctx echo.Context) (err error) {
 func (service *APIService) getFeedService() *feed.FeedService {
 	port := common.ValueOrDefault(os.Getenv("PORT"), service.defaultPort)
 
-	return feed.NewFeedService(service.coreservice, port, FeedsPath)
+	return feed.NewFeedService(service.coreService, port, FeedsPath)
 }

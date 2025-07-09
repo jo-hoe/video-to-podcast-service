@@ -25,7 +25,6 @@ func StartServer(databaseService database.DatabaseService, resourcePath string) 
 	defaultResourcePath = resourcePath
 
 	e := echo.New()
-
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
