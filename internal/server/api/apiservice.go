@@ -232,7 +232,7 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "audio file not found")
 	}
 
-	return ctx.File(result.AudioFilePath)
+	return ctx.File(expectedPath)
 }
 
 // equalPath compares two paths for equality, case-insensitive on Windows, and normalizes separators.
