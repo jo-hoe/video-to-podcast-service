@@ -16,24 +16,6 @@ Video To Podcast Service is a backend service that downloads video files (curren
 - Automatic cleanup of empty feed directories
 - Dockerized for easy deployment
 
-## Prerequisites
-
-- [Docker](https://docs.docker.com/engine/install/)
-
-### Optional
-
-- [Python](https://www.python.org/) (used only as starting script)
-
-Run the project using `make`. Make is typically installed by default on Linux and Mac.
-
-If you do not have it and run on Windows, you can directly install it from [gnuwin32](https://gnuwin32.sourceforge.net/packages/make.htm) or via `winget`
-
-```PowerShell
-winget install GnuWin32.Make
-```
-
-If you want to run the project without Docker, you can install [Golang](https://go.dev/doc/install)
-
 ## How to Use
 
 ### Start the Service
@@ -58,7 +40,6 @@ make start-service
 # or
 make start-services-rebuild
 ```
-
 
 ### Resources
 
