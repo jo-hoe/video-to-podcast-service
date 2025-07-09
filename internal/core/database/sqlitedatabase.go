@@ -117,6 +117,19 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	return items, nil
 }
 
+func (m *SQLiteDatabase) DeletePodcastItem(id string) error {
+	stmt, err := m.db.Prepare(fmt.Sprintf(`DELETE FROM %s WHERE id = ?`, defaultDatabaseName))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = stmt.Close() }()
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return fmt.Errorf("failed to delete podcast item with id %s: %w", id, err)
+	}
+	return nil
+}
+
 // Close closes the database connection.
 func (s *SQLiteDatabase) CloseConnection() error {
 	return s.db.Close()

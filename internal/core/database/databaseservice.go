@@ -9,4 +9,5 @@ type DatabaseService interface {
 
 	CreatePodcastItem(item *PodcastItem) error // CreatePodcastItem creates a new podcast item in the database and overwrites it if it already exists.
 	GetAllPodcastItems() ([]*PodcastItem, error)
+	DeletePodcastItem(id string) error
 }
