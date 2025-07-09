@@ -33,6 +33,24 @@
             cursor: not-allowed;
             /* Changes cursor to indicate it's not clickable */
         }
+
+        /* Ensure images within the grid column don't overflow */
+        .grid>div>img,
+        .grid>div>a>img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Adjust thumbnail max-height for better layout within card */
+        .thumbnail-container img {
+            max-height: 120px;
+            /* Adjust as needed */
+            width: auto;
+            display: block;
+            /* Remove extra space below image */
+            margin: 0 auto;
+            /* Center image if smaller than container */
+        }
     </style>
 </head>
 
@@ -53,37 +71,45 @@
             <div>
                 {{range .PodcastItems}}
                 <article id="podcast-{{.ID}}">
-                    <div>
-                        {{if .Thumbnail}}
-                        {{if .VideoURL}}
-                        <a href="{{.VideoURL}}" target="_blank">
-                            <img src="{{.Thumbnail}}" alt="Thumbnail" style="max-height: 8em; height: auto;">
-                        </a>
-                        {{else}}
-                        <img src="{{.Thumbnail}}" alt="Thumbnail">
-                        {{end}}
-                        {{else}}
-                        <p>No Image</p>
-                        {{end}}
-                    </div>
+                    <div class="grid">
+                        <div class="thumbnail-container">
+                            {{if .Thumbnail}}
+                            {{if .VideoURL}}
+                            <a href="{{.VideoURL}}" target="_blank">
+                                <img src="{{.Thumbnail}}" alt="Thumbnail">
+                            </a>
+                            {{else}}
+                            <img src="{{.Thumbnail}}" alt="Thumbnail">
+                            {{end}}
+                            {{else}}
+                            <p>No Image</p>
+                            {{end}}
+                        </div>
+                        <div>
+                            <h3>{{.Title}}</h3>
+                            <p><strong>Author:</strong> {{.Author}}</p>
+                            <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
+                            <p><strong>Updated:</strong> {{.UpdatedAt.Format "2006-01-02 15:04"}}</p>
 
-                    <h3>{{.Title}}</h3>
-                    <p><strong>Author:</strong> {{.Author}}</p>
-                    <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
-                    <p><strong>Updated:</strong> {{.UpdatedAt.Format "2006-01-02 15:04"}}</p>
-
-                    <div>
-                        {{if .Title}}
-                        <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS Feed</a>
-                        {{else}}
-                        <span>-</span>
-                        {{end}}
-                        <form method="DELETE" hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
-                            hx-target="#podcast-{{.ID}}" hx-swap="outerHTML remove">
-                            <button type="submit" aria-label="Delete" title="Delete">
-                                &#128465;
-                            </button>
-                        </form>
+                            <div class="grid"> <!-- Nested grid for RSS and Delete button -->
+                                <div>
+                                    {{if .Title}}
+                                    <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS Feed</a>
+                                    {{else}}
+                                    <span>-</span>
+                                    {{end}}
+                                </div>
+                                <div style="text-align: right;"> <!-- Align delete button to the right -->
+                                    <form method="DELETE"
+                                        hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
+                                        hx-target="#podcast-{{.ID}}" hx-swap="outerHTML remove">
+                                        <button type="submit" aria-label="Delete" title="Delete">
+                                            &#128465;
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </article>
                 {{end}}
