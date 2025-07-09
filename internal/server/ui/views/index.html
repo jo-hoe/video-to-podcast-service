@@ -43,7 +43,7 @@
 
         /* Adjust thumbnail max-height for better layout within card */
         .thumbnail-container img {
-            max-height: 120px;
+            max-height: 16em;
             /* Adjust as needed */
             width: auto;
             display: block;
@@ -72,7 +72,8 @@
                 {{range .PodcastItems}}
                 <article id="podcast-{{.ID}}">
                     <div class="grid">
-                        <div class="thumbnail-container" style="display: flex; align-items: center;">
+                        <div class="thumbnail-container"
+                            style="display: flex; align-items: center; justify-content: center;">
                             {{if .Thumbnail}}
                             {{if .VideoURL}}
                             <a href="{{.VideoURL}}" target="_blank">
