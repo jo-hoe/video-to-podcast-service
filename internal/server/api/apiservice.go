@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
@@ -46,42 +48,59 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.POST(addItemPaths, service.addItemsHandler)
 	e.GET(FeedsPath, service.feedsHandler)
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
-	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
-	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.feedHandler)
+	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID/:audioFileName"), service.audioFileHandler)
+	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.deleteFeedItem)
 
 	// Set probe route
 	e.GET("/", service.probeHandler)
 }
 
 func (service *APIService) deleteFeedItem(ctx echo.Context) error {
-	// validate podcastItemID
 	podcastItemID := ctx.Param("podcastItemID")
-	if podcastItemID == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "itemItemID is required")
-	}
-
-	databaseService := service.coreService.GetDatabaseService()
-	podcastItem, err := databaseService.GetPodcastItemByID(podcastItemID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("no podcast item found with ID %s", podcastItemID))
-	}
-
-	// validate feedTitle
 	feedTitle := ctx.Param("feedTitle")
-	if feedTitle == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
-	}
-	feedDirectory, err := service.coreService.GetFeedDirectory(podcastItem.AudioFilePath)
-	if err != nil || podcastItem == nil || feedTitle != feedDirectory {
-		return echo.NewHTTPError(http.StatusNotFound, "feed item not found")
+	validationError := service.validateItemPathComponents(podcastItemID, feedTitle)
+	if validationError != nil {
+		return validationError
 	}
 
-	err = databaseService.DeletePodcastItem(podcastItemID)
+	err := service.coreService.GetDatabaseService().DeletePodcastItem(podcastItemID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("failed to delete podcast item with ID %s", podcastItemID))
 	}
 
 	return ctx.NoContent(http.StatusOK)
+}
+
+func (service *APIService) validateItemPathComponents(podcastItemID string, feedTitle string) *echo.HTTPError {
+	// validate podcastItemID
+	if podcastItemID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "podcastItemID is required")
+	}
+
+	databaseService := service.coreService.GetDatabaseService()
+	podcastItem, err := databaseService.GetPodcastItemByID(podcastItemID)
+	if err != nil || podcastItem == nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("no podcast item found with ID %s", podcastItemID))
+	}
+
+	// validate feedTitle
+	if feedTitle == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
+	}
+
+	feedDirectory, err := service.coreService.GetFeedDirectory(podcastItem.AudioFilePath)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "feed item not found (feed directory error)")
+	}
+
+	// Normalize both for comparison (case-insensitive, unescape)
+	normFeedTitle, _ := url.PathUnescape(feedTitle)
+	normFeedDirectory, _ := url.PathUnescape(feedDirectory)
+	if !equalPath(normFeedTitle, normFeedDirectory) {
+		return echo.NewHTTPError(http.StatusNotFound, "feed item not found (feed title mismatch)")
+	}
+
+	return nil
 }
 
 func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
@@ -134,41 +153,59 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 }
 
 func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
-	feedTitle := ctx.Param("feedTitle")
-	if feedTitle == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
-	}
-	decodedFeedTitle, err := url.QueryUnescape(feedTitle)
+	decodedFeedTitle, err := service.getPathAttributeValue(ctx, "feedTitle")
 	if err != nil {
 		return err
 	}
-	audioFileName := ctx.Param("audioFileName")
-	if audioFileName == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "audioFileName is required")
-	}
-	decodedAudioFileName, err := url.QueryUnescape(audioFileName)
+	decodedAudioFileName, err := service.getPathAttributeValue(ctx, "audioFileName")
 	if err != nil {
 		return err
 	}
 
-	pocastItems, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
+	decodedPodcastItemID, err := service.getPathAttributeValue(ctx, "podcastItemID")
+	if err != nil {
+		return err
+	}
+	validationError := service.validateItemPathComponents(decodedPodcastItemID, decodedFeedTitle)
+	if validationError != nil {
+		return validationError
+	}
+
+	podcastItem, err := service.coreService.GetDatabaseService().GetPodcastItemByID(decodedPodcastItemID)
 	if err != nil {
 		return err
 	}
 
-	foundFile := ""
-	for _, audioFile := range pocastItems {
-		if audioFile.AudioFilePath == filepath.Join(service.coreService.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName) {
-			foundFile = audioFile.AudioFilePath
-			break
-		}
+	expectedPath := filepath.Clean(filepath.Join(service.coreService.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName))
+	actualPath := filepath.Clean(podcastItem.AudioFilePath)
+	if !equalPath(expectedPath, actualPath) {
+		return echo.NewHTTPError(http.StatusNotFound, "audio file not found (path mismatch)")
 	}
 
-	if foundFile == "" {
-		return echo.NewHTTPError(http.StatusNotFound, "audio file not found")
-	}
+	return ctx.File(podcastItem.AudioFilePath)
 
-	return ctx.File(foundFile)
+}
+
+// equalPath compares two paths for equality, case-insensitive on Windows, and normalizes separators.
+func equalPath(a, b string) bool {
+	ca := filepath.Clean(a)
+	cb := filepath.Clean(b)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(ca, cb)
+	}
+	return ca == cb
+}
+
+func (*APIService) getPathAttributeValue(ctx echo.Context, attributeName string) (string, error) {
+	attributeValue := ctx.Param(attributeName)
+	if attributeValue == "" {
+		return "", echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("%s is required", attributeName))
+	}
+	decodedFeedTitle, err := url.PathUnescape(attributeValue)
+	if err != nil {
+		return "", err
+	}
+	return decodedFeedTitle, nil
 }
 
 func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
