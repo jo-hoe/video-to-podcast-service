@@ -12,13 +12,16 @@
         .spinner {
             display: none;
         }
+
         .spinner.htmx-request {
             display: inline-block;
         }
+
         .spinner img {
             width: 20px;
             height: 20px;
         }
+
         .thumbnail {
             width: 60px;
             height: 45px;
@@ -29,7 +32,7 @@
 <body>
     <main>
         <h1>Video to Podcast Service</h1>
-        
+
         <!-- Form Section -->
         <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
             hx-encoding="json" hx-indicator="#loading-indicator">
@@ -48,52 +51,60 @@
         <section>
             <h2>Available Items</h2>
             {{if .PodcastItems}}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Thumbnail</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>Duration</th>
-                            <th>Updated</th>
-                            <th>Video</th>
-                            <th>Feed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range .PodcastItems}}
-                        <tr>
-                            <td>
-                                {{if .Thumbnail}}
-                                    <img src="{{.Thumbnail}}" alt="Thumbnail" class="thumbnail">
-                                {{else}}
-                                    No Image
-                                {{end}}
-                            </td>
-                            <td>{{.Title}}</td>
-                            <td>{{.Author}}</td>
-                            <td>{{formatDuration .DurationInMilliseconds}}</td>
-                            <td>{{.UpdatedAt.Format "2006-01-02 15:04"}}</td>
-                            <td>
-                                {{if .VideoURL}}
-                                    <a href="{{.VideoURL}}" target="_blank">View</a>
-                                {{else}}
-                                    -
-                                {{end}}
-                            </td>
-                            <td>
-                                {{if .Title}}
-                                    <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS</a>
-                                {{else}}
-                                    -
-                                {{end}}
-                            </td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Thumbnail</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Duration</th>
+                        <th>Updated</th>
+                        <th>Feed</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .PodcastItems}}
+                    <tr>
+                        <td>
+                            {{if .Thumbnail}}
+                            {{if .VideoURL}}
+                            <a href="{{.VideoURL}}" target="_blank">
+                                <img src="{{.Thumbnail}}" alt="Thumbnail" class="thumbnail">
+                            </a>
+                            {{else}}
+                            <img src="{{.Thumbnail}}" alt="Thumbnail" class="thumbnail">
+                            {{end}}
+                            {{else}}
+                            No Image
+                            {{end}}
+                        </td>
+                        <td>{{.Title}}</td>
+                        <td>{{.Author}}</td>
+                        <td>{{formatDuration .DurationInMilliseconds}}</td>
+                        <td>{{.UpdatedAt.Format "2006-01-02 15:04"}}</td>
+                        <td>
+                            {{if .Title}}
+                            <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS</a>
+                            {{else}}
+                            -
+                            {{end}}
+                        </td>
+                        <td>
+                            <form method="DELETE" hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
+                                hx-target="closest tr" hx-swap="outerHTML remove">
+                                <button type="submit" aria-label="Delete" title="Delete"
+                                    style="background:none;border:none;color:#c00;cursor:pointer;font-size:1.2em;">
+                                    &#128465;
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
             {{else}}
-                <p><em>No podcast items found. Add a video URL above to get started!</em></p>
+            <p><em>No podcast items found. Add a video URL above to get started!</em></p>
             {{end}}
         </section>
     </main>

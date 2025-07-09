@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"sort"
 	"text/template"
 
@@ -33,8 +34,9 @@ func NewUIService(coreservice *core.CoreService) *UIService {
 func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	// Create template with helper functions
 	funcMap := template.FuncMap{
-		"formatDuration": formatDuration,
-		"getFeedLink":    service.getFeedLink,
+		"formatDuration":       formatDuration,
+		"getFeedLink":          service.getFeedLink,
+		"getFeedTitleFromPath": getFeedTitleFromPath,
 	}
 
 	e.Renderer = &Template{
@@ -43,6 +45,12 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	// Set UI routes
 	e.GET(MainPageName, service.indexHandler)
 	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
+}
+
+// Helper function to extract feed title from audio file path
+func getFeedTitleFromPath(path string) string {
+	// Assumes feed title is the parent directory of the audio file
+	return filepath.Base(filepath.Dir(path))
 }
 
 func (service *UIService) indexHandler(ctx echo.Context) (err error) {
