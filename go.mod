@@ -7,7 +7,8 @@ require (
 	github.com/gorilla/feeds v1.2.0
 	github.com/jo-hoe/mp3-joiner v0.0.0-20240816144805-0e151d4eda80
 	github.com/labstack/echo/v4 v4.13.4
-	github.com/lrstanley/go-ytdlp v0.0.0-20250131232431-973bd5e3acef
+	github.com/lrstanley/go-ytdlp v1.1.0
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.41.0
 )
@@ -24,10 +25,10 @@ require (
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/u2takey/go-utils v0.3.1 // indirect
+	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
