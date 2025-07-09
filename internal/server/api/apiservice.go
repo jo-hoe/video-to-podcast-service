@@ -290,5 +290,3 @@ func (service *APIService) getFeedService() *feed.FeedService {
 
 	return feed.NewFeedService(service.coreService, port, FeedsPath)
 }
-
-//
