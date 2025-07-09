@@ -246,16 +246,13 @@ func equalPath(a, b string) bool {
 	return ca == cb
 }
 
+// getPathAttributeValue returns a decoded path parameter or an error if missing/invalid.
 func (*APIService) getPathAttributeValue(ctx echo.Context, attributeName string) (string, error) {
-	attributeValue := ctx.Param(attributeName)
-	if attributeValue == "" {
-		return "", echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("%s is required", attributeName))
+	value := ctx.Param(attributeName)
+	if value == "" {
+		return "", echo.NewHTTPError(http.StatusBadRequest, attributeName+" is required")
 	}
-	decodedFeedTitle, err := url.PathUnescape(attributeValue)
-	if err != nil {
-		return "", err
-	}
-	return decodedFeedTitle, nil
+	return url.PathUnescape(value)
 }
 
 func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
