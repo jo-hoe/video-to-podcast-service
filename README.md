@@ -5,9 +5,16 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/jo-hoe/video-to-podcast-service)](https://goreportcard.com/report/github.com/jo-hoe/video-to-podcast-service)
 [![Coverage Status](https://coveralls.io/repos/github/jo-hoe/video-to-podcast-service/badge.svg?branch=main)](https://coveralls.io/github/jo-hoe/video-to-podcast-service?branch=main)
 
-A service that can download video files, transform them into audio files, and then convert them to RSS audio podcast feeds.
+Video To Podcast Service is a backend service that downloads video files (currently only from YouTube), extracts and converts them into audio files, and organizes them into podcast feeds accessible via RSS. The service exposes a REST API for adding new videos, listing available podcast feeds, retrieving audio files, and deleting podcast items.
 
-Currently, the service only supports YouTube videos.
+**Key Features:**
+
+- Download videos (YouTube supported) and convert to audio (MP3)
+- Organize audio files into podcast feeds (one feed per channel)
+- Serve podcast feeds as RSS for use in podcast apps
+- REST API for adding, listing, retrieving, and deleting podcast items
+- Automatic cleanup of empty feed directories
+- Dockerized for easy deployment
 
 ## Prerequisites
 
@@ -29,97 +36,62 @@ If you want to run the project without Docker, you can install [Golang](https://
 
 ## How to Use
 
-### Start only this Service
+### Start the Service
 
-You can use `make` to start the service
+You can start the service using `make` (recommended):
 
 ```bash
 make start
 ```
 
-Or just use native docker commands. E.g.
+Or use Docker directly:
 
 ```bash
 docker build . -t v2p
 docker run --rm -p 8080:8080 v2p
 ```
 
+Or with Docker Compose (includes optional mail webhook):
+
+```bash
+make start-service
+# or
+make start-services-rebuild
+```
+
+
 ### Resources
 
-All downloaded resources will be placed in directories `resources`.
-Podcasts will be structured in directories with the name of the channel the video belongs to.
+All downloaded resources are placed in the `resources` directory. Podcasts are organized in subdirectories named after the channel the video belongs to. Each feed has its own directory containing audio files and the RSS XML.
 
-## Example Requests
+## API Usage
 
-Below are a few examples of requests to the service.
-
-### Add Items
-
-These APIs can be used to add videos to the service.
-Note that the service accepts individual video links and a playlist.
-
-#### Add Single Item
-
-```bash
-curl -H "Content-Type: application/json" --data '{"url":"https://www.youtube.com/playlist?list=PLXqZLJI1Rpy_x_piwxi9T-UlToz3UGdM-"}' http://localhost:8080/v1/addItem
-```
-
-#### Add Multiple Items
-
-```bash
-curl -H "Content-Type: application/json" --data '{"urls":["https://www.youtube.com/watch?v=BRnwg3dpboc", "https://www.youtube.com/watch?v=_fWrJ4WHz_g"]}' http://localhost:8080/v1/addItems
-```
-
-### Get All Feeds
-
-Use this API to get a list of all feeds.
-
-```bash
-curl -H "Content-Type: application/json" http://localhost:8080/v1/feeds
-```
-
-### Start with EMail Webhook
-
-This option allows you to start an additional service that continuously pulls an email address and uses the mail link in the content of unread mails as input for the service.
-The configuration of this service is described [in this .yaml](https://github.com/jo-hoe/video-to-podcast-service/blob/main/mail-webhook-config/config.yaml).
+The service exposes a REST API. See [`openapi.yaml`](./openapi.yaml) for the full OpenAPI/Swagger specification.
 
 ## Linting
 
-The project uses golangci-lint for linting.
+The project uses `golangci-lint` for linting. See <https://golangci-lint.run/usage/install/> for installation instructions.
 
-### Installation
-
-See <https://golangci-lint.run/usage/install/>
-
-### Execution
-
-Run the linting locally by executing
+To run linting locally:
 
 ```bash
 golangci-lint run ./...
 ```
 
-in the working directory.
-
 ## Limitations
 
-Google blocks certain IPs.
-This includes IPs form hyperscalers (such as AWS).
-Trying to download youtube videos from such a IP results in an error such as `403`.
-The lib used in this project returns `Error:can't bypass age restriction: login required to confirm your age`.
-You can find more details regarding this issue [in this github issue](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479).
+- Only YouTube is supported as a video source.
+- Google may block certain IPs (e.g., from cloud providers), resulting in errors like `403` or age restriction issues. See [this GitHub issue](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479) for more details.
 
 ## Future Work
 
-- one can implement itunes tags to get a pic for each podcast element (however, the lib does not support this, implementation requires generating the xml and not using lib)
-  - example `<itunes:image href="http://....png"/>`
-- create `index.html` with all podcasts and qr codes
-- provide ticketing return/progression via api
-- set length in podcast
-- allow to set the target name of the podcast channel via api
-- auto chapterize videos without chapters
+- Add iTunes to
+  - add tags for podcast images (requires custom XML generation)
+  - set length in podcast metadata
+- Provide ticketing/progress feedback via API
+- Auto-chapterize videos without chapters
 
 ## Relevant Links
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
-- [example podcast](https://feeds.libsyn.com/230510/rss)
+- [Example podcast](https://feeds.libsyn.com/230510/rss)

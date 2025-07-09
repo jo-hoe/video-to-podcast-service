@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: Video to Podcast Service API
+  version: 1.0.0
+  description: API for managing podcast feeds and items.
+servers:
+  - url: http://localhost:8080
+paths:
+  /v1/addItems:
+    post:
+      summary: Add podcast items by URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                urls:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - urls
+      responses:
+        '204':
+          description: Items added successfully
+        '400':
+          description: Invalid request body or data
+        '500':
+          description: Failed to process download item
+  /v1/feeds:
+    get:
+      summary: List all podcast feed links
+      responses:
+        '200':
+          description: List of feed links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '500':
+          description: Failed to get feeds
+  /v1/feeds/{feedTitle}/rss.xml:
+    get:
+      summary: Get RSS feed for a given feed title
+      parameters:
+        - in: path
+          name: feedTitle
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: RSS feed XML
+          content:
+            application/xml:
+              schema:
+                type: string
+        '404':
+          description: Feed not found
+        '500':
+          description: Failed to generate RSS
+  /v1/feeds/{feedTitle}/{audioFileName}:
+    get:
+      summary: Download audio file for a feed
+      parameters:
+        - in: path
+          name: feedTitle
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: audioFileName
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audio file
+          content:
+            audio/mpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Audio file not found
+        '500':
+          description: Failed to retrieve podcast items
+  /v1/feeds/{feedTitle}/{podcastItemID}:
+    delete:
+      summary: Delete a podcast item and its audio file
+      parameters:
+        - in: path
+          name: feedTitle
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: podcastItemID
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Podcast item deleted
+        '400':
+          description: Invalid podcast item or feed title
+        '404':
+          description: Feed item not found
+        '500':
+          description: Failed to delete podcast item or internal error
+  /:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is running
+components:
+  schemas:
+    DownloadItems:
+      type: object
+      properties:
+        urls:
+          type: array
+          items:
+            type: string
+      required:
+        - urls
