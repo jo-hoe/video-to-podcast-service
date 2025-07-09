@@ -72,7 +72,7 @@
                 {{range .PodcastItems}}
                 <article id="podcast-{{.ID}}">
                     <div class="grid">
-                        <div class="thumbnail-container">
+                        <div class="thumbnail-container" style="display: flex; align-items: center;">
                             {{if .Thumbnail}}
                             {{if .VideoURL}}
                             <a href="{{.VideoURL}}" target="_blank">
