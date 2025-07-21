@@ -34,7 +34,3 @@ start-service: ## start service
 .PHONY: start-service-rebuild
 start-service-rebuild: ## rebuild and start service
 	docker-compose up --build video-to-podcast-service
-
-.PHONY: start-services-rebuild
-start-services-rebuild: ## start service with webhook
-	docker-compose up --build video-to-podcast-service mail-webhook-service
