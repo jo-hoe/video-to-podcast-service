@@ -76,6 +76,17 @@ docker run --rm -p 8080:8080 \
   ghcr.io/jo-hoe/video-to-podcast-service:latest
 ```
 
+**Usage with Docker Compose:**
+
+If using the provided `docker-compose.yml`, place your `youtube_cookies.txt` file in the project root directory and uncomment the relevant lines in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+environment:
+  YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
+```
+
 **Note:** The service will work without cookies for most public YouTube content and in case you are not using a blocked IP (e.g. from the IP range of a hyperscaler).
 
 or on PowerShell:
