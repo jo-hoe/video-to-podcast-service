@@ -95,7 +95,9 @@ func Test_configureCookies(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			originalEnv := os.Getenv(cookieFileEnvVar)
-			defer os.Setenv(cookieFileEnvVar, originalEnv)
+			defer func() {
+				_ = os.Setenv(cookieFileEnvVar, originalEnv)
+			}()
 
 			var tempFile string
 			if tt.createFile {
@@ -106,13 +108,13 @@ func Test_configureCookies(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to create test cookie file: %v", err)
 				}
-				os.Setenv(cookieFileEnvVar, tempFile)
+				_ = os.Setenv(cookieFileEnvVar, tempFile)
 			} else if tt.cookieFile != "" {
 				// Set environment variable to non-existent file
-				os.Setenv(cookieFileEnvVar, tt.cookieFile)
+				_ = os.Setenv(cookieFileEnvVar, tt.cookieFile)
 			} else {
 				// Clear environment variable
-				os.Unsetenv(cookieFileEnvVar)
+				_ = os.Unsetenv(cookieFileEnvVar)
 			}
 
 			// Test
@@ -132,7 +134,7 @@ func Test_configureCookies(t *testing.T) {
 			
 			// Clean up temp file if created
 			if tt.createFile && tempFile != "" {
-				os.Remove(tempFile)
+				_ = os.Remove(tempFile)
 			}
 		})
 	}
