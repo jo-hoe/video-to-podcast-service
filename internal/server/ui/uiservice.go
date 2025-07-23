@@ -42,8 +42,14 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	e.Renderer = &Template{
 		templates: template.Must(template.New("").Funcs(funcMap).ParseFS(templateFS, viewsPattern)),
 	}
+	
 	// Set UI routes
 	e.GET(MainPageName, service.indexHandler)
+	// redirect to main page
+	e.GET("/", func(c echo.Context) error {
+		return c.Redirect(http.StatusFound, "/"+MainPageName)
+	})
+
 	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
 }
 
