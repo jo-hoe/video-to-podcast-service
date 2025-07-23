@@ -34,10 +34,13 @@ RUN apt-get update && \
 RUN useradd --create-home --shell /bin/bash appuser
 RUN mkdir -p /home/appuser/app/resources
 
-# Create cache directory and set permissions
+# Create cache directory and cookies directory, set permissions
 RUN mkdir -p /home/appuser/.cache && \
+    mkdir -p /home/appuser/.cookies && \
     chown -R appuser:appuser /home/appuser/.cache && \
-    chmod 755 /home/appuser/.cache
+    chown -R appuser:appuser /home/appuser/.cookies && \
+    chmod 755 /home/appuser/.cache && \
+    chmod 755 /home/appuser/.cookies
 
 # Set the working directory
 WORKDIR /home/appuser/app

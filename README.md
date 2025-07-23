@@ -56,19 +56,38 @@ The service supports the following environment variables. **All are optional**â€
 - `BASE_PATH` (optional): Sets the base directory for resources. **Default:** `resources` directory next to the executable inside the container. Only set this if you want to use a custom location or mount a host directory.
 - `CONNECTION_STRING` (optional): Sets the database connection string. **Default:** empty string, which uses a SQLite database file in the resource path. Only set this if you want to use a custom database or location.
 
-You can pass these variables when starting the container. For example:
+#### YouTube Cookie Configuration
+
+For accessing age-restricted or private YouTube content, you can provide cookies to yt-dlp:
+
+- `YTDLP_COOKIES_FILE` (optional): Path to a Netscape-format cookie file.
+
+**How to get cookies:**
+
+For detailed instructions on obtaining cookies (including permanent cookies that don't expire), see the official yt-dlp documentation:
+- [YouTube extractor documentation](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube)
+- [How do I pass cookies to yt-dlp?](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+
+**Usage with Docker:**
+
+Once you have your cookie file, mount it into the container:
 
 ```bash
 docker run --rm -p 8080:8080 \
+  -v /path/to/your/youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt \
+  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt \
   -e BASE_PATH=/data/resources \
   -e CONNECTION_STRING="file:/data/resources/podcast.db" \
   ghcr.io/jo-hoe/video-to-podcast-service:latest
 ```
 
+**Note:** The service will work without cookies for most public YouTube content and in case you are not using a blocked IP (e.g. from the IP range of a hyperscaler).
+
 or on PowerShell:
 
 ```powershell
 docker run --rm -p 8080:8080 `
+  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt `
   -e BASE_PATH=/data/resources `
   -e CONNECTION_STRING="file:/data/resources/podcast.db" `
   ghcr.io/jo-hoe/video-to-podcast-service:latest
