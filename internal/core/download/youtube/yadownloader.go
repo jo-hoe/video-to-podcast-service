@@ -25,6 +25,8 @@ const (
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
+	// Environment variable for cookie file configuration
+	cookieFileEnvVar = "YTDLP_COOKIES_FILE"
 )
 
 type YoutubeAudioDownloader struct{}
@@ -101,20 +103,41 @@ func setMetadata(fullFilePath string) (err error) {
 	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
 
+// configureCookies adds cookie configuration to yt-dlp instance
+func configureCookies(dl *ytdlp.Command) *ytdlp.Command {
+	// Check for cookie file
+	if cookieFile := os.Getenv(cookieFileEnvVar); cookieFile != "" {
+		if _, err := os.Stat(cookieFile); err == nil {
+			log.Printf("using cookie file: %s", cookieFile)
+			return dl.Cookies(cookieFile)
+		} else {
+			log.Printf("warning: cookie file specified but not found: %s", cookieFile)
+		}
+	}
+
+	return dl
+}
+
 func getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := ytdlp.New().Print("thumbnail")
+	log.Printf("getting thumbnail URL for: %s", videoUrl)
+	dl := ytdlp.New().Print("thumbnail").Verbose()
+	dl = configureCookies(dl)
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
 	if err != nil {
 		log.Printf("error getting thumbnail url from '%s': '%v'", videoUrl, err)
 		return result, err
 	}
+	
+	// Log all output from yt-dlp
 	for _, output := range cliOutput.OutputLogs {
+		log.Printf("yt-dlp thumbnail: %s", output.Line)
 		if strings.HasPrefix(output.Line, "https") {
 			result = output.Line
 		}
 	}
 
+	log.Printf("found thumbnail URL: %s", result)
 	return result, err
 }
 
@@ -153,12 +176,27 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
-		Output(tempFilenameTemplate) // set output path
+		Output(tempFilenameTemplate). // set output path
+		Verbose() // Add verbose output to see what's happening
+
+	// Configure cookies if available
+	dl = configureCookies(dl)
+
+	// Log the command that will be executed
+	log.Printf("executing yt-dlp command for URL: %s", urlString)
+	log.Printf("output template: %s", tempFilenameTemplate)
 
 	// download
-	_, err := dl.Run(context.Background(), urlString)
+	result_output, err := dl.Run(context.Background(), urlString)
 	if err != nil {
 		return result, err
+	}
+
+	// Log the output from yt-dlp
+	if result_output != nil {
+		for _, outputLog := range result_output.OutputLogs {
+			log.Printf("yt-dlp: %s", outputLog.Line)
+		}
 	}
 
 	// get file names
@@ -172,10 +210,21 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl, err := ytdlp.New().Simulate().Quiet().Run(context.Background(), urlString)
+	dl := ytdlp.New().Simulate().Verbose() // Remove Quiet() and add Verbose() to see output
+	dl = configureCookies(dl)
+	
+	result, err := dl.Run(context.Background(), urlString)
 	if err != nil {
 		log.Printf("error checking video availability: '%v'", err)
 		return false
 	}
-	return dl != nil
+	
+	// Log the output from yt-dlp availability check
+	if result != nil {
+		for _, outputLog := range result.OutputLogs {
+			log.Printf("yt-dlp availability: %s", outputLog.Line)
+		}
+	}
+	
+	return result != nil
 }

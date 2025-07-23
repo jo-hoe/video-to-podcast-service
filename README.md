@@ -19,30 +19,110 @@ Video To Podcast Service is a backend service that downloads video files (curren
 
 ### Start the Service
 
-You can start the service using `make` (recommended):
+You can start the service using `make` (recommended if you have the repository):
 
 ```bash
 make start
 ```
 
-Or use Docker directly:
+#### If you do not have the repository or Docker image
+
+You can pull the latest prebuilt image from GitHub Container Registry:
 
 ```bash
-docker build . -t v2p
-docker run --rm -p 8080:8080 v2p
+docker pull ghcr.io/jo-hoe/video-to-podcast-service:latest
 ```
 
-Or with Docker Compose (includes optional mail webhook):
+#### Running the Service with Docker
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/jo-hoe/video-to-podcast-service:latest
+```
+
+#### Or with Docker Compose
+
+If you have a `docker-compose.yml` referencing the image, you can use:
 
 ```bash
 make start-service
 # or
-make start-services-rebuild
+make start-service-rebuild
 ```
+
+### Environment Variables
+
+The service supports the following environment variables. **All are optional**—if not set, sensible defaults are used:
+
+- `BASE_PATH` (optional): Sets the base directory for resources. **Default:** `resources` directory next to the executable inside the container. Only set this if you want to use a custom location or mount a host directory.
+- `CONNECTION_STRING` (optional): Sets the database connection string. **Default:** empty string, which uses a SQLite database file in the resource path. Only set this if you want to use a custom database or location.
+- `YTDLP_COOKIES_FILE` (optional): Path to a Netscape-format cookie file, e.g. for accessing age-restricted or private YouTube content.
+
+**How to get cookies file:**
+
+For detailed instructions on obtaining cookies (including permanent cookies that don't expire), see the official yt-dlp documentation:
+- [YouTube extractor documentation](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube)
+- [How do I pass cookies to yt-dlp?](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
+
+**Usage with Docker:**
+
+Once you have your cookie file, mount it into the container:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -v /path/to/your/youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt \
+  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt \
+  -e BASE_PATH=/data/resources \
+  -e CONNECTION_STRING="file:/data/resources/podcast.db" \
+  ghcr.io/jo-hoe/video-to-podcast-service:latest
+```
+
+**Usage with Docker Compose:**
+
+If using the provided `docker-compose.yml`, place your `youtube_cookies.txt` file in the project root directory and uncomment the relevant lines in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+environment:
+  YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
+```
+
+**Note:** The service will work without cookies for most public YouTube content and in case you are not using a blocked IP (e.g. from the IP range of a hyperscaler).
+
+or on PowerShell:
+
+```powershell
+docker run --rm -p 8080:8080 `
+  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt `
+  -e BASE_PATH=/data/resources `
+  -e CONNECTION_STRING="file:/data/resources/podcast.db" `
+  ghcr.io/jo-hoe/video-to-podcast-service:latest
+```
+
+Or with Docker Compose, set them in your `docker-compose.yml` under `environment:`.
 
 ### Resources
 
 All downloaded resources are placed in the `resources` directory. Podcasts are organized in subdirectories named after the channel the video belongs to. Each feed has its own directory containing audio files and the RSS XML.
+
+### Host URL and Network Access
+
+The service generates podcast feed URLs and audio file links using the `Host` header from incoming HTTP requests. This means:
+
+- If you access the API or RSS feed using `localhost` (e.g., `http://localhost:8080/v1/feeds`), the generated feed and audio URLs will also use `localhost`.
+- If you access the API using your machine's external IP or hostname (e.g., `http://192.168.1.100:8080/v1/feeds`), the generated URLs will use that IP or hostname.
+
+**Why does this matter?**
+
+- If you want to subscribe to the podcast feed from another device (e.g., your phone or another computer), you must use the external IP or hostname in the URL, not `localhost`. Otherwise, the generated links in the RSS feed will not be accessible from other devices.
+- When running in Docker, make sure to publish the port (e.g., `-p 8080:8080`) and use your host's IP address to access the service externally.
+
+**Example:**
+
+- Accessing `http://localhost:8080/v1/feeds` from your browser on the same machine will generate feed URLs with `localhost`.
+- Accessing `http://192.168.1.100:8080/v1/feeds` from another device on your network will generate feed URLs with `192.168.1.100`.
+
+If you want to share feeds or audio links, always use the address that matches how other devices will connect to your server.
 
 ## API Usage
 

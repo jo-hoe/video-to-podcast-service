@@ -53,7 +53,7 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.deleteFeedItem)
 
 	// Set probe route
-	e.GET("/", service.probeHandler)
+	e.GET(fmt.Sprintf("%s%s", apiVersion, "health"), service.probeHandler)
 }
 
 func (service *APIService) deleteFeedItem(ctx echo.Context) error {

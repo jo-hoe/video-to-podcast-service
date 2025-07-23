@@ -1,5 +1,5 @@
 # Build stage: build the Go application
-FROM golang:1.24.4 AS build
+FROM golang:1.24.5 AS build
 # Set the working directory
 WORKDIR /app
 # Copy go.mod and go.sum to leverage caching for dependencies
@@ -30,14 +30,19 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user and set up directories
-RUN useradd --create-home --shell /bin/bash appuser
+# Create a non-root user with UID 1000 and set up directories
+# First check if UID 1000 exists and remove it if needed, then create appuser
+RUN if id 1000 >/dev/null 2>&1; then userdel -r $(id -nu 1000) 2>/dev/null || true; fi && \
+    useradd --create-home --shell /bin/bash --uid 1000 appuser
 RUN mkdir -p /home/appuser/app/resources
 
-# Create cache directory and set permissions
+# Create cache directory and cookies directory, set permissions
 RUN mkdir -p /home/appuser/.cache && \
+    mkdir -p /home/appuser/.cookies && \
     chown -R appuser:appuser /home/appuser/.cache && \
-    chmod 755 /home/appuser/.cache
+    chown -R appuser:appuser /home/appuser/.cookies && \
+    chmod 755 /home/appuser/.cache && \
+    chmod 755 /home/appuser/.cookies
 
 # Set the working directory
 WORKDIR /home/appuser/app

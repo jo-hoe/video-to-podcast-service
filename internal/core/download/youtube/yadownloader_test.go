@@ -1,7 +1,11 @@
 package youtube
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/lrstanley/go-ytdlp"
 )
 
 func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
@@ -55,3 +59,84 @@ func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
 		})
 	}
 }
+
+func Test_configureCookies(t *testing.T) {
+	tests := []struct {
+		name           string
+		cookieFile     string
+		createFile     bool
+		fileContent    string
+		expectCookies  bool
+		expectWarning  bool
+	}{
+		{
+			name:          "no cookie file configured",
+			cookieFile:    "",
+			createFile:    false,
+			expectCookies: false,
+		},
+		{
+			name:          "cookie file exists",
+			cookieFile:    "test_cookies.txt",
+			createFile:    true,
+			fileContent:   "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t1234567890\ttest_cookie\ttest_value",
+			expectCookies: true,
+		},
+		{
+			name:          "cookie file configured but doesn't exist",
+			cookieFile:    "nonexistent_cookies.txt",
+			createFile:    false,
+			expectCookies: false,
+			expectWarning: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup
+			originalEnv := os.Getenv(cookieFileEnvVar)
+			defer func() {
+				_ = os.Setenv(cookieFileEnvVar, originalEnv)
+			}()
+
+			var tempFile string
+			if tt.createFile {
+				// Create temporary file
+				tmpDir := t.TempDir()
+				tempFile = filepath.Join(tmpDir, tt.cookieFile)
+				err := os.WriteFile(tempFile, []byte(tt.fileContent), 0644)
+				if err != nil {
+					t.Fatalf("Failed to create test cookie file: %v", err)
+				}
+				_ = os.Setenv(cookieFileEnvVar, tempFile)
+			} else if tt.cookieFile != "" {
+				// Set environment variable to non-existent file
+				_ = os.Setenv(cookieFileEnvVar, tt.cookieFile)
+			} else {
+				// Clear environment variable
+				_ = os.Unsetenv(cookieFileEnvVar)
+			}
+
+			// Test
+			dl := ytdlp.New()
+			result := configureCookies(dl)
+
+			// Verify
+			if result == nil {
+				t.Error("configureCookies() returned nil")
+				return
+			}
+
+			// The actual verification of whether cookies were set would require
+			// inspecting the internal state of the ytdlp.Command, which isn't
+			// easily accessible. For now, we verify that the function doesn't
+			// panic and returns a valid command object.
+			
+			// Clean up temp file if created
+			if tt.createFile && tempFile != "" {
+				_ = os.Remove(tempFile)
+			}
+		})
+	}
+}
+

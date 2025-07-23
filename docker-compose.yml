@@ -1,20 +1,21 @@
 services:
-  mail-webhook-service:
-    image: ghcr.io/jo-hoe/go-mail-webhook-service:1.0.0
-    volumes:
-      - "./mail-webhook-config/:/go/config"
   video-to-podcast-service:
     build: .
     image: video-to-podcast-service
     ports:
       - "8080:8080"
     volumes:
-      - "./resources/:/home/appuser/app/resources"
+      # Uncomment the line below in case you want to add the mp3's to a directory in your host
+      # - "./resources/:/home/appuser/app/resources"
+      # Uncomment the line below to mount YouTube cookies file (update the path to your cookies file)
+      # - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080"]
+      test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080/v1/health"]
       interval: 12s
       retries: 8
       start_period: 2s
       timeout: 12s
     environment:
       PORT: "8080"
+      # Uncomment the line below to use cookies file
+      # YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
