@@ -55,14 +55,9 @@ The service supports the following environment variables. **All are optional**â€
 
 - `BASE_PATH` (optional): Sets the base directory for resources. **Default:** `resources` directory next to the executable inside the container. Only set this if you want to use a custom location or mount a host directory.
 - `CONNECTION_STRING` (optional): Sets the database connection string. **Default:** empty string, which uses a SQLite database file in the resource path. Only set this if you want to use a custom database or location.
+- `YTDLP_COOKIES_FILE` (optional): Path to a Netscape-format cookie file, e.g. for accessing age-restricted or private YouTube content.
 
-#### YouTube Cookie Configuration
-
-For accessing age-restricted or private YouTube content, you can provide cookies to yt-dlp:
-
-- `YTDLP_COOKIES_FILE` (optional): Path to a Netscape-format cookie file.
-
-**How to get cookies:**
+**How to get cookies file:**
 
 For detailed instructions on obtaining cookies (including permanent cookies that don't expire), see the official yt-dlp documentation:
 - [YouTube extractor documentation](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube)

@@ -5,9 +5,10 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - "./resources/:/home/appuser/app/resources"
+      # Uncomment the line below in case you want to add the mp3's to a directory in your host
+      # - "./resources/:/home/appuser/app/resources"
       # Uncomment the line below to mount YouTube cookies file
-      # - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+      # - "/home/aiagentmachine/Downloads/youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080/v1/health"]
       interval: 12s
