@@ -176,8 +176,7 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
-		Output(tempFilenameTemplate). // set output path
-		Verbose() // Add verbose output to see what's happening
+		Output(tempFilenameTemplate) // set output path
 
 	// Configure cookies if available
 	dl = configureCookies(dl)
