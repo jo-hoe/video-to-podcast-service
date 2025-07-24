@@ -29,8 +29,8 @@ lint: ## run golangci-lint
 
 .PHONY: start-service
 start-service: ## start service
-	docker-compose up video-to-podcast-service
+	docker compose up video-to-podcast-service
 
 .PHONY: start-service-rebuild
 start-service-rebuild: ## rebuild and start service
-	docker-compose up --build video-to-podcast-service
+	docker compose up --build video-to-podcast-service

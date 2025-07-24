@@ -55,6 +55,7 @@ The service supports the following environment variables. **All are optional**â€
 
 - `BASE_PATH` (optional): Sets the base directory for resources. **Default:** `resources` directory next to the executable inside the container. Only set this if you want to use a custom location or mount a host directory.
 - `CONNECTION_STRING` (optional): Sets the database connection string. **Default:** empty string, which uses a SQLite database file in the resource path. Only set this if you want to use a custom database or location.
+- `BASE_URL` (optional): Sets the base URL for generating podcast feed and audio file links. **Default:** Uses the `Host` header from incoming requests with `http://` scheme. Set this to override automatic URL detection, useful for reverse proxies or custom domains. Supports both HTTP and HTTPS schemes (e.g., `https://example.com` or `http://localhost:8080`). If no scheme is provided, defaults to HTTPS.
 - `YTDLP_COOKIES_FILE` (optional): Path to a Netscape-format cookie file, e.g. for accessing age-restricted or private YouTube content.
 
 **How to get cookies file:**
@@ -73,6 +74,7 @@ docker run --rm -p 8080:8080 \
   -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt \
   -e BASE_PATH=/data/resources \
   -e CONNECTION_STRING="file:/data/resources/podcast.db" \
+  -e BASE_URL="https://your-domain.com" \
   ghcr.io/jo-hoe/video-to-podcast-service:latest
 ```
 
@@ -96,6 +98,7 @@ docker run --rm -p 8080:8080 `
   -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt `
   -e BASE_PATH=/data/resources `
   -e CONNECTION_STRING="file:/data/resources/podcast.db" `
+  -e BASE_URL="https://your-domain.com" `
   ghcr.io/jo-hoe/video-to-podcast-service:latest
 ```
 
@@ -107,22 +110,29 @@ All downloaded resources are placed in the `resources` directory. Podcasts are o
 
 ### Host URL and Network Access
 
-The service generates podcast feed URLs and audio file links using the `Host` header from incoming HTTP requests. This means:
+The service generates podcast feed URLs and audio file links in two ways:
 
-- If you access the API or RSS feed using `localhost` (e.g., `http://localhost:8080/v1/feeds`), the generated feed and audio URLs will also use `localhost`.
-- If you access the API using your machine's external IP or hostname (e.g., `http://192.168.1.100:8080/v1/feeds`), the generated URLs will use that IP or hostname.
+1. **Using BASE_URL environment variable (recommended)**: Set the `BASE_URL` environment variable to explicitly define how URLs should be generated. This is the preferred method for production deployments, reverse proxies, or when you need consistent URLs regardless of how clients access the service.
+
+2. **Using Host header (fallback)**: If `BASE_URL` is not set, the service uses the `Host` header from incoming HTTP requests with an `http://` scheme.
+
+**BASE_URL Examples:**
+- `BASE_URL=https://podcasts.example.com` - All generated URLs will use this domain with HTTPS
+- `BASE_URL=http://192.168.1.100:8080` - All generated URLs will use this IP and port with HTTP
+- `BASE_URL=my-domain.com` - Defaults to HTTPS, equivalent to `https://my-domain.com`
+
+**Host Header Behavior (when BASE_URL is not set):**
+- Accessing `http://localhost:8080/v1/feeds` generates feed URLs with `http://localhost:8080`
+- Accessing `http://192.168.1.100:8080/v1/feeds` generates feed URLs with `http://192.168.1.100:8080`
 
 **Why does this matter?**
 
-- If you want to subscribe to the podcast feed from another device (e.g., your phone or another computer), you must use the external IP or hostname in the URL, not `localhost`. Otherwise, the generated links in the RSS feed will not be accessible from other devices.
-- When running in Docker, make sure to publish the port (e.g., `-p 8080:8080`) and use your host's IP address to access the service externally.
+- If you want to subscribe to podcast feeds from other devices, the generated URLs must be accessible from those devices
+- Using `BASE_URL` ensures consistent URLs regardless of how clients access the API
+- When running behind a reverse proxy or load balancer, `BASE_URL` should match your public domain
+- When running in Docker, make sure to publish the port (e.g., `-p 8080:8080`) if not using `BASE_URL`
 
-**Example:**
-
-- Accessing `http://localhost:8080/v1/feeds` from your browser on the same machine will generate feed URLs with `localhost`.
-- Accessing `http://192.168.1.100:8080/v1/feeds` from another device on your network will generate feed URLs with `192.168.1.100`.
-
-If you want to share feeds or audio links, always use the address that matches how other devices will connect to your server.
+**Recommendation:** Always set `BASE_URL` in production environments to ensure reliable, consistent URLs for podcast clients.
 
 ## API Usage
 

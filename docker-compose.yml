@@ -4,13 +4,12 @@ services:
     image: video-to-podcast-service
     ports:
       - "8080:8080"
-    volumes:
-      # Uncomment the line below in case you want to add the mp3's to a directory in your host
-      # - "./resources/:/home/appuser/app/resources"
-      # Uncomment the line below to mount YouTube cookies file (update the path to your cookies file)
-      # - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+    # Uncomment and modify the volumes section below as needed
+    # volumes:
+    #   - "./resources/:/home/appuser/app/resources"  # Mount resources directory to host
+    #   - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"  # Mount cookies file
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080/v1/health"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/health"]
       interval: 12s
       retries: 8
       start_period: 2s

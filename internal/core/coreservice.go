@@ -12,6 +12,10 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 )
 
+const (
+	baseURLEnvVar = "BASE_URL"
+)
+
 type CoreService struct {
 	databaseService      database.DatabaseService
 	audioSourceDirectory string
@@ -44,7 +48,8 @@ func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath 
 	// URL encode the feed title
 	urlEncodedFeedTitle := url.PathEscape(feedTitle)
 
-	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, urlEncodedFeedTitle)
+	baseURL := cs.getBaseURL(host)
+	return fmt.Sprintf("%s/%s/%s/rss.xml", baseURL, apiPath, urlEncodedFeedTitle)
 }
 
 func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFilePath string) string {
@@ -55,13 +60,31 @@ func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFile
 	}
 	audioUrlPath := strings.Join(parts, "/")
 
-	return fmt.Sprintf("http://%s/%s/%s", host, apiPath, audioUrlPath)
+	baseURL := cs.getBaseURL(host)
+	return fmt.Sprintf("%s/%s/%s", baseURL, apiPath, audioUrlPath)
 }
 
 func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 	pathWithoutRoot := strings.TrimPrefix(audioFilePath, cs.audioSourceDirectory)
 	pathWithoutRoot = strings.TrimPrefix(pathWithoutRoot, string(os.PathSeparator))
 	return pathWithoutRoot
+}
+
+// getBaseURL returns the base URL for generating links, prioritizing environment variable over host header
+func (cs *CoreService) getBaseURL(host string) string {
+	if baseURL := os.Getenv(baseURLEnvVar); baseURL != "" {
+		// Remove trailing slash if present
+		baseURL = strings.TrimSuffix(baseURL, "/")
+		// Ensure the URL has a proper scheme
+		if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+			// Default to https if no scheme is provided
+			baseURL = "https://" + baseURL
+		}
+		return baseURL
+	}
+
+	// Fallback to host header with http scheme (existing behavior)
+	return "http://" + host
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
