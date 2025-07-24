@@ -70,7 +70,8 @@ func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFile
 
 func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 	pathWithoutRoot := strings.TrimPrefix(audioFilePath, cs.audioSourceDirectory)
-	pathWithoutRoot = strings.TrimPrefix(pathWithoutRoot, string(os.PathSeparator))
+	// Remove all leading slashes/backslashes (Windows/Linux)
+	pathWithoutRoot = strings.TrimLeft(pathWithoutRoot, "\\/")
 	return pathWithoutRoot
 }
 
