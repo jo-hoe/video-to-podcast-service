@@ -120,7 +120,7 @@ func configureCookies(dl *ytdlp.Command) *ytdlp.Command {
 
 func getThumbnailUrl(videoUrl string) (result string, err error) {
 	log.Printf("getting thumbnail URL for: %s", videoUrl)
-	dl := ytdlp.New().Print("thumbnail").Verbose()
+	dl := ytdlp.New().Print("thumbnail")
 	dl = configureCookies(dl)
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
@@ -176,8 +176,7 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
-		Output(tempFilenameTemplate). // set output path
-		Verbose() // Add verbose output to see what's happening
+		Output(tempFilenameTemplate) // set output path
 
 	// Configure cookies if available
 	dl = configureCookies(dl)
@@ -210,7 +209,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl := ytdlp.New().Simulate().Verbose() // Remove Quiet() and add Verbose() to see output
+	dl := ytdlp.New().Simulate().Quiet()
 	dl = configureCookies(dl)
 	
 	result, err := dl.Run(context.Background(), urlString)
