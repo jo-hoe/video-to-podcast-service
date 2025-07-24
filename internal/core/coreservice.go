@@ -38,8 +38,10 @@ func (cs *CoreService) GetAudioSourceDirectory() string {
 
 func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
+	// Normalize path separators to forward slashes for URLs
+	pathWithoutRoot = strings.ReplaceAll(pathWithoutRoot, string(os.PathSeparator), "/")
 	// get first part of the path as feed title
-	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
+	parts := strings.Split(pathWithoutRoot, "/")
 	if len(parts) == 0 {
 		log.Printf("error: audio file path '%s' does not contain a valid feed title", audioFilePath)
 		return ""
@@ -54,7 +56,9 @@ func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath 
 
 func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
-	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
+	// Normalize path separators to forward slashes for URLs
+	pathWithoutRoot = strings.ReplaceAll(pathWithoutRoot, string(os.PathSeparator), "/")
+	parts := strings.Split(pathWithoutRoot, "/")
 	for i, part := range parts {
 		parts[i] = url.PathEscape(part)
 	}
