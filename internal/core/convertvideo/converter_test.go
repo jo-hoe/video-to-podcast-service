@@ -17,7 +17,7 @@ func Test_convertVideoToAudio(t *testing.T) {
 		t.Error("could not create folder")
 	}
 
-	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test_assets", "video.mp4"))
+	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test", "assets", "video.mp4"))
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}

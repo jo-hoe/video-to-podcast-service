@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
@@ -17,12 +16,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-const defaultPort = "8080"
-
-var defaultResourcePath string
-
-func StartServer(databaseService database.DatabaseService, resourcePath string) {
-	defaultResourcePath = resourcePath
+func StartServer(cfg *config.Config, databaseService database.DatabaseService) {
 
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -31,20 +25,19 @@ func StartServer(databaseService database.DatabaseService, resourcePath string) 
 
 	e.Validator = &genericValidator{Validator: validator.New()}
 
-	coreService := core.NewCoreService(databaseService, defaultResourcePath)
+	coreService := core.NewCoreService(databaseService, cfg.Storage.BasePath)
 
-	apiService := api.NewAPIService(coreService, defaultPort)
+	apiService := api.NewAPIService(coreService, cfg.Server.Port)
 	apiService.SetAPIRoutes(e)
 
 	uiService := ui.NewUIService(coreService)
 	uiService.SetUIRoutes(e)
 
 	// start server
-	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
 	log.Print("starting server")
-	log.Printf("UI available at http://localhost:%s/%s", port, ui.MainPageName)
-	log.Printf("Explore all feeds via API at http://localhost:%s/%s ", port, api.FeedsPath)
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
+	log.Printf("UI available at http://localhost:%s/%s", cfg.Server.Port, ui.MainPageName)
+	log.Printf("Explore all feeds via API at http://localhost:%s/%s ", cfg.Server.Port, api.FeedsPath)
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", cfg.Server.Port)))
 }
 
 type genericValidator struct {

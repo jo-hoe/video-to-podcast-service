@@ -4,17 +4,20 @@ services:
     image: video-to-podcast-service
     ports:
       - "8080:8080"
-    # Uncomment and modify the volumes section below as needed
-    # volumes:
-    #   - "./resources/:/home/appuser/app/resources"  # Mount resources directory to host
-    #   - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"  # Mount cookies file
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/health"]
-      interval: 12s
-      retries: 8
-      start_period: 2s
-      timeout: 12s
     environment:
       PORT: "8080"
-      # Uncomment the line below to use cookies file
+      # BASE_URL: "https://your-domain.com"  # Set for production
+      # BASE_PATH: "/data/resources"         # Custom storage path
       # YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
+    #volumes:
+      # Uncomment to persist data
+      # - "./data:/home/appuser/app/resources"
+      # Uncomment to use cookies file
+      # - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
