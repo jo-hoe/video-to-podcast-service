@@ -9,7 +9,7 @@ services:
       # BASE_URL: "https://your-domain.com"  # Set for production
       # BASE_PATH: "/data/resources"         # Custom storage path
       # YTDLP_COOKIES_FILE: "/app/.cookies/youtube_cookies.txt"
-    volumes:
+    #volumes:
       # Uncomment to persist data
       # - "./data:/app/resources"
       # Uncomment to use cookies file
