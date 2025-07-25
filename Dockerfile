@@ -37,11 +37,11 @@ WORKDIR /app
 # Create necessary directories
 RUN mkdir -p /app/resources
 
-# Copy the built application from the build stage
-COPY --from=build /go/bin/app .
+# Copy the built application from the build stage to /usr/local/bin
+COPY --from=build /go/bin/app /usr/local/bin/app
 
 # Ensure the executable has execute permissions
-RUN chmod +x /app/app
+RUN chmod +x /usr/local/bin/app
 
 # ENTRYPOINT should point to the executable
-ENTRYPOINT ["./app"]
+ENTRYPOINT ["app"]
