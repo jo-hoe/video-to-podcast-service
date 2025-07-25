@@ -9,7 +9,7 @@ Video To Podcast Service is a backend service that downloads video files (curren
 
 **Key Features:**
 
-- Download videos (YouTube supported) and convert to audio (MP3)
+- Download videos and convert to audio (MP3)
 - Organize audio files into podcast feeds (one feed per channel)
 - Serve podcast feeds as RSS for use in podcast apps
 - REST API for adding, listing, retrieving, and deleting podcast items
