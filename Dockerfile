@@ -12,8 +12,9 @@ COPY . ./
 # Build with CGO (required for sqlite dependency) and output to a specific location
 RUN CGO_ENABLED=1 go build -o /go/bin/app ./
 
-# Runtime stage: use a minimal base image for runtime and set up a non-root user
+# Runtime stage: use a minimal base image for runtime
 FROM jrottenberg/ffmpeg:7.1-ubuntu
+
 # Install required dependencies
 RUN apt-get update && \
     apt-get install -y \
@@ -30,35 +31,17 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user with UID 1000 and set up directories
-# First check if UID 1000 exists and remove it if needed, then create appuser
-RUN if id 1000 >/dev/null 2>&1; then userdel -r $(id -nu 1000) 2>/dev/null || true; fi && \
-    useradd --create-home --shell /bin/bash --uid 1000 appuser
-RUN mkdir -p /home/appuser/app/resources
-
-# Create cache directory and cookies directory, set permissions
-RUN mkdir -p /home/appuser/.cache && \
-    mkdir -p /home/appuser/.cookies && \
-    chown -R appuser:appuser /home/appuser/.cache && \
-    chown -R appuser:appuser /home/appuser/.cookies && \
-    chmod 755 /home/appuser/.cache && \
-    chmod 755 /home/appuser/.cookies
-
 # Set the working directory
-WORKDIR /home/appuser/app
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p /app/resources
 
 # Copy the built application from the build stage
 COPY --from=build /go/bin/app .
 
-# Ensure the executable has execute permissions and set ownership
-RUN chmod +x /home/appuser/app/app && \
-    chown -R appuser:appuser /home/appuser/app
-
-# Set the user to the non-root user
-USER appuser
-
-# Set HOME environment variable explicitly
-ENV HOME=/home/appuser
+# Ensure the executable has execute permissions
+RUN chmod +x /app/app
 
 # ENTRYPOINT should point to the executable
 ENTRYPOINT ["./app"]

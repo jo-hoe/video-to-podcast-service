@@ -70,8 +70,8 @@ Once you have your cookie file, mount it into the container:
 
 ```bash
 docker run --rm -p 8080:8080 \
-  -v /path/to/your/youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt \
-  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt \
+  -v /path/to/your/youtube_cookies.txt:/app/.cookies/youtube_cookies.txt \
+  -e YTDLP_COOKIES_FILE=/app/.cookies/youtube_cookies.txt \
   -e BASE_PATH=/data/resources \
   -e CONNECTION_STRING="file:/data/resources/podcast.db" \
   -e BASE_URL="https://your-domain.com" \
@@ -84,9 +84,9 @@ If using the provided `docker-compose.yml`, place your `youtube_cookies.txt` fil
 
 ```yaml
 volumes:
-  - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+  - "./youtube_cookies.txt:/app/.cookies/youtube_cookies.txt"
 environment:
-  YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
+  YTDLP_COOKIES_FILE: "/app/.cookies/youtube_cookies.txt"
 ```
 
 **Note:** The service will work without cookies for most public YouTube content and in case you are not using a blocked IP (e.g. from the IP range of a hyperscaler).
@@ -95,7 +95,7 @@ or on PowerShell:
 
 ```powershell
 docker run --rm -p 8080:8080 `
-  -e YTDLP_COOKIES_FILE=/home/appuser/.cookies/youtube_cookies.txt `
+  -e YTDLP_COOKIES_FILE=/app/.cookies/youtube_cookies.txt `
   -e BASE_PATH=/data/resources `
   -e CONNECTION_STRING="file:/data/resources/podcast.db" `
   -e BASE_URL="https://your-domain.com" `

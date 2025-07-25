@@ -8,12 +8,12 @@ services:
       PORT: "8080"
       # BASE_URL: "https://your-domain.com"  # Set for production
       # BASE_PATH: "/data/resources"         # Custom storage path
-      # YTDLP_COOKIES_FILE: "/home/appuser/.cookies/youtube_cookies.txt"
-    #volumes:
+      # YTDLP_COOKIES_FILE: "/app/.cookies/youtube_cookies.txt"
+    volumes:
       # Uncomment to persist data
-      # - "./data:/home/appuser/app/resources"
+      # - "./data:/app/resources"
       # Uncomment to use cookies file
-      # - "./youtube_cookies.txt:/home/appuser/.cookies/youtube_cookies.txt"
+      # - "./youtube_cookies.txt:/app/.cookies/youtube_cookies.txt"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/health"]
       interval: 30s
