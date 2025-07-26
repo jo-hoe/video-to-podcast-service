@@ -153,15 +153,3 @@ golangci-lint run ./...
 - Only YouTube is supported as a video source.
 - Google may block certain IPs (e.g., from cloud providers), resulting in errors like `403` or age restriction issues. See [this GitHub issue](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479) for more details.
 
-## Future Work
-
-- Add iTunes to
-  - add tags for podcast images (requires custom XML generation)
-  - set length in podcast metadata
-- Provide ticketing/progress feedback via API
-- Auto-chapterize videos without chapters
-
-## Relevant Links
-
-- [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
-- [Example podcast](https://feeds.libsyn.com/230510/rss)
