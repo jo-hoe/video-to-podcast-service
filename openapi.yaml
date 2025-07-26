@@ -112,7 +112,7 @@ paths:
           description: Feed item not found
         '500':
           description: Failed to delete podcast item or internal error
-  /:
+  /v1/health:
     get:
       summary: Health check
       responses:
