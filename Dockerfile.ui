@@ -1,0 +1,45 @@
+# Build stage: build the Go UI service
+FROM golang:1.24.5 AS build
+
+# Set the working directory
+WORKDIR /app
+
+# Copy go.mod and go.sum to leverage caching for dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the rest of the code
+COPY . ./
+
+# Build the UI service (no CGO needed for UI service)
+RUN CGO_ENABLED=0 go build -o /go/bin/ui-service ./cmd/ui
+
+# Runtime stage: use minimal Alpine image for UI service
+FROM alpine:3.20
+
+# Install minimal dependencies for UI service
+RUN apk --no-cache add ca-certificates curl && \
+    update-ca-certificates
+
+# Create a non-root user for security
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the built UI service from the build stage
+COPY --from=build /go/bin/ui-service /usr/local/bin/ui-service
+
+# Copy UI templates and static files
+COPY internal/server/ui/views/ /app/internal/server/ui/views/
+
+# Ensure the executable has execute permissions and set ownership
+RUN chmod +x /usr/local/bin/ui-service && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Set the entrypoint to the UI service
+ENTRYPOINT ["ui-service"]

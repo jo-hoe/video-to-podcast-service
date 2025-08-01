@@ -1,0 +1,6 @@
+# This file ensures the data directory is tracked by git
+# The data directory structure:
+# - resources/: Audio files and media resources
+# - database/: SQLite database files
+# - cookies/: YouTube cookies for authentication
+# - config/: Configuration files
