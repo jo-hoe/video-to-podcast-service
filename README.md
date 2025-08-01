@@ -107,6 +107,7 @@ The services support the following environment variables. **All are optional**â€
 **How to get cookies file:**
 
 For detailed instructions on obtaining cookies (including permanent cookies that don't expire), see the official yt-dlp documentation:
+
 - [YouTube extractor documentation](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#youtube)
 - [How do I pass cookies to yt-dlp?](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
 
@@ -160,11 +161,13 @@ The service generates podcast feed URLs and audio file links in two ways:
 2. **Using Host header (fallback)**: If `BASE_URL` is not set, the service uses the `Host` header from incoming HTTP requests with an `http://` scheme.
 
 **BASE_URL Examples:**
+
 - `BASE_URL=https://podcasts.example.com` - All generated URLs will use this domain with HTTPS
 - `BASE_URL=http://192.168.1.100:8080` - All generated URLs will use this IP and port with HTTP
 - `BASE_URL=my-domain.com` - Defaults to HTTPS, equivalent to `https://my-domain.com`
 
 **Host Header Behavior (when BASE_URL is not set):**
+
 - Accessing `http://localhost:8080/v1/feeds` generates feed URLs with `http://localhost:8080`
 - Accessing `http://192.168.1.100:8080/v1/feeds` generates feed URLs with `http://192.168.1.100:8080`
 
@@ -296,4 +299,3 @@ golangci-lint run ./...
 
 - Only YouTube is supported as a video source.
 - Google may block certain IPs (e.g., from cloud providers), resulting in errors like `403` or age restriction issues. See [this GitHub issue](https://github.com/kkdai/youtube/issues/343#issuecomment-2347950479) for more details.
-
