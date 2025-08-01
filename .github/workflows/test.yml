@@ -1,3 +1,4 @@
+  
 on:
   push:
     branches:
@@ -15,46 +16,22 @@ jobs:
         platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup FFmpeg
-      uses: AnimMouse/setup-ffmpeg@v1
+    - uses: actions/checkout@v4
+    - uses: AnimMouse/setup-ffmpeg@v1
       id: setup-ffmpeg
-      
-    - name: Verify FFmpeg installation
-      run: ffmpeg -version
-      
+    - run: ffmpeg -version
     - name: Install Go
+      if: success()
       uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
-        
-    - name: Cache Go modules
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-          
-    - name: Download dependencies
-      run: go mod download
-      
-    - name: Build all services
-      run: |
-        go build -v ./cmd/api
-        go build -v ./cmd/ui
-      
+    - name: Checkout code
+      uses: actions/checkout@v4
     - name: Run tests
       run: go test -v ./... -covermode=count -coverprofile=coverage.out
-      
     - name: Convert coverage.out to coverage.lcov
       if: matrix.platform == 'ubuntu-latest'
       uses: jandelgado/gcov2lcov-action@v1
-      
     - name: Coveralls
       if: matrix.platform == 'ubuntu-latest'
       uses: coverallsapp/github-action@master
