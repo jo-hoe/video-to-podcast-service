@@ -26,10 +26,6 @@ build-api: ## build API service binary
 build-ui: ## build UI service binary
 	go build -o $(UI_BINARY) ./cmd/ui
 
-.PHONY: start
-start: ## build and start with docker compose
-	docker compose up --build
-
 # =============================================================================
 # Testing and Quality Targets
 # =============================================================================
@@ -54,15 +50,11 @@ update: ## update dependencies
 docker-build: ## build Docker images locally
 	docker compose build
 
-.PHONY: docker-test
-docker-test: docker-build ## build and test Docker images
-	docker compose up -d
-	sleep 10
-	curl -f http://localhost:8080/v1/health
-	curl -f http://localhost:3000/health
-	docker compose down
-
 .PHONY: docker-clean
 docker-clean: ## clean up Docker resources
 	docker compose down -v
 	docker system prune -f
+
+.PHONY: start
+start: ## build and start with docker compose
+	docker compose up --build

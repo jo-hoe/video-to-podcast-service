@@ -116,8 +116,6 @@ The service provides a REST API for programmatic access:
 - `DELETE /v1/feeds/{feed}/{item}` - Delete a podcast item
 - `GET /v1/feeds/{feed}/rss.xml` - Get RSS feed for a channel
 
-See [`openapi.yaml`](./openapi.yaml) for complete API documentation.
-
 ## Accessing from Other Devices
 
 To access podcast feeds from other devices on your network:

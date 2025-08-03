@@ -2,60 +2,114 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
 func TestLoadUIConfig(t *testing.T) {
-	// Test with default values
-	cfg := LoadUIConfig()
+	// Test with default configuration (no config file)
+	tempDir, err := os.MkdirTemp("", "config_test_*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	nonExistentConfigPath := filepath.Join(tempDir, "nonexistent.yaml")
+	cfg, err := LoadUIConfig(nonExistentConfigPath)
+	if err != nil {
+		t.Fatalf("Expected no error for non-existent config, got %v", err)
+	}
 
 	if cfg.Server.Port != "3000" {
 		t.Errorf("Expected default port 3000, got %s", cfg.Server.Port)
 	}
 
-	if cfg.API.BaseURL != "http://api-service:8080" {
-		t.Errorf("Expected default API BaseURL http://api-service:8080, got %s", cfg.API.BaseURL)
+	if cfg.API.BaseURL != "http://localhost:8080" {
+		t.Errorf("Expected default API BaseURL http://localhost:8080, got %s", cfg.API.BaseURL)
 	}
 
 	if cfg.API.Timeout != 30*time.Second {
 		t.Errorf("Expected default timeout 30s, got %v", cfg.API.Timeout)
 	}
+}
 
-	// Test with environment variables
-	_ = os.Setenv(UIEnvPort, "4000")
-	_ = os.Setenv(UIEnvAPIBaseURL, "http://test-api:8080")
-	_ = os.Setenv(UIEnvAPITimeout, "45s")
-	defer func() {
-		_ = os.Unsetenv(UIEnvPort)
-		_ = os.Unsetenv(UIEnvAPIBaseURL)
-		_ = os.Unsetenv(UIEnvAPITimeout)
-	}()
+func TestLoadUIConfigFromFile(t *testing.T) {
+	// Test with custom YAML configuration
+	tempDir, err := os.MkdirTemp("", "config_test_*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
-	cfg = LoadUIConfig()
+	configPath := filepath.Join(tempDir, "test_config.yaml")
+	configContent := `
+api:
+  server:
+    port: "8080"
+    base_url: ""
+  database:
+    connection_string: ":memory:"
+  storage:
+    base_path: "/tmp/video-to-podcast"
+  external:
+    ytdlp_cookies_file: ""
+ui:
+  server:
+    port: "4000"
+  api:
+    base_url: "http://test-api:8080"
+    timeout: "45s"
+`
+
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
+	}
+
+	cfg, err := LoadUIConfig(configPath)
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
+	}
 
 	if cfg.Server.Port != "4000" {
-		t.Errorf("Expected port 4000 from env, got %s", cfg.Server.Port)
+		t.Errorf("Expected port 4000 from config, got %s", cfg.Server.Port)
 	}
 
 	if cfg.API.BaseURL != "http://test-api:8080" {
-		t.Errorf("Expected API BaseURL http://test-api:8080 from env, got %s", cfg.API.BaseURL)
+		t.Errorf("Expected API BaseURL http://test-api:8080 from config, got %s", cfg.API.BaseURL)
 	}
 
 	if cfg.API.Timeout != 45*time.Second {
-		t.Errorf("Expected timeout 45s from env, got %v", cfg.API.Timeout)
+		t.Errorf("Expected timeout 45s from config, got %v", cfg.API.Timeout)
 	}
 }
 
-func TestLoadUIConfigInvalidTimeout(t *testing.T) {
-	// Test with invalid timeout format
-	_ = os.Setenv(UIEnvAPITimeout, "invalid")
-	defer func() { _ = os.Unsetenv(UIEnvAPITimeout) }()
+func TestLoadConfigInvalidYAML(t *testing.T) {
+	// Test with invalid YAML content
+	tempDir, err := os.MkdirTemp("", "config_test_*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
-	cfg := LoadUIConfig()
+	configPath := filepath.Join(tempDir, "invalid.yaml")
+	// Create truly invalid YAML with syntax errors
+	invalidContent := `
+api:
+  server:
+    port: "8080"
+    base_url: "
+ui:
+  server:
+    port: [invalid structure without closing bracket
+`
 
-	// Should fallback to default timeout when parsing fails
-	if cfg.API.Timeout != 30*time.Second {
-		t.Errorf("Expected fallback timeout 30s for invalid format, got %v", cfg.API.Timeout)
+	if err := os.WriteFile(configPath, []byte(invalidContent), 0644); err != nil {
+		t.Fatalf("Failed to write invalid config: %v", err)
+	}
+
+	_, err = LoadUIConfig(configPath)
+	if err == nil {
+		t.Error("Expected error for invalid YAML, got nil")
 	}
 }
