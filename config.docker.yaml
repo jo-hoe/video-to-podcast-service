@@ -1,0 +1,23 @@
+# Video to Podcast Service Configuration for Docker
+# This configuration is optimized for containerized deployment
+# with no persistence beyond container lifetime
+
+api:
+  server:
+    port: "8080"
+    base_url: "" # Auto-detect based on request
+  database:
+    connection_string: ":memory:" # In-memory database (no persistence)
+  storage:
+    base_path: "/tmp/video-to-podcast" # Temporary storage
+  external:
+    ytdlp_cookies_file: "" # No cookies file by default
+    # Uncomment to use cookies file:
+    # ytdlp_cookies_file: "/app/cookies/youtube_cookies.txt"
+
+ui:
+  server:
+    port: "3000"
+  api:
+    base_url: "http://api-service:8080" # For Docker Compose networking
+    timeout: "30s"

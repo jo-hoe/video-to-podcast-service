@@ -1,0 +1,21 @@
+# Video to Podcast Service Configuration
+# This configuration provides sensible defaults for out-of-the-box usage
+# without persistence beyond container lifetime
+
+api:
+  server:
+    port: "8080"
+    base_url: "" # Auto-detect based on request
+  database:
+    connection_string: ":memory:" # In-memory database (no persistence)
+  storage:
+    base_path: "/tmp/video-to-podcast" # Temporary storage
+  external:
+    ytdlp_cookies_file: "" # No cookies file by default
+
+ui:
+  server:
+    port: "3000"
+  api:
+    base_url: "http://localhost:8080" # For local development
+    timeout: "30s"

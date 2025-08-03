@@ -17,7 +17,28 @@ import (
 )
 
 func main() {
-	cfg := config.LoadAPIConfig()
+	configPath := config.GetConfigPath()
+
+	// Create default config if it doesn't exist
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Printf("Config file not found at %s, creating default configuration", configPath)
+		if err := config.SaveDefaultConfig(configPath); err != nil {
+			log.Printf("Warning: Failed to create default config file: %v", err)
+		}
+	}
+
+	cfg, err := config.LoadAPIConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Log configuration
+	log.Printf("Starting API service on port %s", cfg.Server.Port)
+	log.Printf("Database: %s", cfg.Database.ConnectionString)
+	log.Printf("Storage path: %s", cfg.Storage.BasePath)
+	if cfg.External.YTDLPCookiesFile != "" {
+		log.Printf("Using cookies file: %s", cfg.External.YTDLPCookiesFile)
+	}
 
 	// Ensure directory structure exists
 	if err := ensureDirectoryStructure(cfg); err != nil {

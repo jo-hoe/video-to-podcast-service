@@ -6,16 +6,11 @@ services:
     image: video-to-podcast-api
     ports:
       - "8080:8080"
-    environment:
-      PORT: "8080"
-      BASE_PATH: "/app/data/resources"         # Custom storage path
-      DATABASE_PATH: "/app/data/database"      # Database storage path
-      # YTDLP_COOKIES_FILE: "/app/data/cookies/youtube_cookies.txt"
     volumes:
-      # Persist all data in a common directory structure
-      - podcast_data:/app/data
-      # Uncomment to use cookies file from host (copy to data/cookies/ first)
-      #- "./data/cookies/youtube_cookies.txt:/app/data/cookies/youtube_cookies.txt"
+      # Mount Docker-specific configuration file
+      - "./config.docker.yaml:/app/config.yaml:ro"
+      # Optional: Mount custom cookies file
+      # - "./cookies/youtube_cookies.txt:/app/cookies/youtube_cookies.txt:ro"
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/v1/health"]
       interval: 30s
@@ -40,10 +35,9 @@ services:
     image: video-to-podcast-ui
     ports:
       - "3000:3000"
-    environment:
-      UI_PORT: "3000"
-      API_BASE_URL: "http://api-service:8080"
-      API_TIMEOUT: "30s"
+    volumes:
+      # Mount Docker-specific configuration file
+      - "./config.docker.yaml:/app/config.yaml:ro"
     depends_on:
       api-service:
         condition: service_healthy

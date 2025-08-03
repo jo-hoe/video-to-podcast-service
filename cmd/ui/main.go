@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-playground/validator"
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
@@ -13,7 +14,26 @@ import (
 )
 
 func main() {
-	cfg := config.LoadUIConfig()
+	configPath := config.GetConfigPath()
+
+	// Create default config if it doesn't exist
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		log.Printf("Config file not found at %s, creating default configuration", configPath)
+		if err := config.SaveDefaultConfig(configPath); err != nil {
+			log.Printf("Warning: Failed to create default config file: %v", err)
+		}
+	}
+
+	cfg, err := config.LoadUIConfig(configPath)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Log configuration
+	log.Printf("Starting UI service on port %s", cfg.Server.Port)
+	log.Printf("API service URL: %s", cfg.API.BaseURL)
+	log.Printf("API timeout: %s", cfg.API.Timeout)
+
 	startUIServer(cfg)
 }
 
