@@ -1,4 +1,4 @@
-package test
+package api
 
 import (
 	"bytes"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
-	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -41,7 +40,7 @@ func TestAPIClientCommunication(t *testing.T) {
 	coreService := core.NewCoreService(databaseService, tempDir)
 
 	// Create API service
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080")
 
 	// Create Echo instance for API
 	apiEcho := echo.New()
@@ -115,7 +114,7 @@ func TestEndToEndWorkflow(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080")
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -232,7 +231,7 @@ func TestAPIServiceErrorHandling(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080")
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -393,7 +392,7 @@ func TestServiceCommunicationProtocol(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080")
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())

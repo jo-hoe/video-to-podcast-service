@@ -1,4 +1,4 @@
-package test
+package ui
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
-	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
 	"github.com/labstack/echo/v4"
 )
 
@@ -117,7 +116,7 @@ func TestUIErrorHandling(t *testing.T) {
 			}
 
 			// Create UI service with mock client
-			uiService := ui.NewUIService(mockClient)
+			uiService := NewUIService(mockClient)
 
 			// Create Echo instance and set up routes
 			e := echo.New()
@@ -159,7 +158,7 @@ func TestUIErrorHandlingUnit(t *testing.T) {
 		errorToReturn:     retryError,
 	}
 
-	uiService := ui.NewUIService(mockClient)
+	uiService := NewUIService(mockClient)
 	e := echo.New()
 	uiService.SetUIRoutes(e)
 
