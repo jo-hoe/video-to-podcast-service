@@ -7,10 +7,11 @@ require (
 	github.com/gorilla/feeds v1.2.0
 	github.com/jo-hoe/mp3-joiner v0.0.0-20240816144805-0e151d4eda80
 	github.com/labstack/echo/v4 v4.13.4
-	github.com/lrstanley/go-ytdlp v1.1.1
+	github.com/lrstanley/go-ytdlp v1.2.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.42.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -37,5 +38,4 @@ require (
 	golang.org/x/time v0.12.0 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
