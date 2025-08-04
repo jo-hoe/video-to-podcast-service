@@ -20,6 +20,9 @@ Convert YouTube videos to podcast feeds that you can subscribe to in any podcast
    ```bash
    git clone https://github.com/jo-hoe/video-to-podcast-service.git
    cd video-to-podcast-service
+   
+   # Create required directories and set permissions (Linux/Mac)
+   mkdir -p cookies data/{cookies,resources,database,config} resources
    docker compose up
    ```
 
@@ -155,6 +158,10 @@ To access podcast feeds from other devices on your network:
 **Service won't start:**
 - Make sure ports 3000 and 8080 are available
 - Check Docker is running: `docker --version`
+
+**Permission denied errors (Linux):**
+- Use Docker to fix permissions: `docker run --rm -v $(pwd):/workspace alpine chown -R 1001:1001 /workspace/cookies /workspace/data /workspace/resources`
+- Or run with user mapping: `docker compose run --user $(id -u):$(id -g) api-service`
 
 **Can't download videos:**
 - Try adding YouTube cookies for authentication

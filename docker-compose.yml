@@ -8,9 +8,16 @@ services:
       - "8080:8080"
     volumes:
       # Mount Docker-specific configuration file
-      - "./config.docker.yaml:/app/config.yaml:ro"
-      # Optional: Mount custom cookies file
-      # - "./cookies/youtube_cookies.txt:/app/cookies/youtube_cookies.txt:ro"
+      #- "./config.docker.yaml:/app/config.yaml:ro"
+      # Mount cookies directory with read/write access
+      #- "./cookies:/app/cookies:rw"
+      #- "./data/cookies:/app/data/cookies:rw"
+      # Mount resources directories with read/write access
+      #- "./resources:/app/resources:rw"
+      #- "./data/resources:/app/data/resources:rw"
+      # Mount other data directories
+      #- "./data/database:/app/data/database:rw"
+      #- "./data/config:/app/data/config:rw"
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/v1/health"]
       interval: 30s
