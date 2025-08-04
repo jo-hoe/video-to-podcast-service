@@ -63,7 +63,7 @@ func startAPIServer(cfg *config.APIConfig, databaseService database.DatabaseServ
 
 	coreService := core.NewCoreService(databaseService, cfg.Storage.BasePath)
 
-	apiService := api.NewAPIService(coreService, cfg.Server.Port)
+	apiService := api.NewAPIService(coreService, cfg.Server.Port, &cfg.Feed)
 	apiService.SetAPIRoutes(e)
 
 	// start API server

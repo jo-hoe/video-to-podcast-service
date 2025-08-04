@@ -14,6 +14,11 @@ api:
     ytdlp_cookies_file: "" # No cookies file by default
     # Uncomment to use cookies file:
     # ytdlp_cookies_file: "/app/cookies/youtube_cookies.txt"
+  feed:
+    # RSS feed generation mode
+    # "per_directory" - Creates one RSS feed per subdirectory (default behavior)
+    # "unified" - Creates a single RSS feed containing all podcast items
+    mode: "per_directory"
 
 ui:
   server:

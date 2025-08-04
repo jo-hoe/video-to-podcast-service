@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
@@ -39,7 +40,7 @@ func TestMicroservicesAPIClientCommunication(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := api.NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	// Create API server
 	apiEcho := echo.New()
@@ -124,7 +125,7 @@ func TestMicroservicesEndToEndWorkflow(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := api.NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -262,7 +263,7 @@ func TestMicroservicesErrorHandling(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := api.NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -441,7 +442,7 @@ func TestMicroservicesCommunicationProtocol(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := api.NewAPIService(coreService, "8080")
+	apiService := api.NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())

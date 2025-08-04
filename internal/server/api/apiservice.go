@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
@@ -28,6 +29,7 @@ const (
 type APIService struct {
 	coreService *core.CoreService
 	defaultPort string
+	feedConfig  *config.FeedConfig
 }
 
 type DownloadItem struct {
@@ -38,10 +40,11 @@ type DownloadItems struct {
 	URLS []string `json:"urls" validate:"required"`
 }
 
-func NewAPIService(coreservice *core.CoreService, defaultPort string) *APIService {
+func NewAPIService(coreservice *core.CoreService, defaultPort string, feedConfig *config.FeedConfig) *APIService {
 	return &APIService{
 		coreService: coreservice,
 		defaultPort: defaultPort,
+		feedConfig:  feedConfig,
 	}
 }
 
@@ -186,6 +189,22 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 
 func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
+
+	// Handle mode-specific routing
+	if service.feedConfig != nil && service.feedConfig.Mode == "unified" {
+		// In unified mode, only allow "all" as feedTitle
+		if feedTitle != "all" {
+			log.Printf("invalid feed request in unified mode: %s", feedTitle)
+			return echo.NewHTTPError(http.StatusNotFound, "feed not found")
+		}
+	} else {
+		// In per-directory mode, reject "all" requests
+		if feedTitle == "all" {
+			log.Printf("invalid feed request in per-directory mode: %s", feedTitle)
+			return echo.NewHTTPError(http.StatusNotFound, "feed not found")
+		}
+	}
+
 	result, err := service.getFeed(ctx.Request().Host, feedTitle)
 	if err != nil {
 		log.Printf("failed to get feed for title %s: %v", feedTitle, err)
@@ -267,8 +286,14 @@ func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, 
 		return nil, err
 	}
 
+	// In unified mode, map "all" to the actual unified feed title
+	searchTitle := feedTitle
+	if service.feedConfig != nil && service.feedConfig.Mode == "unified" && feedTitle == "all" {
+		searchTitle = "All Podcast Items"
+	}
+
 	for _, feed := range feedItems {
-		if feed.Title == feedTitle {
+		if feed.Title == searchTitle {
 			result = feed
 			break
 		}
@@ -408,5 +433,5 @@ func (service *APIService) checkCoreServiceHealth() error {
 func (service *APIService) getFeedService() *feed.FeedService {
 	port := common.ValueOrDefault(os.Getenv("PORT"), service.defaultPort)
 
-	return feed.NewFeedService(service.coreService, port, FeedsPath)
+	return feed.NewFeedService(service.coreService, port, FeedsPath, service.feedConfig)
 }

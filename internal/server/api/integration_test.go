@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
@@ -40,7 +41,7 @@ func TestAPIClientCommunication(t *testing.T) {
 	coreService := core.NewCoreService(databaseService, tempDir)
 
 	// Create API service
-	apiService := NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	// Create Echo instance for API
 	apiEcho := echo.New()
@@ -114,7 +115,7 @@ func TestEndToEndWorkflow(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -214,6 +215,387 @@ func TestEndToEndWorkflow(t *testing.T) {
 	})
 }
 
+// TestRSSFeedConfigurationIntegration tests comprehensive RSS feed configuration scenarios
+func TestRSSFeedConfigurationIntegration(t *testing.T) {
+	// Create temporary directory for test
+	tempDir, err := os.MkdirTemp("", "feed_config_integration_*")
+	if err != nil {
+		t.Fatalf("Failed to create temp directory: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(tempDir) }()
+
+	// Set up test database with comprehensive test data
+	dbPath := filepath.Join(tempDir, "test.db")
+	databaseService, err := database.NewDatabase(dbPath, tempDir)
+	if err != nil {
+		t.Fatalf("Failed to create test database: %v", err)
+	}
+
+	// Create multiple test directories to simulate different channels
+	testDirs := []string{"tech-channel", "music-channel", "news-channel"}
+	for _, dir := range testDirs {
+		fullPath := filepath.Join(tempDir, dir)
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			t.Fatalf("Failed to create test directory %s: %v", dir, err)
+		}
+	}
+
+	// Create test audio files and podcast items
+	testItems := []*database.PodcastItem{
+		{
+			ID:                     "tech1",
+			Title:                  "Tech Talk Episode 1",
+			Description:            "Latest technology trends",
+			AudioFilePath:          filepath.Join(tempDir, "tech-channel", "tech1.mp3"),
+			Author:                 "Tech Expert",
+			DurationInMilliseconds: 1800000, // 30 minutes
+			Thumbnail:              "http://example.com/tech1.jpg",
+		},
+		{
+			ID:                     "tech2",
+			Title:                  "Tech Talk Episode 2",
+			Description:            "AI and Machine Learning",
+			AudioFilePath:          filepath.Join(tempDir, "tech-channel", "tech2.mp3"),
+			Author:                 "Tech Expert",
+			DurationInMilliseconds: 2100000, // 35 minutes
+			Thumbnail:              "http://example.com/tech2.jpg",
+		},
+		{
+			ID:                     "music1",
+			Title:                  "Music Review: Album X",
+			Description:            "Review of the latest album",
+			AudioFilePath:          filepath.Join(tempDir, "music-channel", "music1.mp3"),
+			Author:                 "Music Critic",
+			DurationInMilliseconds: 1200000, // 20 minutes
+			Thumbnail:              "http://example.com/music1.jpg",
+		},
+		{
+			ID:                     "news1",
+			Title:                  "Daily News Update",
+			Description:            "Today's top stories",
+			AudioFilePath:          filepath.Join(tempDir, "news-channel", "news1.mp3"),
+			Author:                 "News Anchor",
+			DurationInMilliseconds: 900000, // 15 minutes
+			Thumbnail:              "http://example.com/news1.jpg",
+		},
+	}
+
+	// Create audio files and add items to database
+	for _, item := range testItems {
+		if err := os.WriteFile(item.AudioFilePath, []byte("fake audio data"), 0644); err != nil {
+			t.Fatalf("Failed to create test file %s: %v", item.AudioFilePath, err)
+		}
+		if err := databaseService.CreatePodcastItem(item); err != nil {
+			t.Fatalf("Failed to add test item %s: %v", item.ID, err)
+		}
+	}
+
+	t.Run("PerDirectoryMode_CompleteFlow", func(t *testing.T) {
+		coreService := core.NewCoreService(databaseService, tempDir)
+		apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
+
+		apiEcho := echo.New()
+		apiEcho.Use(middleware.Logger())
+		apiEcho.Use(middleware.Recover())
+		apiService.SetAPIRoutes(apiEcho)
+
+		apiServer := httptest.NewServer(apiEcho)
+		defer apiServer.Close()
+
+		// Test feeds endpoint returns multiple feeds (one per directory)
+		resp, err := http.Get(apiServer.URL + "/v1/feeds")
+		if err != nil {
+			t.Fatalf("Failed to get feeds: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var feeds []string
+		if err := json.NewDecoder(resp.Body).Decode(&feeds); err != nil {
+			t.Fatalf("Failed to decode feeds response: %v", err)
+		}
+
+		// Should have 3 feeds (tech-channel, music-channel, news-channel)
+		if len(feeds) != 3 {
+			t.Errorf("Expected 3 feeds in per_directory mode, got %d", len(feeds))
+		}
+
+		// Verify each feed URL contains the expected pattern
+		expectedChannels := map[string]bool{"tech-channel": false, "music-channel": false, "news-channel": false}
+		for _, feedURL := range feeds {
+			for channel := range expectedChannels {
+				if strings.Contains(feedURL, channel) {
+					expectedChannels[channel] = true
+				}
+			}
+		}
+
+		for channel, found := range expectedChannels {
+			if !found {
+				t.Errorf("Expected to find feed for channel %s", channel)
+			}
+		}
+
+		// Test individual feed access works for each channel
+		for channel := range expectedChannels {
+			resp, err = http.Get(apiServer.URL + "/v1/feeds/" + channel + "/rss.xml")
+			if err != nil {
+				t.Fatalf("Failed to get individual feed for %s: %v", channel, err)
+			}
+			defer func() { _ = resp.Body.Close() }()
+
+			if resp.StatusCode != http.StatusOK {
+				t.Errorf("Expected status 200 for individual feed %s, got %d", channel, resp.StatusCode)
+			}
+
+			// Verify content type is XML
+			contentType := resp.Header.Get("Content-Type")
+			if !strings.Contains(contentType, "xml") {
+				t.Errorf("Expected XML content type for RSS feed %s, got %s", channel, contentType)
+			}
+
+			// Verify RSS content contains expected elements
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatalf("Failed to read RSS body for %s: %v", channel, err)
+			}
+			rssContent := string(body)
+
+			// Check for RSS structure
+			if !strings.Contains(rssContent, "<rss") {
+				t.Errorf("RSS feed for %s should contain <rss tag", channel)
+			}
+			if !strings.Contains(rssContent, "<channel>") {
+				t.Errorf("RSS feed for %s should contain <channel> tag", channel)
+			}
+			if !strings.Contains(rssContent, "<item>") {
+				t.Errorf("RSS feed for %s should contain <item> tag", channel)
+			}
+		}
+
+		// Test that "all" endpoint returns 404 in per-directory mode
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/all/rss.xml")
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("Expected status 404 for /all endpoint in per-directory mode, got %d", resp.StatusCode)
+		}
+
+		// Test audio file access works
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/tech-channel/tech1.mp3")
+		if err != nil {
+			t.Fatalf("Failed to get audio file: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 for audio file access, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("UnifiedMode_CompleteFlow", func(t *testing.T) {
+		coreService := core.NewCoreService(databaseService, tempDir)
+		apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "unified"})
+
+		apiEcho := echo.New()
+		apiEcho.Use(middleware.Logger())
+		apiEcho.Use(middleware.Recover())
+		apiService.SetAPIRoutes(apiEcho)
+
+		apiServer := httptest.NewServer(apiEcho)
+		defer apiServer.Close()
+
+		// Test feeds endpoint returns single unified feed
+		resp, err := http.Get(apiServer.URL + "/v1/feeds")
+		if err != nil {
+			t.Fatalf("Failed to get feeds: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var feeds []string
+		if err := json.NewDecoder(resp.Body).Decode(&feeds); err != nil {
+			t.Fatalf("Failed to decode feeds response: %v", err)
+		}
+
+		if len(feeds) != 1 {
+			t.Errorf("Expected 1 feed in unified mode, got %d", len(feeds))
+		}
+
+		// Verify the unified feed URL contains expected pattern
+		if len(feeds) > 0 && !strings.Contains(feeds[0], "/v1/feeds/all/rss.xml") {
+			t.Errorf("Expected unified feed URL to contain '/v1/feeds/all/rss.xml', got %s", feeds[0])
+		}
+
+		// Test unified feed access works via /all endpoint
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/all/rss.xml")
+		if err != nil {
+			t.Fatalf("Failed to get unified feed via /all: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 for unified feed via /all, got %d", resp.StatusCode)
+		}
+
+		// Verify content type is XML
+		contentType := resp.Header.Get("Content-Type")
+		if !strings.Contains(contentType, "xml") {
+			t.Errorf("Expected XML content type for RSS feed, got %s", contentType)
+		}
+
+		// Verify RSS content contains all items from all subdirectories
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Failed to read RSS body: %v", err)
+		}
+		rssContent := string(body)
+
+		// Check for RSS structure
+		if !strings.Contains(rssContent, "<rss") {
+			t.Error("Unified RSS feed should contain <rss tag")
+		}
+		if !strings.Contains(rssContent, "<channel>") {
+			t.Error("Unified RSS feed should contain <channel> tag")
+		}
+		if !strings.Contains(rssContent, "All Podcast Items") {
+			t.Error("Unified RSS feed should contain 'All Podcast Items' title")
+		}
+
+		// Verify all test items are included in the unified feed
+		expectedTitles := []string{"Tech Talk Episode 1", "Tech Talk Episode 2", "Music Review: Album X", "Daily News Update"}
+		for _, title := range expectedTitles {
+			if !strings.Contains(rssContent, title) {
+				t.Errorf("Unified RSS feed should contain item: %s", title)
+			}
+		}
+
+		// Test individual feed access returns 404 in unified mode for all channels
+		testChannels := []string{"tech-channel", "music-channel", "news-channel"}
+		for _, channel := range testChannels {
+			resp, err = http.Get(apiServer.URL + "/v1/feeds/" + channel + "/rss.xml")
+			if err != nil {
+				t.Fatalf("Failed to send request for %s: %v", channel, err)
+			}
+			defer func() { _ = resp.Body.Close() }()
+
+			if resp.StatusCode != http.StatusNotFound {
+				t.Errorf("Expected status 404 for individual feed %s in unified mode, got %d", channel, resp.StatusCode)
+			}
+		}
+
+		// Test audio file access still works in unified mode
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/tech-channel/tech1.mp3")
+		if err != nil {
+			t.Fatalf("Failed to get audio file: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 for audio file access in unified mode, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("DefaultModeBackwardCompatibility", func(t *testing.T) {
+		coreService := core.NewCoreService(databaseService, tempDir)
+		// Test with nil config (should default to per_directory)
+		apiService := NewAPIService(coreService, "8080", nil)
+
+		apiEcho := echo.New()
+		apiEcho.Use(middleware.Logger())
+		apiEcho.Use(middleware.Recover())
+		apiService.SetAPIRoutes(apiEcho)
+
+		apiServer := httptest.NewServer(apiEcho)
+		defer apiServer.Close()
+
+		// Should behave like per_directory mode
+		resp, err := http.Get(apiServer.URL + "/v1/feeds")
+		if err != nil {
+			t.Fatalf("Failed to get feeds: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var feeds []string
+		if err := json.NewDecoder(resp.Body).Decode(&feeds); err != nil {
+			t.Fatalf("Failed to decode feeds response: %v", err)
+		}
+
+		if len(feeds) != 3 {
+			t.Errorf("Expected 3 feeds with nil config (default behavior), got %d", len(feeds))
+		}
+
+		// Test that individual feed access works (per-directory behavior)
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/tech-channel/rss.xml")
+		if err != nil {
+			t.Fatalf("Failed to get individual feed: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200 for individual feed with nil config, got %d", resp.StatusCode)
+		}
+
+		// Test that "all" endpoint returns 404 (per-directory behavior)
+		resp, err = http.Get(apiServer.URL + "/v1/feeds/all/rss.xml")
+		if err != nil {
+			t.Fatalf("Failed to send request: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusNotFound {
+			t.Errorf("Expected status 404 for /all endpoint with nil config, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("InvalidModeHandling", func(t *testing.T) {
+		coreService := core.NewCoreService(databaseService, tempDir)
+		// Test with invalid mode (should default to per_directory)
+		apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "invalid_mode"})
+
+		apiEcho := echo.New()
+		apiEcho.Use(middleware.Logger())
+		apiEcho.Use(middleware.Recover())
+		apiService.SetAPIRoutes(apiEcho)
+
+		apiServer := httptest.NewServer(apiEcho)
+		defer apiServer.Close()
+
+		// Should behave like per_directory mode
+		resp, err := http.Get(apiServer.URL + "/v1/feeds")
+		if err != nil {
+			t.Fatalf("Failed to get feeds: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("Expected status 200, got %d", resp.StatusCode)
+		}
+
+		var feeds []string
+		if err := json.NewDecoder(resp.Body).Decode(&feeds); err != nil {
+			t.Fatalf("Failed to decode feeds response: %v", err)
+		}
+
+		if len(feeds) != 2 {
+			t.Errorf("Expected 2 feeds with invalid mode (default behavior), got %d", len(feeds))
+		}
+	})
+}
+
 // TestAPIServiceErrorHandling tests error handling scenarios in the API service
 func TestAPIServiceErrorHandling(t *testing.T) {
 	// Create temporary directory for test
@@ -231,7 +613,7 @@ func TestAPIServiceErrorHandling(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())
@@ -392,7 +774,7 @@ func TestServiceCommunicationProtocol(t *testing.T) {
 	}
 
 	coreService := core.NewCoreService(databaseService, tempDir)
-	apiService := NewAPIService(coreService, "8080")
+	apiService := NewAPIService(coreService, "8080", &config.FeedConfig{Mode: "per_directory"})
 
 	apiEcho := echo.New()
 	apiEcho.Use(middleware.Logger())

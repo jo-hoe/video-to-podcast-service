@@ -12,6 +12,11 @@ api:
     base_path: "/tmp/video-to-podcast" # Temporary storage
   external:
     ytdlp_cookies_file: "" # No cookies file by default
+  feed:
+    # RSS feed generation mode
+    # "per_directory" - Creates one RSS feed per subdirectory (default behavior)
+    # "unified" - Creates a single RSS feed containing all podcast items
+    mode: "per_directory"
 
 ui:
   server:

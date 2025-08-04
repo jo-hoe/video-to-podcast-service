@@ -21,6 +21,7 @@ type APIConfig struct {
 	Database DatabaseConfig  `yaml:"database"`
 	Storage  StorageConfig   `yaml:"storage"`
 	External ExternalConfig  `yaml:"external"`
+	Feed     FeedConfig      `yaml:"feed"`
 }
 
 // UIConfig holds all UI service configuration
@@ -55,6 +56,11 @@ type ExternalConfig struct {
 	YTDLPCookiesFile string `yaml:"ytdlp_cookies_file"`
 }
 
+// FeedConfig holds RSS feed generation configuration
+type FeedConfig struct {
+	Mode string `yaml:"mode"` // "per_directory" or "unified"
+}
+
 // APIClientConfig holds API client configuration for communicating with API service
 type APIClientConfig struct {
 	BaseURL string        `yaml:"base_url"`
@@ -87,6 +93,12 @@ func LoadAPIConfig(configPath string) (*APIConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Validate and set default for feed mode if invalid or missing
+	if config.API.Feed.Mode == "" || (config.API.Feed.Mode != "per_directory" && config.API.Feed.Mode != "unified") {
+		config.API.Feed.Mode = "per_directory"
+	}
+
 	return &config.API, nil
 }
 
@@ -115,6 +127,9 @@ func getDefaultConfig() *Config {
 			},
 			External: ExternalConfig{
 				YTDLPCookiesFile: "", // No cookies file by default
+			},
+			Feed: FeedConfig{
+				Mode: "per_directory", // Default to per-directory mode
 			},
 		},
 		UI: UIConfig{
