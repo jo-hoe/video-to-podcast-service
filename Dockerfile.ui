@@ -15,7 +15,7 @@ COPY . ./
 RUN CGO_ENABLED=0 go build -o /go/bin/ui-service ./cmd/ui
 
 # Runtime stage: use minimal Alpine image for UI service
-FROM alpine:3.20
+FROM alpine:3.22
 
 # Install minimal dependencies for UI service
 RUN apk --no-cache add ca-certificates curl && \
