@@ -8,7 +8,7 @@ services:
       - "8080:8080"
     volumes:
       # Mount Docker-specific configuration file
-      #- "./config.docker.yaml:/app/config.yaml:ro"
+      - "./config.docker.yaml:/app/config.yaml:ro"
       # Mount cookies directory with read/write access
       #- "./cookies:/app/cookies:rw"
       #- "./data/cookies:/app/data/cookies:rw"

@@ -48,6 +48,10 @@ func getDatabaseType(connectionString string) string {
 	if len(connectionString) > 3 && connectionString[len(connectionString)-3:] == ".db" {
 		return "sqlite"
 	}
+	// Handle SQLite in-memory database
+	if connectionString == ":memory:" {
+		return "sqlite"
+	}
 	// Add more database types as needed
 	return "unknown"
 }

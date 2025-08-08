@@ -590,8 +590,8 @@ func TestRSSFeedConfigurationIntegration(t *testing.T) {
 			t.Fatalf("Failed to decode feeds response: %v", err)
 		}
 
-		if len(feeds) != 2 {
-			t.Errorf("Expected 2 feeds with invalid mode (default behavior), got %d", len(feeds))
+		if len(feeds) != 3 {
+			t.Errorf("Expected 3 feeds with invalid mode (default behavior), got %d", len(feeds))
 		}
 	})
 }
