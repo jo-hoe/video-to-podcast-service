@@ -1,0 +1,246 @@
+# Default values for video-to-podcast.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# API Service configuration
+api:
+  replicaCount: 1
+  
+  image:
+    repository: video-to-podcast-api
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    annotations: {}
+  
+  resources:
+    limits:
+      memory: 1Gi
+      cpu: 1000m
+    requests:
+      memory: 512Mi
+      cpu: 500m
+  
+  # Health check configuration
+  healthCheck:
+    enabled: true
+    path: /v1/health
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 5
+    successThreshold: 1
+  
+  # Application configuration
+  config:
+    server:
+      port: "8080"
+      baseUrl: ""
+    database:
+      connectionString: ":memory:"
+    storage:
+      basePath: "/app/data/resources"
+    external:
+      ytdlpCookiesFile: ""
+    feed:
+      mode: "per_directory"
+  
+  # Node selector and tolerations
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# UI Service configuration
+ui:
+  replicaCount: 1
+  
+  image:
+    repository: video-to-podcast-ui
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+    annotations: {}
+  
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m
+  
+  # Health check configuration
+  healthCheck:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 20
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 5
+    successThreshold: 1
+  
+  # Application configuration
+  config:
+    server:
+      port: "3000"
+    api:
+      baseUrl: ""  # Will be auto-configured to API service
+      timeout: "30s"
+  
+  # Node selector and tolerations
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Persistence configuration
+persistence:
+  enabled: false
+  
+  # Storage for resources (audio files, etc.)
+  resources:
+    enabled: false
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    annotations: {}
+  
+  # Storage for database
+  database:
+    enabled: false
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    annotations: {}
+  
+  # Storage for cookies
+  cookies:
+    enabled: false
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 100Mi
+    annotations: {}
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 1001
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: video-to-podcast.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: ui
+        - path: /v1
+          pathType: Prefix
+          service: api
+  tls: []
+  #  - secretName: video-to-podcast-tls
+  #    hosts:
+  #      - video-to-podcast.local
+
+# Autoscaling configuration
+autoscaling:
+  api:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+  
+  ui:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  ingress: []
+  egress: []
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+# YouTube cookies secret (optional)
+youtubeCookies:
+  enabled: false
+  secretName: youtube-cookies
+  cookiesFile: youtube_cookies.txt
+  # If you want to create the secret from a file:
+  # createSecret: true
+  # cookiesContent: |
+  #   # Your cookies content here
+
+# Additional environment variables
+extraEnvVars: []
+# - name: EXTRA_VAR
+#   value: "extra-value"
+
+# Additional volumes
+extraVolumes: []
+# - name: extra-volume
+#   emptyDir: {}
+
+# Additional volume mounts
+extraVolumeMounts: []
+# - name: extra-volume
+#   mountPath: /extra
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}

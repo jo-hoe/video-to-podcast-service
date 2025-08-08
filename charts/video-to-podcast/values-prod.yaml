@@ -1,0 +1,212 @@
+# Production environment values for video-to-podcast
+# This file provides configuration suitable for production deployment
+
+# Production-grade resource allocation
+api:
+  replicaCount: 3
+  
+  image:
+    tag: "v1.0.0"  # Use specific version tags in production
+    pullPolicy: Always
+  
+  resources:
+    limits:
+      memory: 2Gi
+      cpu: 1500m
+    requests:
+      memory: 1Gi
+      cpu: 750m
+  
+  # Production configuration with persistence
+  config:
+    database:
+      connectionString: "/app/data/database/podcast.db"
+    storage:
+      basePath: "/app/data/resources"
+    server:
+      baseUrl: "https://api.video-to-podcast.example.com"
+
+ui:
+  replicaCount: 2
+  
+  image:
+    tag: "v1.0.0"  # Use specific version tags in production
+    pullPolicy: Always
+  
+  resources:
+    limits:
+      memory: 1Gi
+      cpu: 750m
+    requests:
+      memory: 512Mi
+      cpu: 375m
+
+# Enable persistence for production
+persistence:
+  enabled: true
+  resources:
+    enabled: true
+    storageClass: "fast-ssd"
+    size: 100Gi
+    annotations:
+      volume.beta.kubernetes.io/storage-class: "fast-ssd"
+  database:
+    enabled: true
+    storageClass: "fast-ssd"
+    size: 10Gi
+    annotations:
+      volume.beta.kubernetes.io/storage-class: "fast-ssd"
+  cookies:
+    enabled: true
+    storageClass: "standard"
+    size: 1Gi
+
+# Production ingress with TLS
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: video-to-podcast.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: ui
+        - path: /v1
+          pathType: Prefix
+          service: api
+  tls:
+    - secretName: video-to-podcast-tls
+      hosts:
+        - video-to-podcast.example.com
+
+# Enable autoscaling for production
+autoscaling:
+  api:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  ui:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Enable Pod Disruption Budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Enable monitoring for production
+monitoring:
+  serviceMonitor:
+    enabled: true
+    namespace: "monitoring"
+    labels:
+      release: prometheus
+
+# Enable network policies for security
+networkPolicy:
+  enabled: true
+
+# Production security settings
+podSecurityContext:
+  fsGroup: 1001
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+# YouTube cookies for production (if needed)
+youtubeCookies:
+  enabled: true
+  secretName: youtube-cookies-prod
+
+# Production annotations and labels
+podAnnotations:
+  environment: "production"
+  backup.velero.io/backup-volumes: "resources,database"
+  
+podLabels:
+  environment: "production"
+  tier: "application"
+
+# Node affinity for production workloads
+api:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node-type
+            operator: In
+            values:
+            - "application"
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - api
+          topologyKey: kubernetes.io/hostname
+
+ui:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node-type
+            operator: In
+            values:
+            - "application"
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - ui
+          topologyKey: kubernetes.io/hostname
+
+# Production tolerations (if using tainted nodes)
+api:
+  tolerations:
+  - key: "application"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+ui:
+  tolerations:
+  - key: "application"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"

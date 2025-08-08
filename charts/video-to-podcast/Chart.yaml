@@ -1,0 +1,21 @@
+apiVersion: v2
+name: video-to-podcast
+description: A Helm chart for Video to Podcast Service - Convert YouTube videos to podcast feeds
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/jo-hoe/video-to-podcast-service
+sources:
+  - https://github.com/jo-hoe/video-to-podcast-service
+maintainers:
+  - name: jo-hoe
+    url: https://github.com/jo-hoe
+keywords:
+  - podcast
+  - youtube
+  - video
+  - audio
+  - rss
+  - feed
+annotations:
+  category: Media

@@ -1,0 +1,137 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "video-to-podcast.fullname" . }}-api
+  labels:
+    {{- include "video-to-podcast.api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.api.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "video-to-podcast.api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "video-to-podcast.api.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "video-to-podcast.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: api
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "video-to-podcast.api.image" . }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.service.targetPort }}
+              protocol: TCP
+          {{- if .Values.api.healthCheck.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.api.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.api.healthCheck.successThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.api.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.api.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.api.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.api.healthCheck.successThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            {{- if .Values.persistence.enabled }}
+            {{- if .Values.persistence.resources.enabled }}
+            - name: resources
+              mountPath: /app/data/resources
+            {{- end }}
+            {{- if .Values.persistence.database.enabled }}
+            - name: database
+              mountPath: /app/data/database
+            {{- end }}
+            {{- if .Values.persistence.cookies.enabled }}
+            - name: cookies
+              mountPath: /app/data/cookies
+            {{- end }}
+            {{- end }}
+            {{- if .Values.youtubeCookies.enabled }}
+            - name: youtube-cookies
+              mountPath: /app/cookies
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "video-to-podcast.fullname" . }}-config
+        {{- if .Values.persistence.enabled }}
+        {{- if .Values.persistence.resources.enabled }}
+        - name: resources
+          persistentVolumeClaim:
+            claimName: {{ include "video-to-podcast.fullname" . }}-resources
+        {{- end }}
+        {{- if .Values.persistence.database.enabled }}
+        - name: database
+          persistentVolumeClaim:
+            claimName: {{ include "video-to-podcast.fullname" . }}-database
+        {{- end }}
+        {{- if .Values.persistence.cookies.enabled }}
+        - name: cookies
+          persistentVolumeClaim:
+            claimName: {{ include "video-to-podcast.fullname" . }}-cookies
+        {{- end }}
+        {{- end }}
+        {{- if .Values.youtubeCookies.enabled }}
+        - name: youtube-cookies
+          secret:
+            secretName: {{ .Values.youtubeCookies.secretName }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

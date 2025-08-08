@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "video-to-podcast.fullname" . }}-ui
+  labels:
+    {{- include "video-to-podcast.ui.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.ui.enabled }}
+  replicas: {{ .Values.ui.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "video-to-podcast.ui.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "video-to-podcast.ui.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "video-to-podcast.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: ui
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "video-to-podcast.ui.image" . }}
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ui.service.targetPort }}
+              protocol: TCP
+          {{- if .Values.ui.healthCheck.enabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.ui.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.ui.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ui.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.ui.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.ui.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.ui.healthCheck.successThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.ui.healthCheck.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.ui.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ui.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.ui.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.ui.healthCheck.failureThreshold }}
+            successThreshold: {{ .Values.ui.healthCheck.successThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.ui.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            {{- with .Values.extraEnvVars }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "video-to-podcast.fullname" . }}-config
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.ui.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ui.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

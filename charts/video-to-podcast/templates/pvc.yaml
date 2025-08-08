@@ -1,0 +1,85 @@
+{{- if .Values.persistence.enabled }}
+{{- if .Values.persistence.resources.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "video-to-podcast.fullname" . }}-resources
+  labels:
+    {{- include "video-to-podcast.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  {{- with .Values.persistence.resources.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.resources.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.resources.size }}
+  {{- if .Values.persistence.resources.storageClass }}
+  {{- if (eq "-" .Values.persistence.resources.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.resources.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.persistence.database.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "video-to-podcast.fullname" . }}-database
+  labels:
+    {{- include "video-to-podcast.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+  {{- with .Values.persistence.database.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.database.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.database.size }}
+  {{- if .Values.persistence.database.storageClass }}
+  {{- if (eq "-" .Values.persistence.database.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.database.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.persistence.cookies.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "video-to-podcast.fullname" . }}-cookies
+  labels:
+    {{- include "video-to-podcast.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cookies
+  {{- with .Values.persistence.cookies.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.cookies.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.cookies.size }}
+  {{- if .Values.persistence.cookies.storageClass }}
+  {{- if (eq "-" .Values.persistence.cookies.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.persistence.cookies.storageClass }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }}
