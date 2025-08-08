@@ -340,9 +340,10 @@ func TestFeedService_GetUnifiedFeed_WithMultipleItems(t *testing.T) {
 	foundChannel1Items := 0
 	foundChannel2Items := 0
 	for _, item := range feed.Items {
-		if item.Title == "Channel 1 Episode 1" || item.Title == "Channel 1 Episode 2" {
+		switch item.Title {
+		case "Channel 1 Episode 1", "Channel 1 Episode 2":
 			foundChannel1Items++
-		} else if item.Title == "Channel 2 Episode 1" {
+		case "Channel 2 Episode 1":
 			foundChannel2Items++
 		}
 	}
@@ -674,9 +675,10 @@ func TestFeedService_GetPerDirectoryFeeds_MultipleDirectories(t *testing.T) {
 	// Find feeds by title (directory name)
 	var channel1Feed, channel2Feed *feeds.Feed
 	for _, feed := range feedList {
-		if feed.Title == "channel1" {
+		switch feed.Title {
+		case "channel1":
 			channel1Feed = feed
-		} else if feed.Title == "channel2" {
+		case "channel2":
 			channel2Feed = feed
 		}
 	}

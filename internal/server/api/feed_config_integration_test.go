@@ -718,7 +718,7 @@ api:
 			}
 
 			// Clean up
-			os.Remove(configPath)
+			_ = os.Remove(configPath)
 		}
 	})
 
@@ -747,7 +747,7 @@ api:
 		}
 
 		// Clean up
-		os.Remove(configPath)
+		_ = os.Remove(configPath)
 	})
 
 	t.Run("ConfigurationValidation_MissingFeedSection", func(t *testing.T) {
@@ -775,7 +775,7 @@ api:
 		}
 
 		// Clean up
-		os.Remove(configPath)
+		_ = os.Remove(configPath)
 	})
 }
 
