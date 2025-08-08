@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"time"
 )
 
 func calculateFileHash(filePath string) ([]byte, error) {
@@ -52,12 +54,12 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := inputFile.Close(); err != nil {
-			log.Printf("Error closing input file: %v", err)
-		}
-	}()
 	fileName := filepath.Base(inputFile.Name())
+
+	// Close the input file immediately after opening
+	if err := inputFile.Close(); err != nil {
+		log.Printf("Error closing input file: %v", err)
+	}
 
 	if doesFileExist(targetPath) {
 		log.Printf("file '%s' already exists at target", fileName)
@@ -70,12 +72,7 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 		if filesEqual {
 			log.Print("hash was equal, deleting file at origin")
 			// same file already exists and can be removed from source
-			// Close the file before removing it
-			if err := inputFile.Close(); err != nil {
-				log.Printf("Error closing input file before removal: %v", err)
-			}
-			err = os.Remove(sourcePath)
-			if err != nil {
+			if err := removeFile(sourcePath); err != nil {
 				return err
 			}
 			// stop process
@@ -83,57 +80,74 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 		} else {
 			log.Print("hash was not equal deleting file from target folder")
 			// remove destination file and continue
-			err = os.Remove(targetPath)
-			if err != nil {
+			if err := removeFile(targetPath); err != nil {
 				return err
 			}
 		}
 	}
 
 	tempFileName := fmt.Sprintf("%s.part", targetPath)
-	outputFile, err := os.Create(tempFileName)
+	err = copyFile(sourcePath, tempFileName)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		log.Print("securely cleaning cache and closing file")
-		fileClosingError := outputFile.Close()
-		if fileClosingError != nil {
-			log.Print("could not close file")
-			return
-		}
 
-		// check if copying was successful
-		if err != nil {
-			return
-		}
-
-		log.Printf("renaming file temp file to '%s'", targetPath)
-		// rename file to actual file name
-		err = os.Rename(tempFileName, targetPath)
-		if err != nil {
-			log.Printf("could not rename file %+v", err)
-			return
-		}
-
-		// currently double-check of file hash
-		// target/source file has been omitted
-
-		log.Printf("file '%s' moved successfully", fileName)
-		// The copy was successful, so now delete the original file
-		log.Printf("deleting file '%s' from source folder", fileName)
-		err = os.Remove(sourcePath)
-		if err != nil {
-			log.Printf("could not close file %+v", err)
-		}
-
-	}()
-
-	// actual file copy
-	_, err = io.Copy(outputFile, inputFile)
+	log.Printf("renaming file temp file to '%s'", targetPath)
+	// rename file to actual file name
+	err = os.Rename(tempFileName, targetPath)
 	if err != nil {
+		log.Printf("could not rename file %+v", err)
+		return err
+	}
+
+	log.Printf("file '%s' moved successfully", fileName)
+	// The copy was successful, so now delete the original file
+	log.Printf("deleting file '%s' from source folder", fileName)
+	if err := removeFile(sourcePath); err != nil {
+		log.Printf("could not remove source file: %v", err)
 		return err
 	}
 
 	return nil
+}
+
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return err
+	}
+
+	return destFile.Sync()
+}
+
+func removeFile(path string) error {
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		err := os.RemoveAll(path)
+		if err == nil {
+			return nil
+		}
+		if !os.IsPermission(err) {
+			return err
+		}
+		if i == maxRetries-1 {
+			return err
+		}
+		if runtime.GOOS == "windows" {
+			time.Sleep(time.Duration(i+1) * 100 * time.Millisecond)
+		}
+	}
+	return fmt.Errorf("failed to remove file after %d attempts", maxRetries)
 }
