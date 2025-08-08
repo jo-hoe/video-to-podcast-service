@@ -17,6 +17,7 @@ Convert YouTube videos to podcast feeds that you can subscribe to in any podcast
 ## Quick Start
 
 1. **Download and run:**
+
    ```bash
    git clone https://github.com/jo-hoe/video-to-podcast-service.git
    cd video-to-podcast-service
@@ -27,11 +28,11 @@ Convert YouTube videos to podcast feeds that you can subscribe to in any podcast
    ```
 
 2. **Access the service:**
-   - Web interface: http://localhost:3000
-   - API: http://localhost:8080
+   - Web interface: <http://localhost:3000>
+   - API: <http://localhost:8080>
 
 3. **Add a video:**
-   - Open http://localhost:3000 in your browser
+   - Open <http://localhost:3000> in your browser
    - Paste a YouTube URL and click "Add"
    - The video will be downloaded and converted to audio
 
@@ -42,6 +43,7 @@ Convert YouTube videos to podcast feeds that you can subscribe to in any podcast
 ## How It Works
 
 The service runs two components:
+
 - **API Service** (port 8080): Downloads videos, converts audio, serves RSS feeds
 - **UI Service** (port 3000): Web interface for easy interaction
 
@@ -50,6 +52,7 @@ The service runs two components:
 The service uses YAML configuration files with sensible defaults. No setup required for basic usage.
 
 ### Default Behavior
+
 - **No persistence**: Data is stored temporarily and cleared when containers restart
 - **In-memory database**: No permanent storage of metadata
 - **Temporary files**: Audio files stored in `/tmp` and cleaned up automatically
@@ -90,6 +93,7 @@ api:
 ```
 
 And add volumes to `docker-compose.yml`:
+
 ```yaml
 volumes:
   - podcast_data:/app/data
@@ -101,12 +105,15 @@ For private or age-restricted videos, add a cookies file:
 
 1. Export cookies from your browser to `cookies/youtube_cookies.txt`
 2. Update configuration:
+
    ```yaml
    api:
      external:
        ytdlp_cookies_file: "/app/cookies/youtube_cookies.txt"
    ```
+
 3. Mount the cookies file:
+
    ```yaml
    volumes:
      - "./cookies/youtube_cookies.txt:/app/cookies/youtube_cookies.txt:ro"
@@ -129,6 +136,7 @@ The service provides a REST API for programmatic access:
 To access podcast feeds from other devices on your network:
 
 1. **Find your computer's IP address:**
+
    ```bash
    # On Linux/Mac
    ip addr show | grep inet
@@ -138,6 +146,7 @@ To access podcast feeds from other devices on your network:
    ```
 
 2. **Update the configuration** to use your IP:
+
    ```yaml
    api:
      server:
@@ -156,17 +165,21 @@ To access podcast feeds from other devices on your network:
 ## Troubleshooting
 
 **Service won't start:**
+
 - Make sure ports 3000 and 8080 are available
 - Check Docker is running: `docker --version`
 
 **Permission denied errors (Linux):**
+
 - Use Docker to fix permissions: `docker run --rm -v $(pwd):/workspace alpine chown -R 1001:1001 /workspace/cookies /workspace/data /workspace/resources`
 - Or run with user mapping: `docker compose run --user $(id -u):$(id -g) api-service`
 
 **Can't download videos:**
+
 - Try adding YouTube cookies for authentication
 - Some IPs (especially cloud providers) may be blocked by YouTube
 
 **Can't access from other devices:**
+
 - Configure `base_url` with your computer's IP address
 - Make sure firewall allows connections on ports 3000 and 8080
