@@ -1,81 +1,177 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Config holds all application configuration
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Storage  StorageConfig
-	External ExternalConfig
+	API APIConfig `yaml:"api"`
+	UI  UIConfig  `yaml:"ui"`
 }
 
-// ServerConfig holds server-related configuration
-type ServerConfig struct {
-	Port    string
-	BaseURL string
+// APIConfig holds all API service configuration
+type APIConfig struct {
+	Server   APIServerConfig `yaml:"server"`
+	Database DatabaseConfig  `yaml:"database"`
+	Storage  StorageConfig   `yaml:"storage"`
+	External ExternalConfig  `yaml:"external"`
+	Feed     FeedConfig      `yaml:"feed"`
+}
+
+// UIConfig holds all UI service configuration
+type UIConfig struct {
+	Server UIServerConfig  `yaml:"server"`
+	API    APIClientConfig `yaml:"api"`
+}
+
+// APIServerConfig holds API server-related configuration
+type APIServerConfig struct {
+	Port    string `yaml:"port"`
+	BaseURL string `yaml:"base_url"`
+}
+
+// UIServerConfig holds UI server-related configuration
+type UIServerConfig struct {
+	Port string `yaml:"port"`
 }
 
 // DatabaseConfig holds database-related configuration
 type DatabaseConfig struct {
-	ConnectionString string
+	ConnectionString string `yaml:"connection_string"`
 }
 
 // StorageConfig holds storage-related configuration
 type StorageConfig struct {
-	BasePath string
+	BasePath string `yaml:"base_path"`
 }
 
 // ExternalConfig holds external service configuration
 type ExternalConfig struct {
-	YTDLPCookiesFile string
+	YTDLPCookiesFile string `yaml:"ytdlp_cookies_file"`
 }
 
-// Environment variable names
-const (
-	EnvPort             = "PORT"
-	EnvBaseURL          = "BASE_URL"
-	EnvBasePath         = "BASE_PATH"
-	EnvConnectionString = "CONNECTION_STRING"
-	EnvYTDLPCookiesFile = "YTDLP_COOKIES_FILE"
-)
+// FeedConfig holds RSS feed generation configuration
+type FeedConfig struct {
+	Mode string `yaml:"mode"` // "per_directory" or "unified"
+}
 
-// LoadConfig loads configuration from environment variables with sensible defaults
-func LoadConfig() *Config {
-	return &Config{
-		Server: ServerConfig{
-			Port:    getEnvOrDefault(EnvPort, "8080"),
-			BaseURL: os.Getenv(EnvBaseURL),
-		},
-		Database: DatabaseConfig{
-			ConnectionString: os.Getenv(EnvConnectionString),
-		},
-		Storage: StorageConfig{
-			BasePath: getEnvOrDefault(EnvBasePath, getDefaultResourcePath()),
-		},
-		External: ExternalConfig{
-			YTDLPCookiesFile: os.Getenv(EnvYTDLPCookiesFile),
-		},
+// APIClientConfig holds API client configuration for communicating with API service
+type APIClientConfig struct {
+	BaseURL string        `yaml:"base_url"`
+	Timeout time.Duration `yaml:"timeout"`
+}
+
+// LoadConfig loads configuration from YAML file with fallback to defaults
+func LoadConfig(configPath string) (*Config, error) {
+	// Start with default configuration
+	config := getDefaultConfig()
+
+	// If config file exists, load and merge it
+	if _, err := os.Stat(configPath); err == nil {
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+
+		if err := yaml.Unmarshal(data, config); err != nil {
+			return nil, fmt.Errorf("failed to parse config file: %w", err)
+		}
 	}
+
+	return config, nil
 }
 
-// getEnvOrDefault returns environment variable value or default if not set
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// getDefaultResourcePath returns the default resource path relative to executable
-func getDefaultResourcePath() string {
-	ex, err := os.Executable()
+// LoadAPIConfig loads only API service configuration
+func LoadAPIConfig(configPath string) (*APIConfig, error) {
+	config, err := LoadConfig(configPath)
 	if err != nil {
-		return "resources"
+		return nil, err
 	}
-	exPath := filepath.Dir(ex)
-	return filepath.Join(exPath, "resources")
+
+	// Validate and set default for feed mode if invalid or missing
+	if config.API.Feed.Mode == "" || (config.API.Feed.Mode != "per_directory" && config.API.Feed.Mode != "unified") {
+		config.API.Feed.Mode = "per_directory"
+	}
+
+	return &config.API, nil
+}
+
+// LoadUIConfig loads only UI service configuration
+func LoadUIConfig(configPath string) (*UIConfig, error) {
+	config, err := LoadConfig(configPath)
+	if err != nil {
+		return nil, err
+	}
+	return &config.UI, nil
+}
+
+// getDefaultConfig returns the default configuration for out-of-the-box usage
+func getDefaultConfig() *Config {
+	return &Config{
+		API: APIConfig{
+			Server: APIServerConfig{
+				Port:    "8080",
+				BaseURL: "", // Empty means auto-detect
+			},
+			Database: DatabaseConfig{
+				ConnectionString: ":memory:", // In-memory database for no persistence
+			},
+			Storage: StorageConfig{
+				BasePath: "/tmp/video-to-podcast", // Temporary storage
+			},
+			External: ExternalConfig{
+				YTDLPCookiesFile: "", // No cookies file by default
+			},
+			Feed: FeedConfig{
+				Mode: "per_directory", // Default to per-directory mode
+			},
+		},
+		UI: UIConfig{
+			Server: UIServerConfig{
+				Port: "3000",
+			},
+			API: APIClientConfig{
+				BaseURL: "http://localhost:8080", // Default for local development
+				Timeout: 30 * time.Second,
+			},
+		},
+	}
+}
+
+// SaveDefaultConfig saves the default configuration to a file
+func SaveDefaultConfig(configPath string) error {
+	config := getDefaultConfig()
+
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	data, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}
+
+// GetConfigPath returns the default configuration file path
+func GetConfigPath() string {
+	// Check if we're in a containerized environment
+	if _, err := os.Stat("/app"); err == nil {
+		return "/app/config.yaml"
+	}
+
+	// For local development
+	return "config.yaml"
 }

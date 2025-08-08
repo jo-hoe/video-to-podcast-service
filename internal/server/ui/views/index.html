@@ -59,7 +59,7 @@
         <h1>Video to Podcast Service</h1>
 
         <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
-            hx-encoding="json" hx-indicator="#loading-indicator, #submit-button">
+            hx-indicator="#loading-indicator, #submit-button">
             <input type="url" id="videoUrl" name="url" required placeholder="Enter video URL">
             <button type="submit" id="submit-button">Submit</button>
             <span id="loading-indicator" class="spinner" aria-busy="true" style="margin-left:10px;"></span>
@@ -102,8 +102,9 @@
                                 </div>
                                 <div style="text-align: right;"> <!-- Align delete button to the right -->
                                     <form method="DELETE"
-                                        hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
-                                        hx-target="#podcast-{{.ID}}" hx-swap="outerHTML remove">
+                                        hx-delete="/htmx/deleteItem/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
+                                        hx-target="#podcast-{{.ID}}" hx-swap="outerHTML"
+                                        hx-confirm="Are you sure you want to delete this item?">
                                         <button type="submit" aria-label="Delete" title="Delete">
                                             &#128465;
                                         </button>

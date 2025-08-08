@@ -9,8 +9,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
@@ -27,6 +29,7 @@ const (
 type APIService struct {
 	coreService *core.CoreService
 	defaultPort string
+	feedConfig  *config.FeedConfig
 }
 
 type DownloadItem struct {
@@ -37,10 +40,11 @@ type DownloadItems struct {
 	URLS []string `json:"urls" validate:"required"`
 }
 
-func NewAPIService(coreservice *core.CoreService, defaultPort string) *APIService {
+func NewAPIService(coreservice *core.CoreService, defaultPort string, feedConfig *config.FeedConfig) *APIService {
 	return &APIService{
 		coreService: coreservice,
 		defaultPort: defaultPort,
+		feedConfig:  feedConfig,
 	}
 }
 
@@ -51,6 +55,7 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/rss.xml"), service.feedHandler)
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
 	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.deleteFeedItem)
+	e.GET(fmt.Sprintf("%s%s", apiVersion, "items"), service.getAllPodcastItemsHandler)
 
 	// Set probe route
 	e.GET(fmt.Sprintf("%s%s", apiVersion, "health"), service.probeHandler)
@@ -184,6 +189,22 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 
 func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
+
+	// Handle mode-specific routing
+	if service.feedConfig != nil && service.feedConfig.Mode == "unified" {
+		// In unified mode, only allow "all" as feedTitle
+		if feedTitle != "all" {
+			log.Printf("invalid feed request in unified mode: %s", feedTitle)
+			return echo.NewHTTPError(http.StatusNotFound, "feed not found")
+		}
+	} else {
+		// In per-directory mode, reject "all" requests
+		if feedTitle == "all" {
+			log.Printf("invalid feed request in per-directory mode: %s", feedTitle)
+			return echo.NewHTTPError(http.StatusNotFound, "feed not found")
+		}
+	}
+
 	result, err := service.getFeed(ctx.Request().Host, feedTitle)
 	if err != nil {
 		log.Printf("failed to get feed for title %s: %v", feedTitle, err)
@@ -265,8 +286,14 @@ func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, 
 		return nil, err
 	}
 
+	// In unified mode, map "all" to the actual unified feed title
+	searchTitle := feedTitle
+	if service.feedConfig != nil && service.feedConfig.Mode == "unified" && feedTitle == "all" {
+		searchTitle = "All Podcast Items"
+	}
+
 	for _, feed := range feedItems {
-		if feed.Title == feedTitle {
+		if feed.Title == searchTitle {
 			result = feed
 			break
 		}
@@ -279,12 +306,132 @@ func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, 
 	return result, nil
 }
 
+func (service *APIService) getAllPodcastItemsHandler(ctx echo.Context) (err error) {
+	podcastItems, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
+	if err != nil {
+		log.Printf("failed to retrieve podcast items: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to retrieve podcast items")
+	}
+
+	return ctx.JSON(http.StatusOK, podcastItems)
+}
+
+// HealthStatus represents the health status of the API service
+type HealthStatus struct {
+	Status      string            `json:"status"`
+	Timestamp   string            `json:"timestamp"`
+	Version     string            `json:"version"`
+	Uptime      string            `json:"uptime"`
+	Checks      map[string]string `json:"checks"`
+	ServiceInfo ServiceInfo       `json:"service_info"`
+}
+
+type ServiceInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Port        string `json:"port"`
+}
+
+var serviceStartTime = time.Now()
+
 func (service *APIService) probeHandler(ctx echo.Context) (err error) {
-	return ctx.NoContent(http.StatusOK)
+	// Perform health checks
+	checks := make(map[string]string)
+	overallStatus := "healthy"
+
+	// Check database connectivity
+	if dbErr := service.checkDatabaseHealth(); dbErr != nil {
+		checks["database"] = fmt.Sprintf("unhealthy: %v", dbErr)
+		overallStatus = "unhealthy"
+	} else {
+		checks["database"] = "healthy"
+	}
+
+	// Check storage directory
+	if storageErr := service.checkStorageHealth(); storageErr != nil {
+		checks["storage"] = fmt.Sprintf("unhealthy: %v", storageErr)
+		overallStatus = "unhealthy"
+	} else {
+		checks["storage"] = "healthy"
+	}
+
+	// Check core service
+	if coreErr := service.checkCoreServiceHealth(); coreErr != nil {
+		checks["core_service"] = fmt.Sprintf("unhealthy: %v", coreErr)
+		overallStatus = "unhealthy"
+	} else {
+		checks["core_service"] = "healthy"
+	}
+
+	uptime := time.Since(serviceStartTime)
+
+	healthStatus := HealthStatus{
+		Status:    overallStatus,
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Version:   "1.0.0", // You might want to make this configurable
+		Uptime:    uptime.String(),
+		Checks:    checks,
+		ServiceInfo: ServiceInfo{
+			Name:        "video-to-podcast-api",
+			Description: "API service for video to podcast conversion",
+			Port:        service.defaultPort,
+		},
+	}
+
+	// Return appropriate HTTP status based on health
+	if overallStatus == "healthy" {
+		return ctx.JSON(http.StatusOK, healthStatus)
+	} else {
+		return ctx.JSON(http.StatusServiceUnavailable, healthStatus)
+	}
+}
+
+// checkDatabaseHealth verifies database connectivity
+func (service *APIService) checkDatabaseHealth() error {
+	// Try to get all podcast items to verify database connectivity
+	_, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
+	return err
+}
+
+// checkStorageHealth verifies storage directory accessibility
+func (service *APIService) checkStorageHealth() error {
+	storageDir := service.coreService.GetAudioSourceDirectory()
+
+	// Check if directory exists and is accessible
+	if _, err := os.Stat(storageDir); err != nil {
+		return fmt.Errorf("storage directory not accessible: %w", err)
+	}
+
+	// Try to create a temporary file to verify write permissions
+	tempFile := filepath.Join(storageDir, ".health_check_temp")
+	if err := os.WriteFile(tempFile, []byte("health check"), 0644); err != nil {
+		return fmt.Errorf("storage directory not writable: %w", err)
+	}
+
+	// Clean up temp file
+	if err := os.Remove(tempFile); err != nil {
+		// Log but don't fail the health check for temp file cleanup issues
+		log.Printf("Warning: failed to clean up temp health check file: %v", err)
+	}
+	return nil
+}
+
+// checkCoreServiceHealth verifies core service functionality
+func (service *APIService) checkCoreServiceHealth() error {
+	if service.coreService == nil {
+		return fmt.Errorf("core service is nil")
+	}
+
+	// Verify core service components are initialized
+	if service.coreService.GetDatabaseService() == nil {
+		return fmt.Errorf("database service not initialized")
+	}
+
+	return nil
 }
 
 func (service *APIService) getFeedService() *feed.FeedService {
 	port := common.ValueOrDefault(os.Getenv("PORT"), service.defaultPort)
 
-	return feed.NewFeedService(service.coreService, port, FeedsPath)
+	return feed.NewFeedService(service.coreService, port, FeedsPath, service.feedConfig)
 }

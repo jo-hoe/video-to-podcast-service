@@ -1,23 +1,74 @@
 services:
-  video-to-podcast-service:
-    build: .
-    image: video-to-podcast-service
+  api-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: video-to-podcast-api
     ports:
       - "8080:8080"
-    environment:
-      PORT: "8080"
-      # BASE_URL: "https://your-domain.com"  # Set for production
-      # BASE_PATH: "/data/resources"         # Custom storage path
-      # YTDLP_COOKIES_FILE: "/app/.cookies/youtube_cookies.txt"
-    #volumes:
-      # Uncomment to persist data
-      # - "./data:/app/resources"
-      # Uncomment to use cookies file
-      # - "./youtube_cookies.txt:/app/.cookies/youtube_cookies.txt"
+    volumes:
+      # Mount Docker-specific configuration file
+      #- "./config.docker.yaml:/app/config.yaml:ro"
+      # Mount cookies directory with read/write access
+      #- "./cookies:/app/cookies:rw"
+      #- "./data/cookies:/app/data/cookies:rw"
+      # Mount resources directories with read/write access
+      #- "./resources:/app/resources:rw"
+      #- "./data/resources:/app/data/resources:rw"
+      # Mount other data directories
+      #- "./data/database:/app/data/database:rw"
+      #- "./data/config:/app/data/config:rw"
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/v1/health"]
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/v1/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
+    networks:
+      - video-to-podcast-network
+    # Resource limits for better stability
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  ui-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    image: video-to-podcast-ui
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount Docker-specific configuration file
+      - "./config.docker.yaml:/app/config.yaml:ro"
+    depends_on:
+      api-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - video-to-podcast-network
+    # Resource limits for better stability
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+networks:
+  video-to-podcast-network:
+    driver: bridge
+
+volumes:
+  podcast_data:
+    driver: local

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
@@ -22,20 +23,36 @@ type FeedService struct {
 	coreservice  *core.CoreService
 	feedBasePort string
 	feedItemPath string
+	feedConfig   *config.FeedConfig
 }
 
 func NewFeedService(
 	coreService *core.CoreService,
 	feedBasePort string,
-	feedItemPath string) *FeedService {
+	feedItemPath string,
+	feedConfig *config.FeedConfig) *FeedService {
 	return &FeedService{
 		coreservice:  coreService,
 		feedBasePort: feedBasePort,
 		feedItemPath: feedItemPath,
+		feedConfig:   feedConfig,
 	}
 }
 
 func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err error) {
+	if fp.feedConfig != nil && fp.feedConfig.Mode == "unified" {
+		feed, err := fp.getUnifiedFeed(host)
+		if err != nil {
+			return nil, err
+		}
+		return []*feeds.Feed{feed}, nil
+	}
+
+	// Default to per-directory mode
+	return fp.getPerDirectoryFeeds(host)
+}
+
+func (fp *FeedService) getPerDirectoryFeeds(host string) (feedCollector []*feeds.Feed, err error) {
 	feedCollector = make([]*feeds.Feed, 0)
 
 	podcastItems, err := fp.coreservice.GetDatabaseService().GetAllPodcastItems()
@@ -67,6 +84,49 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err e
 	}
 
 	return feedCollector, nil
+}
+
+func (fp *FeedService) getUnifiedFeed(host string) (*feeds.Feed, error) {
+	podcastItems, err := fp.coreservice.GetDatabaseService().GetAllPodcastItems()
+	if err != nil {
+		return nil, fmt.Errorf("could not get podcast items: %w", err)
+	}
+
+	// Create unified feed
+	feed := &feeds.Feed{
+		Title:       "All Podcast Items",
+		Link:        &feeds.Link{Href: fmt.Sprintf("http://%s%s/v1/feeds/all/rss.xml", host, fp.feedBasePort)},
+		Description: "Unified podcast feed containing all items",
+		Author:      &feeds.Author{Name: "Video to Podcast Service"},
+	}
+
+	// Add all items to the unified feed
+	for _, podcastItem := range podcastItems {
+		item, err := fp.createFeedItem(host, podcastItem)
+		if err != nil {
+			return nil, fmt.Errorf("could not create feed item: %w", err)
+		}
+		feed.Items = append(feed.Items, item)
+
+		// Set feed image from first item with thumbnail
+		if feed.Image == nil && podcastItem.Thumbnail != "" {
+			feed.Image = &feeds.Image{
+				Url:  podcastItem.Thumbnail,
+				Link: podcastItem.Thumbnail,
+			}
+		}
+	}
+
+	// Sort items by creation date for consistent ordering (newest first)
+	for i := 0; i < len(feed.Items)-1; i++ {
+		for j := i + 1; j < len(feed.Items); j++ {
+			if feed.Items[i].Created.Before(feed.Items[j].Created) {
+				feed.Items[i], feed.Items[j] = feed.Items[j], feed.Items[i]
+			}
+		}
+	}
+
+	return feed, nil
 }
 
 func (fp *FeedService) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {

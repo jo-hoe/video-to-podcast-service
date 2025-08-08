@@ -1,0 +1,65 @@
+# Build stage: build the Go API service
+FROM golang:1.24.5 AS build
+
+# Set the working directory
+WORKDIR /app
+
+# Copy go.mod and go.sum to leverage caching for dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Install build dependencies for CGO (required for SQLite)
+RUN apt-get update && apt-get install -y gcc libc6-dev && rm -rf /var/lib/apt/lists/*
+
+# Copy the rest of the code
+COPY . ./
+
+# Build the API service with CGO enabled (required for sqlite dependency)
+RUN CGO_ENABLED=1 go build -o /go/bin/api-service ./cmd/api
+
+# Runtime stage: use FFmpeg base image for video processing capabilities
+FROM jrottenberg/ffmpeg:7.1-ubuntu
+
+# Install required dependencies for API service
+RUN apt-get update && \
+    apt-get install -y \
+    ca-certificates \
+    wget \
+    curl \
+    python3-minimal && \
+    update-ca-certificates && \
+    # Download yt-dlp binary for video downloading
+    wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp && \
+    # Verify yt-dlp works
+    /usr/local/bin/yt-dlp --version && \
+    # Cleanup
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser -m
+
+# Set the working directory
+WORKDIR /app
+
+# Create necessary directories for data storage and set ownership
+RUN mkdir -p /app/data/resources /app/data/database /app/data/cookies /app/data/config && \
+    chown -R appuser:appuser /app
+
+# Copy the built API service from the build stage
+COPY --from=build /go/bin/api-service /usr/local/bin/api-service
+
+# Copy the entrypoint script and make it executable
+COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Ensure the executable has execute permissions
+RUN chmod +x /usr/local/bin/api-service
+
+# Switch to non-root user
+USER appuser
+
+# Set the entrypoint to the script, with api-service as the command
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["api-service"]
