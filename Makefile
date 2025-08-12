@@ -27,18 +27,17 @@ lint: ## run golangci-lint
 start-k3d: ## create k3d cluster with registry and push images
 	k3d cluster create --config k3d/$(CLUSTER_NAME).yaml
 	kubectl wait --for=condition=Ready nodes --all --timeout=300s
-	docker build -f Dockerfile.api -t registry.localhost:5000/video-to-podcast-api:latest .
-	docker build -f Dockerfile.ui -t registry.localhost:5000/video-to-podcast-ui:latest .
-	docker push registry.localhost:5000/video-to-podcast-api:latest
-	docker push registry.localhost:5000/video-to-podcast-ui:latest
+	docker build -f Dockerfile.api -t localhost:5000/video-to-podcast-api:latest .
+	docker build -f Dockerfile.ui -t localhost:5000/video-to-podcast-ui:latest .
+	docker push localhost:5000/video-to-podcast-api:latest
+	docker push localhost:5000/video-to-podcast-ui:latest
 	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	helm upgrade --install $(CLUSTER_NAME) $(HELM_CHART) --namespace $(NAMESPACE) --values $(K3D_VALUES) --wait --timeout=300s
 	kubectl apply -f k3d/service.yaml -n $(NAMESPACE)
 
 .PHONY: stop-k3d
 stop-k3d: ## destroy k3d cluster
-	helm uninstall $(CLUSTER_NAME) -n $(NAMESPACE) 2>/dev/null || true
-	k3d cluster delete $(CLUSTER_NAME) 2>/dev/null || true
+	k3d cluster delete $(CLUSTER_NAME)
 
 .PHONY: restart-k3d
 restart-k3d: stop-k3d start-k3d ## restart k3d cluster
