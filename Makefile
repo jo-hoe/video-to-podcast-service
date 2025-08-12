@@ -44,5 +44,5 @@ restart-k3d: stop-k3d start-k3d ## restart k3d cluster
 
 .PHONY: helm-test
 helm-test: ## run Helm tests
-	kubectl delete pods -l "helm.sh/hook=test" -n $(NAMESPACE) --ignore-not-found=true 2>/dev/null || true
+	kubectl delete pods -l "helm.sh/hook=test" -n $(NAMESPACE) --ignore-not-found=true
 	helm test $(CLUSTER_NAME) -n $(NAMESPACE) --timeout=300s --logs
