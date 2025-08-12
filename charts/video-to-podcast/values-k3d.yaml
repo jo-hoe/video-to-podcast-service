@@ -45,7 +45,7 @@ api:
       port: "8080"
       baseUrl: ""
     database:
-      connectionString: ":memory:"  # In-memory for k3d testing
+      connectionString: "/app/data/database/video-to-podcast.db"
     storage:
       basePath: "/app/data/resources"
     external:
@@ -96,11 +96,11 @@ ui:
 
 # Disable persistence for k3d testing (faster startup, no data persistence needed)
 persistence:
-  enabled: false
+  enabled: true
   resources:
-    enabled: false
+    enabled: true
   database:
-    enabled: false
+    enabled: true
   cookies:
     enabled: false
 
