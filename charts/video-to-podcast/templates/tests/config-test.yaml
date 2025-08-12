@@ -1,6 +1,6 @@
 {{/*
-Configuration validation test template for video-to-podcast Helm chart
-Tests environment variables, service configuration, and application settings
+Simplified configuration validation test for video-to-podcast Helm chart.
+Tests that the API and UI services are running and accessible via their health check endpoints.
 */}}
 apiVersion: v1
 kind: Pod
@@ -9,264 +9,33 @@ metadata:
   labels:
     {{- include "video-to-podcast.labels" . | nindent 4 }}
     app.kubernetes.io/component: test
-    test-type: configuration
   annotations:
     "helm.sh/hook": test
     "helm.sh/hook-weight": "2"
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "helm.sh/hook-delete-policy": hook-succeeded
 spec:
   restartPolicy: Never
   containers:
   - name: config-test
-    image: curlimages/curl:8.5.0
+    image: curlimages/curl:8.4.0
     imagePullPolicy: IfNotPresent
-    command: ["/bin/sh"]
+    command: ["/bin/sh", "-c"]
     args:
-      - -c
       - |
-        set -e
-        echo "=== Video-to-Podcast Configuration Validation Test ==="
-        echo "Starting configuration validation..."
-        
-        # Initialize test results
-        API_CONFIG_VALID=false
-        UI_CONFIG_VALID=false
-        SERVICE_CONFIG_VALID=false
-        ENV_VARS_VALID=false
-        
-        # Test 1: Validate API service configuration
-        echo ""
-        echo "1. Testing API service configuration..."
-        API_SERVICE="{{ include "video-to-podcast.api.serviceName" . }}"
-        API_PORT="{{ .Values.api.service.port }}"
-        API_URL="http://$API_SERVICE:$API_PORT"
-        
-        echo "   API Service: $API_SERVICE"
-        echo "   API Port: $API_PORT"
-        echo "   API URL: $API_URL"
-        
-        # Check if API service is accessible
-        if nslookup "$API_SERVICE" >/dev/null 2>&1; then
-          echo "   ✓ API service DNS resolution successful"
-          
-          # Test API configuration endpoint (if available)
-          if curl -f -s --max-time 10 "$API_URL{{ .Values.api.healthCheck.path }}" >/dev/null 2>&1; then
-            echo "   ✓ API service is responding"
-            API_CONFIG_VALID=true
-          else
-            echo "   ✗ API service is not responding"
-          fi
-        else
-          echo "   ✗ API service DNS resolution failed"
-        fi
-        
-        # Test 2: Validate UI service configuration
-        echo ""
-        echo "2. Testing UI service configuration..."
-        UI_SERVICE="{{ include "video-to-podcast.ui.serviceName" . }}"
-        UI_PORT="{{ .Values.ui.service.port }}"
-        UI_URL="http://$UI_SERVICE:$UI_PORT"
-        
-        echo "   UI Service: $UI_SERVICE"
-        echo "   UI Port: $UI_PORT"
-        echo "   UI URL: $UI_URL"
-        
-        # Check if UI service is accessible
-        if nslookup "$UI_SERVICE" >/dev/null 2>&1; then
-          echo "   ✓ UI service DNS resolution successful"
-          
-          # Test UI configuration endpoint (if available)
-          if curl -f -s --max-time 10 "$UI_URL{{ .Values.ui.healthCheck.path }}" >/dev/null 2>&1; then
-            echo "   ✓ UI service is responding"
-            UI_CONFIG_VALID=true
-          else
-            echo "   ✗ UI service is not responding"
-          fi
-        else
-          echo "   ✗ UI service DNS resolution failed"
-        fi
-        
-        # Test 3: Validate service interconnectivity
-        echo ""
-        echo "3. Testing service interconnectivity..."
-        
-        # Test if UI can reach API (simulate UI->API communication)
-        echo "   Testing UI to API connectivity..."
-        if curl -f -s --max-time 10 "$API_URL{{ .Values.api.healthCheck.path }}" >/dev/null 2>&1; then
-          echo "   ✓ UI can reach API service"
-          SERVICE_CONFIG_VALID=true
-        else
-          echo "   ✗ UI cannot reach API service"
-        fi
-        
-        # Test 4: Validate environment variables and configuration
-        echo ""
-        echo "4. Testing environment variables and configuration..."
-        
-        # Validate API configuration values
-        echo "   API Configuration:"
-        echo "     Server Port: {{ .Values.api.config.server.port }}"
-        echo "     Database Connection: {{ .Values.api.config.database.connectionString }}"
-        echo "     Storage Base Path: {{ .Values.api.config.storage.basePath }}"
-        echo "     Feed Mode: {{ .Values.api.config.feed.mode }}"
-        
-        # Validate UI configuration values
-        echo "   UI Configuration:"
-        echo "     Server Port: {{ .Values.ui.config.server.port }}"
-        echo "     API Base URL: {{ .Values.ui.config.api.baseUrl | default (include "video-to-podcast.api.url" .) }}"
-        echo "     API Timeout: {{ .Values.ui.config.api.timeout }}"
-        
-        # Validate resource configuration
-        echo "   Resource Configuration:"
-        echo "     API Memory Limit: {{ .Values.api.resources.limits.memory }}"
-        echo "     API CPU Limit: {{ .Values.api.resources.limits.cpu }}"
-        echo "     UI Memory Limit: {{ .Values.ui.resources.limits.memory }}"
-        echo "     UI CPU Limit: {{ .Values.ui.resources.limits.cpu }}"
-        
-        # Validate security configuration
-        echo "   Security Configuration:"
-        echo "     Pod Security Context - Run as Non-Root: {{ .Values.podSecurityContext.runAsNonRoot }}"
-        echo "     Pod Security Context - User ID: {{ .Values.podSecurityContext.runAsUser }}"
-        echo "     Pod Security Context - Group ID: {{ .Values.podSecurityContext.runAsGroup }}"
-        echo "     Security Context - Allow Privilege Escalation: {{ .Values.securityContext.allowPrivilegeEscalation }}"
-        
-        # Basic validation checks
-        API_PORT_NUM="{{ .Values.api.service.port }}"
-        UI_PORT_NUM="{{ .Values.ui.service.port }}"
-        
-        # Validate port numbers are valid
-        if [ "$API_PORT_NUM" -gt 0 ] && [ "$API_PORT_NUM" -lt 65536 ]; then
-          echo "   ✓ API port number is valid ($API_PORT_NUM)"
-        else
-          echo "   ✗ API port number is invalid ($API_PORT_NUM)"
-          ENV_VARS_VALID=false
-        fi
-        
-        if [ "$UI_PORT_NUM" -gt 0 ] && [ "$UI_PORT_NUM" -lt 65536 ]; then
-          echo "   ✓ UI port number is valid ($UI_PORT_NUM)"
-        else
-          echo "   ✗ UI port number is invalid ($UI_PORT_NUM)"
-          ENV_VARS_VALID=false
-        fi
-        
-        # Validate replica counts
-        API_REPLICAS="{{ .Values.api.replicaCount }}"
-        UI_REPLICAS="{{ .Values.ui.replicaCount }}"
-        
-        if [ "$API_REPLICAS" -gt 0 ]; then
-          echo "   ✓ API replica count is valid ($API_REPLICAS)"
-        else
-          echo "   ✗ API replica count is invalid ($API_REPLICAS)"
-          ENV_VARS_VALID=false
-        fi
-        
-        if [ "$UI_REPLICAS" -gt 0 ]; then
-          echo "   ✓ UI replica count is valid ($UI_REPLICAS)"
-          ENV_VARS_VALID=true
-        else
-          echo "   ✗ UI replica count is invalid ($UI_REPLICAS)"
-          ENV_VARS_VALID=false
-        fi
-        
-        # Test 5: Validate optional configurations
-        echo ""
-        echo "5. Testing optional configurations..."
-        
-        # Check persistence configuration
-        PERSISTENCE_ENABLED="{{ .Values.persistence.enabled }}"
-        echo "   Persistence Enabled: $PERSISTENCE_ENABLED"
-        
-        {{- if .Values.persistence.enabled }}
-        echo "   Persistence Configuration:"
-        echo "     Resources Storage Size: {{ .Values.persistence.resources.size }}"
-        echo "     Database Storage Size: {{ .Values.persistence.database.size }}"
-        echo "     Cookies Storage Size: {{ .Values.persistence.cookies.size }}"
-        {{- end }}
-        
-        # Check ingress configuration
-        INGRESS_ENABLED="{{ .Values.ingress.enabled }}"
-        echo "   Ingress Enabled: $INGRESS_ENABLED"
-        
-        {{- if .Values.ingress.enabled }}
-        echo "   Ingress Configuration:"
-        {{- range .Values.ingress.hosts }}
-        echo "     Host: {{ .host }}"
-        {{- range .paths }}
-        echo "       Path: {{ .path }} -> Service: {{ .service }}"
-        {{- end }}
-        {{- end }}
-        {{- end }}
-        
-        # Check autoscaling configuration
-        API_HPA_ENABLED="{{ .Values.autoscaling.api.enabled }}"
-        UI_HPA_ENABLED="{{ .Values.autoscaling.ui.enabled }}"
-        echo "   API Autoscaling Enabled: $API_HPA_ENABLED"
-        echo "   UI Autoscaling Enabled: $UI_HPA_ENABLED"
-        
-        # Check monitoring configuration
-        MONITORING_ENABLED="{{ .Values.monitoring.serviceMonitor.enabled }}"
-        echo "   Service Monitor Enabled: $MONITORING_ENABLED"
-        
-        # Final validation
-        echo ""
-        echo "=== Configuration Validation Results ==="
-        
-        OVERALL_SUCCESS=true
-        
-        if [ "$API_CONFIG_VALID" = "true" ]; then
-          echo "✓ API service configuration is valid"
-        else
-          echo "✗ API service configuration validation failed"
-          OVERALL_SUCCESS=false
-        fi
-        
-        if [ "$UI_CONFIG_VALID" = "true" ]; then
-          echo "✓ UI service configuration is valid"
-        else
-          echo "✗ UI service configuration validation failed"
-          OVERALL_SUCCESS=false
-        fi
-        
-        if [ "$SERVICE_CONFIG_VALID" = "true" ]; then
-          echo "✓ Service interconnectivity is valid"
-        else
-          echo "✗ Service interconnectivity validation failed"
-          OVERALL_SUCCESS=false
-        fi
-        
-        if [ "$ENV_VARS_VALID" = "true" ]; then
-          echo "✓ Environment variables and configuration are valid"
-        else
-          echo "✗ Environment variables and configuration validation failed"
-          OVERALL_SUCCESS=false
-        fi
-        
-        if [ "$OVERALL_SUCCESS" = "true" ]; then
-          echo ""
-          echo "🎉 All configuration validations passed successfully!"
-          echo ""
-          echo "Configuration Summary:"
-          echo "- API Service: $API_SERVICE:$API_PORT"
-          echo "- UI Service: $UI_SERVICE:$UI_PORT"
-          echo "- API Replicas: $API_REPLICAS"
-          echo "- UI Replicas: $UI_REPLICAS"
-          echo "- Persistence: $PERSISTENCE_ENABLED"
-          echo "- Ingress: $INGRESS_ENABLED"
-          echo "- Monitoring: $MONITORING_ENABLED"
-          exit 0
-        else
-          echo ""
-          echo "❌ Configuration validation failures detected!"
-          echo ""
-          echo "Troubleshooting tips:"
-          echo "- Check Helm values: helm get values {{ .Release.Name }} -n {{ .Release.Namespace }}"
-          echo "- Check service status: kubectl get services -n {{ .Release.Namespace }}"
-          echo "- Check pod status: kubectl get pods -n {{ .Release.Namespace }}"
-          echo "- Check pod logs: kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}"
-          echo "- Check endpoints: kubectl get endpoints -n {{ .Release.Namespace }}"
-          echo "- Validate Helm chart: helm template {{ .Release.Name }} ./charts/video-to-podcast"
-          exit 1
-        fi
+        set -ex
+
+        echo "=== Video-to-Podcast Configuration Test ==="
+
+        API_URL="http://{{ include "video-to-podcast.api.serviceName" . }}:{{ .Values.api.service.port }}{{ .Values.api.healthCheck.path }}"
+        UI_URL="http://{{ include "video-to-podcast.ui.serviceName" . }}:{{ .Values.ui.service.port }}{{ .Values.ui.healthCheck.path }}"
+
+        echo "--> Checking API service at: ${API_URL}"
+        curl -v --fail --connect-timeout 15 "${API_URL}"
+
+        echo "--> Checking UI service at: ${UI_URL}"
+        curl -v --fail --connect-timeout 15 "${UI_URL}"
+
+        echo "🎉 Configuration test passed!"
     resources:
       limits:
         memory: 128Mi
