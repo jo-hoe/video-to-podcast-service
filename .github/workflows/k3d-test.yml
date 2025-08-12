@@ -1,0 +1,188 @@
+name: k3d Helm Chart Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+      - 'Dockerfile.*'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'k3d/**'
+      - 'scripts/**'
+      - 'Makefile'
+      - '.github/workflows/k3d-test.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+      - 'Dockerfile.*'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'k3d/**'
+      - 'scripts/**'
+      - 'Makefile'
+      - '.github/workflows/k3d-test.yml'
+
+env:
+  # k3d cluster configuration
+  CLUSTER_NAME: video-podcast-cluster-ci
+  NAMESPACE: video-to-podcast
+  # Test configuration
+  TEST_TIMEOUT: 1800  # 30 minutes
+  CLEANUP_ON_FAILURE: true
+
+jobs:
+  k3d-test:
+    name: k3d Helm Chart Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          
+      - name: Install k3d
+        run: |
+          echo "Installing k3d..."
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d version
+          
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+          
+      - name: Verify prerequisites
+        run: |
+          echo "Verifying prerequisites..."
+          make check-k3d-prereqs
+          
+      - name: Run k3d test orchestration
+        id: k3d-test
+        run: |
+          echo "Running k3d test orchestration..."
+          export CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
+          export NAMESPACE="${{ env.NAMESPACE }}"
+          export TEST_TIMEOUT="${{ env.TEST_TIMEOUT }}"
+          make test-orchestration
+          
+      - name: Collect test artifacts
+        if: always()
+        run: |
+          echo "Collecting test artifacts..."
+          mkdir -p test-artifacts
+          
+          # Copy test results if they exist
+          if [ -d "/tmp/k3d-test-results" ]; then
+            cp -r /tmp/k3d-test-results/* test-artifacts/ || true
+          fi
+          
+          # Collect cluster information
+          if k3d cluster list | grep -q "${{ env.CLUSTER_NAME }}"; then
+            echo "Collecting cluster information..."
+            kubectl cluster-info > test-artifacts/cluster-info.txt 2>&1 || true
+            kubectl get nodes -o wide > test-artifacts/nodes.txt 2>&1 || true
+            kubectl get pods -A -o wide > test-artifacts/all-pods.txt 2>&1 || true
+            kubectl get services -A > test-artifacts/all-services.txt 2>&1 || true
+            kubectl get events -A --sort-by='.lastTimestamp' > test-artifacts/events.txt 2>&1 || true
+            
+            # Collect application logs
+            if kubectl get namespace "${{ env.NAMESPACE }}" >/dev/null 2>&1; then
+              echo "Collecting application logs..."
+              kubectl logs -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/component=api --tail=100 > test-artifacts/api-logs.txt 2>&1 || true
+              kubectl logs -n "${{ env.NAMESPACE }}" -l app.kubernetes.io/component=ui --tail=100 > test-artifacts/ui-logs.txt 2>&1 || true
+              kubectl describe pods -n "${{ env.NAMESPACE }}" > test-artifacts/pod-descriptions.txt 2>&1 || true
+            fi
+          fi
+          
+          # Collect Docker information
+          docker ps -a > test-artifacts/docker-containers.txt 2>&1 || true
+          docker images > test-artifacts/docker-images.txt 2>&1 || true
+          
+          # Create summary
+          echo "Test run completed at: $(date)" > test-artifacts/test-summary.txt
+          echo "Cluster name: ${{ env.CLUSTER_NAME }}" >> test-artifacts/test-summary.txt
+          echo "Namespace: ${{ env.NAMESPACE }}" >> test-artifacts/test-summary.txt
+          echo "GitHub SHA: ${{ github.sha }}" >> test-artifacts/test-summary.txt
+          echo "GitHub Ref: ${{ github.ref }}" >> test-artifacts/test-summary.txt
+          
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k3d-test-artifacts-${{ github.run_number }}
+          path: test-artifacts/
+          retention-days: 7
+          
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "Generating test report..."
+          
+          # Create a simple test report
+          cat > test-report.md << 'EOF'
+          # k3d Helm Chart Test Report
+          
+          **Test Run:** ${{ github.run_number }}
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          **Timestamp:** $(date -u)
+          
+          ## Test Configuration
+          - Cluster Name: ${{ env.CLUSTER_NAME }}
+          - Namespace: ${{ env.NAMESPACE }}
+          - Timeout: ${{ env.TEST_TIMEOUT }}s
+          
+          ## Test Results
+          EOF
+          
+          if [ "${{ steps.k3d-test.outcome }}" = "success" ]; then
+            echo "✅ **Status:** PASSED" >> test-report.md
+            echo "" >> test-report.md
+            echo "All k3d Helm chart tests completed successfully." >> test-report.md
+          else
+            echo "❌ **Status:** FAILED" >> test-report.md
+            echo "" >> test-report.md
+            echo "k3d Helm chart tests failed. Check the artifacts for detailed logs." >> test-report.md
+          fi
+          
+          echo "" >> test-report.md
+          echo "## Artifacts" >> test-report.md
+          echo "- Test logs and cluster information available in artifacts" >> test-report.md
+          echo "- Artifact name: k3d-test-artifacts-${{ github.run_number }}" >> test-report.md
+          
+          # Add report to artifacts
+          cp test-report.md test-artifacts/ || true
+          
+      - name: Cleanup k3d cluster
+        if: always()
+        run: |
+          echo "Cleaning up k3d cluster..."
+          export CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
+          make stop-k3d || true
+          
+          # Additional cleanup to ensure no resources are left
+          k3d cluster delete "${{ env.CLUSTER_NAME }}" || true
+          
+          # Clean up Docker resources
+          docker system prune -f || true
+          
+      - name: Report test status
+        if: always()
+        run: |
+          if [ "${{ steps.k3d-test.outcome }}" = "success" ]; then
+            echo "✅ k3d Helm chart tests completed successfully!"
+            echo "All services deployed and health checks passed."
+          else
+            echo "❌ k3d Helm chart tests failed!"
+            echo "Check the test artifacts for detailed information."
+            exit 1
+          fi

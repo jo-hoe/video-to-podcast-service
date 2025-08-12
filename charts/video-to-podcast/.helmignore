@@ -28,7 +28,6 @@ Thumbs.db
 # Test files
 *_test.go
 test/
-tests/
 # Documentation
 README.md
 NOTES.txt
@@ -48,5 +47,6 @@ build/
 docker-compose*.yml
 Dockerfile*
 # Chart development files
-values-*.yaml
-!values.yaml
+# Note: Keep values-*.yaml files for template validation
+# values-*.yaml
+# !values.yaml

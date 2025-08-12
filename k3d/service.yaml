@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-to-podcast-api-lb
+  namespace: video-to-podcast
+  labels:
+    app.kubernetes.io/name: video-to-podcast
+    app.kubernetes.io/instance: video-to-podcast
+    app.kubernetes.io/component: api
+    app.kubernetes.io/managed-by: k3d-testing
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: video-to-podcast
+    app.kubernetes.io/instance: video-podcast-cluster
+    app.kubernetes.io/component: api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-to-podcast-ui-lb
+  namespace: video-to-podcast
+  labels:
+    app.kubernetes.io/name: video-to-podcast
+    app.kubernetes.io/instance: video-to-podcast
+    app.kubernetes.io/component: ui
+    app.kubernetes.io/managed-by: k3d-testing
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: video-to-podcast
+    app.kubernetes.io/instance: video-podcast-cluster
+    app.kubernetes.io/component: ui
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

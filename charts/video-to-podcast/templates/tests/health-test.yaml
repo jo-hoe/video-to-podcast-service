@@ -1,0 +1,120 @@
+{{/*
+Health check test template for video-to-podcast Helm chart
+Tests API and UI health endpoints using curl in a test pod
+*/}}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "video-to-podcast.fullname" . }}-health-test"
+  labels:
+    {{- include "video-to-podcast.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+    test-type: health
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+  - name: health-test
+    image: curlimages/curl:8.5.0
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/sh"]
+    args:
+      - -c
+      - |
+        set -e
+        echo "=== Video-to-Podcast Health Check Test ==="
+        echo "Starting health endpoint validation..."
+        
+        # Test API health endpoint
+        echo ""
+        echo "1. Testing API health endpoint..."
+        API_URL="http://{{ include "video-to-podcast.api.serviceName" . }}:{{ .Values.api.service.port }}{{ .Values.api.healthCheck.path }}"
+        echo "   URL: $API_URL"
+        
+        # Retry logic for API health check
+        for i in $(seq 1 5); do
+          echo "   Attempt $i/5..."
+          if curl -f -s --max-time 10 "$API_URL"; then
+            echo "   ✓ API health check passed"
+            API_HEALTHY=true
+            break
+          else
+            echo "   ✗ API health check failed (attempt $i/5)"
+            if [ $i -eq 5 ]; then
+              echo "   ERROR: API health check failed after 5 attempts"
+              API_HEALTHY=false
+            else
+              echo "   Waiting 5 seconds before retry..."
+              sleep 5
+            fi
+          fi
+        done
+        
+        # Test UI health endpoint
+        echo ""
+        echo "2. Testing UI health endpoint..."
+        UI_URL="http://{{ include "video-to-podcast.ui.serviceName" . }}:{{ .Values.ui.service.port }}{{ .Values.ui.healthCheck.path }}"
+        echo "   URL: $UI_URL"
+        
+        # Retry logic for UI health check
+        for i in $(seq 1 5); do
+          echo "   Attempt $i/5..."
+          if curl -f -s --max-time 10 "$UI_URL"; then
+            echo "   ✓ UI health check passed"
+            UI_HEALTHY=true
+            break
+          else
+            echo "   ✗ UI health check failed (attempt $i/5)"
+            if [ $i -eq 5 ]; then
+              echo "   ERROR: UI health check failed after 5 attempts"
+              UI_HEALTHY=false
+            else
+              echo "   Waiting 5 seconds before retry..."
+              sleep 5
+            fi
+          fi
+        done
+        
+        # Final validation
+        echo ""
+        echo "=== Health Check Results ==="
+        if [ "$API_HEALTHY" = "true" ] && [ "$UI_HEALTHY" = "true" ]; then
+          echo "✓ All health checks passed successfully!"
+          echo "  - API service is healthy"
+          echo "  - UI service is healthy"
+          exit 0
+        else
+          echo "✗ Health check failures detected:"
+          [ "$API_HEALTHY" != "true" ] && echo "  - API service health check failed"
+          [ "$UI_HEALTHY" != "true" ] && echo "  - UI service health check failed"
+          echo ""
+          echo "Troubleshooting tips:"
+          echo "- Check if pods are running: kubectl get pods -n {{ .Release.Namespace }}"
+          echo "- Check pod logs: kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ .Release.Namespace }}"
+          echo "- Check service endpoints: kubectl get endpoints -n {{ .Release.Namespace }}"
+          exit 1
+        fi
+    resources:
+      limits:
+        memory: 64Mi
+        cpu: 100m
+      requests:
+        memory: 32Mi
+        cpu: 50m
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534

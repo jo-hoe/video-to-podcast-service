@@ -1,60 +1,49 @@
 include help.mk
 
-# Cross-platform build configuration
+# Minimal Makefile for video-to-podcast-service
+# Cross-platform, no bash code, no OS-dependent commands
 
-.DEFAULT_GOAL := start
+.DEFAULT_GOAL := help
 
-# Build configuration
-BUILD_DIR := bin
-API_BINARY := api-service
-UI_BINARY := ui-service
-
-# Cross-platform build settings
-
-# =============================================================================
-# Binary Build Targets
-# =============================================================================
-
-.PHONY: build
-build: build-api build-ui ## build both API and UI binaries
-
-.PHONY: build-api
-build-api: ## build API service binary
-	go build -o $(API_BINARY) ./cmd/api
-
-.PHONY: build-ui
-build-ui: ## build UI service binary
-	go build -o $(UI_BINARY) ./cmd/ui
+# Configuration
+CLUSTER_NAME := video-podcast-cluster
+NAMESPACE := video-to-podcast
+HELM_CHART := ./charts/video-to-podcast
+K3D_VALUES := $(HELM_CHART)/values-k3d.yaml
 
 # =============================================================================
-# Testing and Quality Targets
+# Essential Targets
 # =============================================================================
 
 .PHONY: test
-test: ## run golang test (including integration tests)
-	go test -timeout 0  ./...
+test: ## run Go tests
+	go test -timeout 300s ./...
 
 .PHONY: lint
 lint: ## run golangci-lint
 	golangci-lint run ./...
 
-.PHONY: update
-update: ## update dependencies
-	go mod tidy
+.PHONY: start-k3d
+start-k3d: ## create k3d cluster with registry and push images
+	k3d cluster create --config k3d/$(CLUSTER_NAME).yaml
+	kubectl wait --for=condition=Ready nodes --all --timeout=300s
+	docker build -f Dockerfile.api -t registry.localhost:5000/video-to-podcast-api:latest .
+	docker build -f Dockerfile.ui -t registry.localhost:5000/video-to-podcast-ui:latest .
+	docker push registry.localhost:5000/video-to-podcast-api:latest
+	docker push registry.localhost:5000/video-to-podcast-ui:latest
+	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	helm upgrade --install $(CLUSTER_NAME) $(HELM_CHART) --namespace $(NAMESPACE) --values $(K3D_VALUES) --wait --timeout=300s
+	kubectl apply -f k3d/service.yaml -n $(NAMESPACE)
 
-# =============================================================================
-# Docker and CI/CD Targets
-# =============================================================================
+.PHONY: stop-k3d
+stop-k3d: ## destroy k3d cluster
+	helm uninstall $(CLUSTER_NAME) -n $(NAMESPACE) 2>/dev/null || true
+	k3d cluster delete $(CLUSTER_NAME) 2>/dev/null || true
 
-.PHONY: docker-build
-docker-build: ## build Docker images locally
-	docker compose build
+.PHONY: restart-k3d
+restart-k3d: stop-k3d start-k3d ## restart k3d cluster
 
-.PHONY: docker-clean
-docker-clean: ## clean up Docker resources
-	docker compose down -v
-	docker system prune -f
-
-.PHONY: start
-start: ## build and start with docker compose
-	docker compose up --build
+.PHONY: helm-test
+helm-test: ## run Helm tests
+	kubectl delete pods -l "helm.sh/hook=test" -n $(NAMESPACE) --ignore-not-found=true 2>/dev/null || true
+	helm test $(CLUSTER_NAME) -n $(NAMESPACE) --timeout=300s --logs

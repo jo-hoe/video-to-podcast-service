@@ -1,6 +1,11 @@
 # Development environment values for video-to-podcast
 # This file provides configuration suitable for development/testing
 
+# Global configuration for local registry
+global:
+  imageRegistry: "registry.localhost:5000"
+  imagePullSecrets: []
+
 # Use NodePort services for easy access during development
 api:
   service:

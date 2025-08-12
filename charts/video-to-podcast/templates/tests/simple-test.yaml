@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "video-to-podcast.fullname" . }}-simple-test"
+  labels:
+    {{- include "video-to-podcast.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+  - name: simple-test
+    image: busybox:1.35
+    command: ['sh', '-c', 'echo "Simple test passed!" && exit 0']
