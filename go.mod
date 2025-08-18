@@ -8,7 +8,7 @@ require (
 	github.com/jo-hoe/mp3-joiner v0.0.0-20240816144805-0e151d4eda80
 	github.com/labstack/echo/v4 v4.13.4
 	github.com/lrstanley/go-ytdlp v1.2.1
-	github.com/mattn/go-sqlite3 v1.14.28
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.43.0
 )
