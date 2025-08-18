@@ -31,8 +31,8 @@ require (
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
