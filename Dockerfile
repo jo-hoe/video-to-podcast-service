@@ -13,7 +13,7 @@ COPY . ./
 RUN CGO_ENABLED=1 go build -o /go/bin/app ./
 
 # Runtime stage: use a minimal base image for runtime
-FROM jrottenberg/ffmpeg:7.1-ubuntu
+FROM jrottenberg/ffmpeg:8.0-ubuntu
 
 # Install required dependencies
 RUN apt-get update && \
