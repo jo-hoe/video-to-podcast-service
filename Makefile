@@ -9,7 +9,7 @@ include help.mk
 CLUSTER_NAME := video-podcast-cluster
 NAMESPACE := video-to-podcast
 HELM_CHART := ./charts/video-to-podcast
-K3D_VALUES := $(HELM_CHART)/values-k3d.yaml
+K3D_VALUES := $(HELM_CHART)/values.yaml
 
 # =============================================================================
 # Essential Targets
@@ -46,3 +46,7 @@ restart-k3d: stop-k3d start-k3d ## restart k3d cluster
 helm-test: ## run Helm tests
 	kubectl delete pods -l "helm.sh/hook=test" -n $(NAMESPACE) --ignore-not-found=true
 	helm test $(CLUSTER_NAME) -n $(NAMESPACE) --timeout=300s --logs
+
+.PHONY: generate-helm-docs
+generate-helm-docs: ## generates helm docu in /helm folder 
+	@docker run --rm --volume "$(ROOT_DIR)charts/video-to-podcast:/helm-docs" jnorwood/helm-docs:latest

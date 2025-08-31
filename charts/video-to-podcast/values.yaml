@@ -2,167 +2,250 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# Global configuration
+# -- Global configuration applied across the chart (if supported by templates)
 global:
+  # -- Optional global image registry override (e.g., "my-registry.io")
   imageRegistry: ""
+  # -- List of secrets to use for pulling images from private registries
   imagePullSecrets: []
 
-# API Service configuration
+# -- API Service configuration
 api:
+  # -- Number of API replicas to run
   replicaCount: 1
   
   image:
+    # -- API container image repository
     repository: video-to-podcast-api
+    # -- Image pull policy for API
     pullPolicy: IfNotPresent
+    # -- API image tag to deploy
     tag: "latest"
   
   service:
+    # -- Kubernetes Service type for API (ClusterIP, NodePort, LoadBalancer)
     type: ClusterIP
+    # -- Service port exposed by the API Service
     port: 8080
+    # -- Target container port for the API
     targetPort: 8080
+    # -- Additional annotations for the API Service
     annotations: {}
   
   resources:
+    # -- Resource limits for API container
     limits:
       memory: 1Gi
       cpu: 1000m
+    # -- Resource requests for API container
     requests:
       memory: 512Mi
       cpu: 500m
   
-  # Health check configuration
+  # -- Liveness/Readiness probe configuration for API
   healthCheck:
+    # -- Enable/disable health probes for API
     enabled: true
+    # -- HTTP path used for API health endpoint
     path: /v1/health
+    # -- Initial delay before starting health checks (seconds)
     initialDelaySeconds: 30
+    # -- Interval between health checks (seconds)
     periodSeconds: 30
+    # -- Probe timeout (seconds)
     timeoutSeconds: 10
+    # -- Consecutive failures before marking container unhealthy
     failureThreshold: 5
+    # -- Consecutive successes before marking container healthy
     successThreshold: 1
   
-  # Application configuration
+  # -- Application runtime configuration for API
   config:
     server:
+      # -- Port the API server listens on (string for templating consistency)
       port: "8080"
+      # -- External base URL for API (e.g., ingress URL); empty uses cluster service
       baseUrl: ""
     database:
+      # -- Database connection string (":memory:" for in-memory / sqlite path for file)
       connectionString: ":memory:"
     storage:
+      # -- Base path in container filesystem for resources (audio, etc.)
       basePath: "/app/data/resources"
     external:
+      # -- Optional path to yt-dlp cookies file inside container
       ytdlpCookiesFile: ""
     feed:
+      # -- Feed generation mode (e.g., "per_directory")
       mode: "per_directory"
   
-  # Node selector and tolerations
+  # -- Node scheduling hints for API
+  # -- Map of node labels for API pods to be scheduled on specific nodes
   nodeSelector: {}
+  # -- Tolerations for API pods to schedule onto tainted nodes
   tolerations: []
+  # -- Affinity rules for API pods (node/pod affinity/anti-affinity)
   affinity: {}
 
-# UI Service configuration
+# -- UI Service configuration
 ui:
+  # -- Number of UI replicas to run
   replicaCount: 1
   
   image:
+    # -- UI container image repository
     repository: video-to-podcast-ui
+    # -- Image pull policy for UI
     pullPolicy: IfNotPresent
+    # -- UI image tag to deploy
     tag: "latest"
   
   service:
+    # -- Kubernetes Service type for UI (ClusterIP, NodePort, LoadBalancer)
     type: ClusterIP
+    # -- Service port exposed by the UI Service
     port: 3000
+    # -- Target container port for the UI
     targetPort: 3000
+    # -- Additional annotations for the UI Service
     annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
   
   resources:
+    # -- Resource limits for UI container
     limits:
       memory: 512Mi
       cpu: 500m
+    # -- Resource requests for UI container
     requests:
       memory: 256Mi
       cpu: 250m
   
-  # Health check configuration
+  # -- Liveness/Readiness probe configuration for UI
   healthCheck:
+    # -- Enable/disable health probes for UI
     enabled: true
+    # -- HTTP path used for UI health endpoint
     path: /health
+    # -- Initial delay before starting health checks (seconds)
     initialDelaySeconds: 20
+    # -- Interval between health checks (seconds)
     periodSeconds: 30
+    # -- Probe timeout (seconds)
     timeoutSeconds: 10
+    # -- Consecutive failures before marking container unhealthy
     failureThreshold: 5
+    # -- Consecutive successes before marking container healthy
     successThreshold: 1
   
-  # Application configuration
+  # -- Application runtime configuration for UI
   config:
     server:
+      # -- Port the UI server listens on (string for templating consistency)
       port: "3000"
     api:
-      baseUrl: ""  # Will be auto-configured to API service
+      baseUrl: ""  # -- Will be auto-configured to API service
+      # -- Timeout for API requests from UI
       timeout: "30s"
   
-  # Node selector and tolerations
+  # -- Node scheduling hints for UI
+  # Map of node labels for UI pods to be scheduled on specific nodes
   nodeSelector: {}
+  # -- Tolerations for UI pods to schedule onto tainted nodes
   tolerations: []
+  # -- Affinity rules for UI pods (node/pod affinity/anti-affinity)
   affinity: {}
 
-# Persistence configuration
+# -- Persistence configuration for application data
 persistence:
+  # -- Enable PersistentVolumeClaims for data persistence
   enabled: false
   
-  # Storage for resources (audio files, etc.)
+  # -- Storage for resources (audio files, etc.)
   resources:
+    # -- Enable PVC for resources storage
     enabled: false
+    # -- StorageClass for resources PVC (empty uses cluster default)
     storageClass: ""
+    # -- Access mode for resources PVC
     accessMode: ReadWriteOnce
+    # -- Requested size for resources PVC
     size: 10Gi
+    # -- Additional annotations for resources PVC
     annotations: {}
   
-  # Storage for database
+  # -- Storage for database
   database:
+    # -- Enable PVC for database storage
     enabled: false
+    # -- StorageClass for database PVC (empty uses cluster default)
     storageClass: ""
+    # -- Access mode for database PVC
     accessMode: ReadWriteOnce
+    # -- Requested size for database PVC
     size: 1Gi
+    # -- Additional annotations for database PVC
     annotations: {}
   
-  # Storage for cookies
+  # -- Storage for cookies
   cookies:
+    # -- Enable PVC for cookies storage
     enabled: false
+    # -- StorageClass for cookies PVC (empty uses cluster default)
     storageClass: ""
+    # -- Access mode for cookies PVC
     accessMode: ReadWriteOnce
+    # -- Requested size for cookies PVC
     size: 100Mi
+    # -- Additional annotations for cookies PVC
     annotations: {}
 
-# Service Account
+# -- Service Account configuration
 serviceAccount:
+  # -- Specifies whether a service account should be created
   create: true
+  # -- Annotations to add to the service account
   annotations: {}
+  # -- Name of the service account to use (if empty, a name is generated)
   name: ""
 
-# Pod Security Context
+# -- Pod Security Context applied to all pods (unless overridden)
 podSecurityContext:
+  # -- Filesystem group ID for mounted volumes
   fsGroup: 1001
+  # -- Run containers as non-root user if true
   runAsNonRoot: true
+  # -- User ID the container runs as
   runAsUser: 1001
+  # -- Primary group ID the container runs as
   runAsGroup: 1001
 
-# Security Context
+# -- Container Security Context defaults
 securityContext:
+  # -- Prevent privilege escalation
   allowPrivilegeEscalation: false
+  # -- Linux capabilities to drop
   capabilities:
     drop:
     - ALL
+  # -- Mount container root filesystem as read-only
   readOnlyRootFilesystem: false
+  # -- Run containers as non-root user if true
   runAsNonRoot: true
+  # -- User ID the container runs as
   runAsUser: 1001
 
-# Ingress configuration
+# -- Ingress configuration to expose UI/API via HTTP(S)
 ingress:
+  # -- Enable ingress resources
   enabled: false
+  # -- IngressClass name (e.g., "nginx")
   className: ""
+  # -- Additional annotations for ingress resources
   annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+    # -- kubernetes.io/ingress.class: nginx
+    # -- kubernetes.io/tls-acme: "true"
   hosts:
     - host: video-to-podcast.local
       paths:
@@ -172,75 +255,99 @@ ingress:
         - path: /v1
           pathType: Prefix
           service: api
+  # -- TLS configuration for ingress (list of hosts mapped to secrets)
   tls: []
-  #  - secretName: video-to-podcast-tls
-  #    hosts:
-  #      - video-to-podcast.local
+  # - secretName: video-to-podcast-tls
+  #   hosts:
+  #     - video-to-podcast.local
 
-# Autoscaling configuration
+# -- Horizontal Pod Autoscaling (HPA) configuration
 autoscaling:
   api:
+    # -- Enable HPA for API deployment
     enabled: false
+    # -- Minimum number of API replicas
     minReplicas: 1
+    # -- Maximum number of API replicas
     maxReplicas: 5
+    # -- Target average CPU utilization percentage for scaling
     targetCPUUtilizationPercentage: 80
+    # -- Target average memory utilization percentage for scaling
     targetMemoryUtilizationPercentage: 80
   
   ui:
+    # -- Enable HPA for UI deployment
     enabled: false
+    # -- Minimum number of UI replicas
     minReplicas: 1
+    # -- Maximum number of UI replicas
     maxReplicas: 3
+    # -- Target average CPU utilization percentage for scaling
     targetCPUUtilizationPercentage: 80
+    # -- Target average memory utilization percentage for scaling
     targetMemoryUtilizationPercentage: 80
 
-# Pod Disruption Budget
+# -- Pod Disruption Budget for high availability
 podDisruptionBudget:
+  # -- Enable creation of a PodDisruptionBudget
   enabled: false
+  # -- Minimum number of pods that must be available
   minAvailable: 1
-  # maxUnavailable: 1
+  # -- maxUnavailable: 1
 
-# Network Policy
+# -- Network Policy configuration to restrict traffic
 networkPolicy:
+  # -- Enable creation of NetworkPolicy resources
   enabled: false
+  # -- Ingress rules for allowing incoming traffic (advanced)
   ingress: []
+  # -- Egress rules for allowing outgoing traffic (advanced)
   egress: []
 
-# Monitoring
+# -- Monitoring configuration (Prometheus ServiceMonitor)
 monitoring:
   serviceMonitor:
+    # -- Enable creation of a ServiceMonitor for scraping metrics
     enabled: false
+    # -- Namespace where ServiceMonitor should be created (empty = same namespace)
     namespace: ""
+    # -- Scrape interval (e.g., "30s")
     interval: 30s
+    # -- Scrape timeout (e.g., "10s")
     scrapeTimeout: 10s
+    # -- Additional labels to attach to ServiceMonitor
     labels: {}
 
-# YouTube cookies secret (optional)
+# -- YouTube cookies secret configuration (optional)
 youtubeCookies:
+  # -- Enable mounting a secret containing YouTube cookies
   enabled: false
+  # -- Name of the Kubernetes Secret with the cookies
   secretName: youtube-cookies
+  # -- File name inside the secret containing cookies
   cookiesFile: youtube_cookies.txt
   # If you want to create the secret from a file:
   # createSecret: true
   # cookiesContent: |
   #   # Your cookies content here
 
-# Additional environment variables
+# -- Additional environment variables injected into both API and UI pods
 extraEnvVars: []
 # - name: EXTRA_VAR
 #   value: "extra-value"
 
-# Additional volumes
+# -- Additional volumes to mount into pods (for advanced customization)
 extraVolumes: []
 # - name: extra-volume
 #   emptyDir: {}
 
-# Additional volume mounts
+# -- Additional volume mounts for containers (match names with extraVolumes)
 extraVolumeMounts: []
 # - name: extra-volume
 #   mountPath: /extra
 
-# Pod annotations
+# -- Additional annotations to add to pods
 podAnnotations: {}
 
-# Pod labels
+# -- Additional labels to add to pods
 podLabels: {}
