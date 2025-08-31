@@ -128,7 +128,7 @@ func getThumbnailUrl(videoUrl string) (result string, err error) {
 		log.Printf("error getting thumbnail url from '%s': '%v'", videoUrl, err)
 		return result, err
 	}
-	
+
 	// Log all output from yt-dlp
 	for _, output := range cliOutput.OutputLogs {
 		log.Printf("yt-dlp thumbnail: %s", output.Line)
@@ -211,19 +211,19 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
 	dl := ytdlp.New().Simulate().Quiet()
 	dl = configureCookies(dl)
-	
+
 	result, err := dl.Run(context.Background(), urlString)
 	if err != nil {
 		log.Printf("error checking video availability: '%v'", err)
 		return false
 	}
-	
+
 	// Log the output from yt-dlp availability check
 	if result != nil {
 		for _, outputLog := range result.OutputLogs {
 			log.Printf("yt-dlp availability: %s", outputLog.Line)
 		}
 	}
-	
+
 	return result != nil
 }

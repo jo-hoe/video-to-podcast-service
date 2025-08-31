@@ -62,12 +62,12 @@ func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
 
 func Test_configureCookies(t *testing.T) {
 	tests := []struct {
-		name           string
-		cookieFile     string
-		createFile     bool
-		fileContent    string
-		expectCookies  bool
-		expectWarning  bool
+		name          string
+		cookieFile    string
+		createFile    bool
+		fileContent   string
+		expectCookies bool
+		expectWarning bool
 	}{
 		{
 			name:          "no cookie file configured",
@@ -131,7 +131,7 @@ func Test_configureCookies(t *testing.T) {
 			// inspecting the internal state of the ytdlp.Command, which isn't
 			// easily accessible. For now, we verify that the function doesn't
 			// panic and returns a valid command object.
-			
+
 			// Clean up temp file if created
 			if tt.createFile && tempFile != "" {
 				_ = os.Remove(tempFile)
@@ -139,4 +139,3 @@ func Test_configureCookies(t *testing.T) {
 		})
 	}
 }
-
