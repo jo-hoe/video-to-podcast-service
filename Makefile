@@ -12,10 +12,6 @@ NAMESPACE := video-to-podcast
 HELM_CHART_DIR := $(ROOT_DIR)charts/video-to-podcast
 K3D_VALUES := $(ROOT_DIR)k3d/values.yaml
 
-# =============================================================================
-# Essential Targets
-# =============================================================================
-
 .PHONY: test
 test: ## run Go tests
 	go test -timeout 300s ./...
