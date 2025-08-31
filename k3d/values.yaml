@@ -1,0 +1,175 @@
+# k3d local development values for video-to-podcast
+# This file provides configuration for k3d local testing with local registry
+
+# Global configuration for local registry
+global:
+  imageRegistry: "registry.localhost:5000"
+  imagePullSecrets: []
+
+# API Service configuration for k3d
+api:
+  replicaCount: 1
+  
+  image:
+    repository: video-to-podcast-api
+    pullPolicy: Always  # Always pull for local development to get latest changes
+    tag: "latest"
+  
+  service:
+    type: LoadBalancer  # Expose via LoadBalancer in k3d (no separate LB service file)
+    port: 8080
+    targetPort: 8080
+  
+  # Lower resource requirements for k3d
+  resources:
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    requests:
+      memory: 256Mi
+      cpu: 250m
+  
+  # Health check configuration optimized for k3d
+  healthCheck:
+    enabled: true
+    path: /v1/health
+    initialDelaySeconds: 15  # Reduced for faster startup in k3d
+    periodSeconds: 10        # More frequent checks for development
+    timeoutSeconds: 5
+    failureThreshold: 3      # Reduced for faster failure detection
+    successThreshold: 1
+  
+  # k3d-friendly configuration
+  config:
+    server:
+      port: "8080"
+      baseUrl: ""
+    database:
+      connectionString: "/app/data/database/video-to-podcast.db"
+    storage:
+      basePath: "/app/data/resources"
+    external:
+      ytdlpCookiesFile: ""
+    feed:
+      mode: "per_directory"
+
+# UI Service configuration for k3d
+ui:
+  replicaCount: 1
+  
+  image:
+    repository: video-to-podcast-ui
+    pullPolicy: Always  # Always pull for local development to get latest changes
+    tag: "latest"
+  
+  service:
+    type: LoadBalancer  # Expose LoadBalancer in k3d (no separate LB service file)
+    port: 3000
+    targetPort: 3000
+  
+  # Lower resource requirements for k3d
+  resources:
+    limits:
+      memory: 256Mi
+      cpu: 250m
+    requests:
+      memory: 128Mi
+      cpu: 100m
+  
+  # Health check configuration optimized for k3d
+  healthCheck:
+    enabled: true
+    path: /health
+    initialDelaySeconds: 10  # Reduced for faster startup in k3d
+    periodSeconds: 10        # More frequent checks for development
+    timeoutSeconds: 5
+    failureThreshold: 3      # Reduced for faster failure detection
+    successThreshold: 1
+  
+  # k3d-friendly configuration
+  config:
+    server:
+      port: "3000"
+    api:
+      baseUrl: ""  # Will be auto-configured to API service
+      timeout: "30s"
+
+# Disable persistence for k3d testing (faster startup, no data persistence needed)
+persistence:
+  enabled: true
+  resources:
+    enabled: true
+  database:
+    enabled: true
+  cookies:
+    enabled: false
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Relaxed security context for k3d development
+podSecurityContext:
+  fsGroup: 999
+  runAsNonRoot: false  # Relaxed for k3d
+  runAsUser: 999
+  runAsGroup: 999
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: false  # Relaxed for k3d
+  runAsUser: 999
+
+# Disable ingress for k3d (using LoadBalancer instead)
+ingress:
+  enabled: false
+
+# Disable autoscaling for k3d testing
+autoscaling:
+  api:
+    enabled: false
+  ui:
+    enabled: false
+
+# Disable PDB for k3d testing
+podDisruptionBudget:
+  enabled: false
+
+# Disable network policy for k3d testing
+networkPolicy:
+  enabled: false
+
+# Disable monitoring for k3d testing
+monitoring:
+  serviceMonitor:
+    enabled: false
+
+# Disable YouTube cookies for k3d testing
+youtubeCookies:
+  enabled: false
+
+# k3d-specific annotations and labels
+podAnnotations:
+  environment: "k3d-testing"
+  registry: "local"
+  
+podLabels:
+  environment: "k3d-testing"
+  registry: "local"
+
+# Additional environment variables for k3d debugging
+extraEnvVars:
+  - name: LOG_LEVEL
+    value: "debug"
+  - name: ENVIRONMENT
+    value: "k3d-testing"
+
+# No extra volumes needed for k3d testing
+extraVolumes: []
+extraVolumeMounts: []

@@ -6,11 +6,11 @@ include help.mk
 .DEFAULT_GOAL := help
 
 # Configuration
+ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 CLUSTER_NAME := video-podcast-cluster
 NAMESPACE := video-to-podcast
-HELM_CHART := ./charts/video-to-podcast
-K3D_VALUES := $(HELM_CHART)/values.yaml
-ROOT_DIR ?= $(CURDIR)
+HELM_CHART_DIR := $(ROOT_DIR)charts/video-to-podcast
+K3D_VALUES := $(ROOT_DIR)k3d/values.yaml
 
 # =============================================================================
 # Essential Targets
@@ -33,8 +33,7 @@ start-k3d: ## create k3d cluster with registry and push images
 	docker push localhost:5000/video-to-podcast-api:latest
 	docker push localhost:5000/video-to-podcast-ui:latest
 	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	helm upgrade --install $(CLUSTER_NAME) $(HELM_CHART) --namespace $(NAMESPACE) --values $(K3D_VALUES) --wait --timeout=300s
-	kubectl apply -f k3d/service.yaml -n $(NAMESPACE)
+	helm upgrade --install $(CLUSTER_NAME) $(HELM_CHART_DIR) --namespace $(NAMESPACE) --values $(K3D_VALUES) --wait --timeout=300s
 
 .PHONY: stop-k3d
 stop-k3d: ## destroy k3d cluster
@@ -50,4 +49,4 @@ helm-test: ## run Helm tests
 
 .PHONY: generate-helm-docs
 generate-helm-docs: ## generates helm docu in /helm folder 
-	@docker run --rm -v "$(ROOT_DIR)/charts/video-to-podcast:/helm-docs" -w /helm-docs jnorwood/helm-docs:latest
+	@docker run --rm -v "$(HELM_CHART_DIR):/helm-docs" -w /helm-docs jnorwood/helm-docs:latest
