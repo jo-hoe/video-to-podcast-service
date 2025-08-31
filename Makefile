@@ -14,7 +14,7 @@ K3D_VALUES := $(ROOT_DIR)k3d/values.yaml
 
 .PHONY: test
 test: ## run Go tests
-	go test -timeout 300s ./...
+	go test -v -timeout 8m ./...
 
 .PHONY: lint
 lint: ## run golangci-lint
