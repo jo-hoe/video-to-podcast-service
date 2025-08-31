@@ -10,6 +10,7 @@ CLUSTER_NAME := video-podcast-cluster
 NAMESPACE := video-to-podcast
 HELM_CHART := ./charts/video-to-podcast
 K3D_VALUES := $(HELM_CHART)/values.yaml
+ROOT_DIR ?= $(CURDIR)
 
 # =============================================================================
 # Essential Targets
@@ -49,4 +50,4 @@ helm-test: ## run Helm tests
 
 .PHONY: generate-helm-docs
 generate-helm-docs: ## generates helm docu in /helm folder 
-	@docker run --rm --volume "$(ROOT_DIR)charts/video-to-podcast:/helm-docs" jnorwood/helm-docs:latest
+	@docker run --rm -v "$(ROOT_DIR)/charts/video-to-podcast:/helm-docs" -w /helm-docs jnorwood/helm-docs:latest
