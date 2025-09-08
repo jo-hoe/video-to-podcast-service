@@ -16,17 +16,17 @@ jobs:
         platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: AnimMouse/setup-ffmpeg@v1
       id: setup-ffmpeg
     - run: ffmpeg -version
     - name: Install Go
       if: success()
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v6
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     - name: Run tests
       run: go test -v ./... -covermode=count -coverprofile=coverage.out
     - name: Convert coverage.out to coverage.lcov
