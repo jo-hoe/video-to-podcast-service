@@ -10,7 +10,7 @@ require (
 	github.com/lrstanley/go-ytdlp v1.2.4
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/u2takey/ffmpeg-go v0.5.0
-	golang.org/x/net v0.43.0
+	golang.org/x/net v0.44.0
 )
 
 require (
