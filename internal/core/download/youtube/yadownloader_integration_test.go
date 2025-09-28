@@ -40,6 +40,7 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
 	if err != nil {
 		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+		return
 	}
 	if len(result) == 0 {
 		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", result)
