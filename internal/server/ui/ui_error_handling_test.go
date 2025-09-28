@@ -140,8 +140,6 @@ func TestUIErrorHandling(t *testing.T) {
 			if !strings.Contains(body, tt.expectedBody) {
 				t.Errorf("Expected body to contain '%s', got '%s'\nDescription: %s", tt.expectedBody, body, tt.description)
 			}
-
-			t.Logf("✅ %s: Status %d, Body: %s", tt.description, rec.Code, body)
 		})
 	}
 }
@@ -189,6 +187,4 @@ func TestUIErrorHandlingUnit(t *testing.T) {
 	if !strings.Contains(body, "<span") || !strings.Contains(body, "color:red") {
 		t.Errorf("Expected styled HTML error message, got: %s", body)
 	}
-
-	t.Logf("✅ 500 error properly handled: %s", body)
 }

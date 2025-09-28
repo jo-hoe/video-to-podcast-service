@@ -112,8 +112,4 @@ func TestUIServiceHostConfiguration(t *testing.T) {
 	if expectedAPIHost == uiRequestHost {
 		t.Error("UI service should use API host (localhost:8080) for RSS feeds, not UI host (localhost:3000)")
 	}
-
-	// Document the correct behavior
-	t.Logf("✅ UI service should use API host: %s", expectedAPIHost)
-	t.Logf("❌ UI service should NOT use UI request host: %s", uiRequestHost)
 }
