@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/feeds v1.2.0
 	github.com/jo-hoe/mp3-joiner v0.0.0-20250617132922-38a1e8cd705e
 	github.com/labstack/echo/v4 v4.13.4
-	github.com/lrstanley/go-ytdlp v1.2.5
+	github.com/lrstanley/go-ytdlp v1.2.6
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.44.0
