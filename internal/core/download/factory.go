@@ -10,8 +10,8 @@ import (
 
 const ErrIsVideoSupported = "this downloader is not responsible for this URL '%s'"
 
-func GetVideoDownloader(url string, cookiesConfig *config.Cookies) (downloader downloader.AudioDownloader, err error) {
-	youtubeAudioDownloader := youtube.NewYoutubeAudioDownloader(cookiesConfig)
+func GetVideoDownloader(url string, cookiesConfig *config.Cookies, mediaConfig *config.Media) (downloader downloader.AudioDownloader, err error) {
+	youtubeAudioDownloader := youtube.NewYoutubeAudioDownloader(cookiesConfig, mediaConfig)
 	if youtubeAudioDownloader.IsVideoSupported(url) {
 		return youtubeAudioDownloader, nil
 	}

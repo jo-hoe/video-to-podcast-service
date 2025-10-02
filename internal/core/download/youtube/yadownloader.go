@@ -30,20 +30,24 @@ const (
 
 type YoutubeAudioDownloader struct{
 	cookiesConfig *config.Cookies
+	mediaConfig   *config.Media
 }
 
-func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies) *YoutubeAudioDownloader {
+func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media) *YoutubeAudioDownloader {
 	ytdlp.MustInstall(context.Background(), nil)
 
 	return &YoutubeAudioDownloader{
 		cookiesConfig: cookiesConfig,
+		mediaConfig:   mediaConfig,
 	}
 }
 
 func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
 	results := make([]string, 0)
-	// create temp directory
-	tempPath, err := os.MkdirTemp("", "")
+	
+	// Create a unique subdirectory within the configured temp path
+	// (tempPath is guaranteed to be set by config.LoadConfig defaults)
+	tempPath, err := os.MkdirTemp(y.mediaConfig.TempPath, "youtube-download-")
 	if err != nil {
 		return results, err
 	}
