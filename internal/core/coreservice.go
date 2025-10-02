@@ -37,6 +37,10 @@ func (cs *CoreService) GetAudioSourceDirectory() string {
 	return cs.audioSourceDirectory
 }
 
+func (cs *CoreService) GetCookieConfig() *config.Cookies {
+	return cs.cookiesConfig
+}
+
 func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
 	// get first part of the path as feed title

@@ -51,6 +51,9 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.GET(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:audioFileName"), service.audioFileHandler)
 	e.DELETE(fmt.Sprintf("%s%s", FeedsPath, "/:feedTitle/:podcastItemID"), service.deleteFeedItem)
 
+	// Health endpoint for Kubernetes probes
+	e.GET(HealthPath, service.healthHandler)
+
 	// Set probe route
 	e.GET("/", service.probeHandler)
 }
