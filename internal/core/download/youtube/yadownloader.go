@@ -25,6 +25,8 @@ const (
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
+	// Environment variable for cookie file configuration
+	cookieFileEnvVar = "YOUTUBE_COOKIES_FILE"
 )
 
 type YoutubeAudioDownloader struct{}
@@ -102,7 +104,8 @@ func setMetadata(fullFilePath string) (err error) {
 }
 
 func getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := ytdlp.New().Print("thumbnail")
+	dl := getCommandBuilder().Print("thumbnail")
+	dl = configureCookies(dl)
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
 	if err != nil {
@@ -142,11 +145,26 @@ func moveToTarget(sourcePath, targetRootPath string) (results string, err error)
 	return targetPath, err
 }
 
+// configureCookies adds cookie configuration to yt-dlp instance
+func configureCookies(dl *ytdlp.Command) *ytdlp.Command {
+	// Check for cookie file
+	if cookieFile := os.Getenv(cookieFileEnvVar); cookieFile != "" {
+		if _, err := os.Stat(cookieFile); err == nil {
+			log.Printf("using cookie file path: %s", cookieFile)
+			return dl.Cookies(cookieFile)
+		} else {
+			log.Printf("warning: cookie file path specified but not found: %s", cookieFile)
+		}
+	}
+
+	return dl
+}
+
 func download(targetDirectory string, urlString string) ([]string, error) {
 	result := make([]string, 0)
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
-	dl := ytdlp.New().
+	dl := getCommandBuilder().
 		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
 		EmbedMetadata().                            // adds metadata such as artist to the file
 		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
@@ -167,15 +185,24 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 }
 
 func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
-	return regexp.MustCompile(playlistRegex).MatchString(url) || regexp.MustCompile(videoRegex).MatchString(url) || regexp.MustCompile(videoShortRegex).MatchString(url)
+	return regexp.MustCompile(playlistRegex).MatchString(url) ||
+		regexp.MustCompile(videoRegex).MatchString(url) ||
+		regexp.MustCompile(videoShortRegex).MatchString(url)
 }
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl, err := ytdlp.New().Simulate().Quiet().Run(context.Background(), urlString)
+	dl := getCommandBuilder().Simulate().Quiet()
+	_, err := dl.Run(context.Background(), urlString)
+
 	if err != nil {
 		log.Printf("error checking video availability: '%v'", err)
 		return false
 	}
 	return dl != nil
+}
+
+func getCommandBuilder() *ytdlp.Command {
+	dl := ytdlp.New().Simulate().Quiet()
+	return configureCookies(dl)
 }
