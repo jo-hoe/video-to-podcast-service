@@ -12,7 +12,6 @@ import (
 
 	"github.com/gorilla/feeds"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
 	"github.com/labstack/echo/v4"
 )
@@ -284,7 +283,5 @@ func (service *APIService) probeHandler(ctx echo.Context) (err error) {
 }
 
 func (service *APIService) getFeedService() *feed.FeedService {
-	port := common.ValueOrDefault(os.Getenv("PORT"), service.defaultPort)
-
-	return feed.NewFeedService(service.coreService, port, FeedsPath)
+	return feed.NewFeedService(service.coreService, service.defaultPort, FeedsPath)
 }

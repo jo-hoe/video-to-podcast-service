@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
@@ -15,12 +16,14 @@ import (
 type CoreService struct {
 	databaseService      database.DatabaseService
 	audioSourceDirectory string
+	cookiesConfig        *config.Cookies
 }
 
-func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string) *CoreService {
+func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string, cookiesConfig *config.Cookies) *CoreService {
 	return &CoreService{
 		databaseService:      databaseService,
 		audioSourceDirectory: audioSourceDirectory,
+		cookiesConfig:        cookiesConfig,
 	}
 }
 
@@ -65,7 +68,7 @@ func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
-	downloaderInstance, err := download.GetVideoDownloader(url)
+	downloaderInstance, err := download.GetVideoDownloader(url, cs.cookiesConfig)
 	if err != nil {
 		return err
 	}

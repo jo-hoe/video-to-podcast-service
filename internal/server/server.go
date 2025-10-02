@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"strconv"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
@@ -21,8 +21,8 @@ const defaultPort = "8080"
 
 var defaultResourcePath string
 
-func StartServer(databaseService database.DatabaseService, resourcePath string) {
-	defaultResourcePath = resourcePath
+func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
+	defaultResourcePath = cfg.Persistence.Media.MediaPath
 
 	e := echo.New()
 	e.Use(middleware.Logger())
@@ -31,16 +31,17 @@ func StartServer(databaseService database.DatabaseService, resourcePath string) 
 
 	e.Validator = &genericValidator{Validator: validator.New()}
 
-	coreService := core.NewCoreService(databaseService, defaultResourcePath)
+	coreService := core.NewCoreService(databaseService, defaultResourcePath, &cfg.Persistence.Cookies)
 
-	apiService := api.NewAPIService(coreService, defaultPort)
+	defaultPortStr := strconv.Itoa(cfg.Port)
+	apiService := api.NewAPIService(coreService, defaultPortStr)
 	apiService.SetAPIRoutes(e)
 
 	uiService := ui.NewUIService(coreService)
 	uiService.SetUIRoutes(e)
 
 	// start server
-	port := common.ValueOrDefault(os.Getenv("PORT"), "8080")
+	port := strconv.Itoa(cfg.Port)
 	log.Print("starting server")
 	log.Printf("UI available at http://localhost:%s/%s", port, ui.MainPageName)
 	log.Printf("Explore all feeds via API at http://localhost:%s/%s ", port, api.FeedsPath)

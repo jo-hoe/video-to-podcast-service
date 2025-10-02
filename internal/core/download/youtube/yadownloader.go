@@ -10,6 +10,7 @@ import (
 	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 	"github.com/lrstanley/go-ytdlp"
@@ -25,16 +26,18 @@ const (
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
-	// Environment variable for cookie file configuration
-	cookieFileEnvVar = "YOUTUBE_COOKIES_FILE"
 )
 
-type YoutubeAudioDownloader struct{}
+type YoutubeAudioDownloader struct{
+	cookiesConfig *config.Cookies
+}
 
-func NewYoutubeAudioDownloader() *YoutubeAudioDownloader {
+func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies) *YoutubeAudioDownloader {
 	ytdlp.MustInstall(context.Background(), nil)
 
-	return &YoutubeAudioDownloader{}
+	return &YoutubeAudioDownloader{
+		cookiesConfig: cookiesConfig,
+	}
 }
 
 func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
@@ -51,7 +54,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}()
 
 	log.Printf("downloading from '%s' to '%s'", urlString, tempPath)
-	tempResults, err := download(tempPath, urlString)
+	tempResults, err := y.download(tempPath, urlString)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +62,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 
 	for _, filePath := range tempResults {
 		log.Printf("setting metadata for '%s'", filePath)
-		err = setMetadata(filePath)
+		err = y.setMetadata(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -79,7 +82,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	return results, err
 }
 
-func setMetadata(fullFilePath string) (err error) {
+func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) (err error) {
 	metadata, err := mp3joiner.GetFFmpegMetadataTag(fullFilePath)
 	if err != nil {
 		return err
@@ -94,7 +97,7 @@ func setMetadata(fullFilePath string) (err error) {
 	metadata[downloader.VideoDownloadLink] = metadata[VideoUrlID3KeyAttribute]
 
 	videoUrl := metadata["purl"]
-	thumbnailUrl, err := getThumbnailUrl(videoUrl)
+	thumbnailUrl, err := y.getThumbnailUrl(videoUrl)
 	if err != nil {
 		return err
 	}
@@ -103,9 +106,8 @@ func setMetadata(fullFilePath string) (err error) {
 	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
 
-func getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := getCommandBuilder().Print("thumbnail")
-	dl = configureCookies(dl)
+func (y *YoutubeAudioDownloader) getThumbnailUrl(videoUrl string) (result string, err error) {
+	dl := y.getCommandBuilder().Print("thumbnail")
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
 	if err != nil {
@@ -146,25 +148,25 @@ func moveToTarget(sourcePath, targetRootPath string) (results string, err error)
 }
 
 // configureCookies adds cookie configuration to yt-dlp instance
-func configureCookies(dl *ytdlp.Command) *ytdlp.Command {
-	// Check for cookie file
-	if cookieFile := os.Getenv(cookieFileEnvVar); cookieFile != "" {
-		if _, err := os.Stat(cookieFile); err == nil {
-			log.Printf("using cookie file path: %s", cookieFile)
-			return dl.Cookies(cookieFile)
+func configureCookies(dl *ytdlp.Command, cookiesConfig *config.Cookies) *ytdlp.Command {
+	// Check if cookies are enabled and cookie file exists
+	if cookiesConfig != nil && cookiesConfig.Enabled && cookiesConfig.CookiePath != "" {
+		if _, err := os.Stat(cookiesConfig.CookiePath); err == nil {
+			log.Printf("using cookie file path: %s", cookiesConfig.CookiePath)
+			return dl.Cookies(cookiesConfig.CookiePath)
 		} else {
-			log.Printf("warning: cookie file path specified but not found: %s", cookieFile)
+			log.Printf("warning: cookie file path specified but not found: %s", cookiesConfig.CookiePath)
 		}
 	}
 
 	return dl
 }
 
-func download(targetDirectory string, urlString string) ([]string, error) {
+func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString string) ([]string, error) {
 	result := make([]string, 0)
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
-	dl := getCommandBuilder().
+	dl := y.getCommandBuilder().
 		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
 		EmbedMetadata().                            // adds metadata such as artist to the file
 		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
@@ -192,7 +194,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl := getCommandBuilder().Simulate().Quiet()
+	dl := y.getCommandBuilder().Simulate().Quiet()
 	_, err := dl.Run(context.Background(), urlString)
 
 	if err != nil {
@@ -202,7 +204,7 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	return dl != nil
 }
 
-func getCommandBuilder() *ytdlp.Command {
+func (y *YoutubeAudioDownloader) getCommandBuilder() *ytdlp.Command {
 	dl := ytdlp.New().Simulate().Quiet()
-	return configureCookies(dl)
+	return configureCookies(dl, y.cookiesConfig)
 }

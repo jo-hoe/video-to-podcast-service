@@ -34,7 +34,7 @@ func TestCreateFeed(t *testing.T) {
 				feedAuthor:        defaultAuthor,
 				feedHost:          "localhost",
 				feedAudioFilePath: filepath.Join("c", "testDir", "audio.mp3"),
-				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c")),
+				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c"), nil),
 			},
 			want: &feeds.Feed{
 				Title:       defaultAuthor,
@@ -64,7 +64,7 @@ func TestNewFeedService(t *testing.T) {
 		feedBasePort string
 		feedItemPath string
 	}
-	sharedCore := core.NewCoreService(&database.MockDatabase{}, "testDir")
+	sharedCore := core.NewCoreService(&database.MockDatabase{}, "testDir", nil)
 	tests := []struct {
 		name string
 		args args
