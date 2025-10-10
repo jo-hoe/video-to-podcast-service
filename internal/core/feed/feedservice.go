@@ -100,7 +100,7 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 		Enclosure: &feeds.Enclosure{
 			Url:    link,
 			Type:   "audio/mpeg",
-			Length: fmt.Sprintf("%d", podcastItem.DurationInMilliseconds),
+			Length: fmt.Sprintf("%d", fileinfo.Size()), // Use actual file size in bytes
 		},
 	}, nil
 }
