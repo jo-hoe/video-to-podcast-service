@@ -1,5 +1,5 @@
 # Build stage: build the Go application
-FROM golang:1.25.1 AS build
+FROM golang:1.25.2 AS build
 # Set the working directory
 WORKDIR /app
 # Copy go.mod and go.sum to leverage caching for dependencies
