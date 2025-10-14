@@ -67,7 +67,7 @@ func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	downloaderInstance, err := download.GetVideoDownloader(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("url %s not supported", url)
 	}
 	if !downloaderInstance.IsVideoAvailable(url) {
 		return fmt.Errorf("video %s is not available", url)

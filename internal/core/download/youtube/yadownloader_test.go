@@ -31,12 +31,20 @@ func TestYoutubeAudioDownloader_IsVideoSupported(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "test short video link",
+			name: "test shorter video link",
 			y:    &YoutubeAudioDownloader{},
 			args: args{
 				url: "https://youtu.be/DucriSA8ukw?feature=shared",
 			},
 			want: true,
+		},
+		{
+			name: "test youtube shorts link",
+			y:    &YoutubeAudioDownloader{},
+			args: args{
+				url: "https://www.youtube.com/shorts/Hb3rmh-_FMw",
+			},
+			want: false,
 		},
 		{
 			name: "test not existing link",
