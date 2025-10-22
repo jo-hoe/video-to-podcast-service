@@ -177,6 +177,7 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
+		ExtractorArgs("youtube:player_client=default,web_safari;player_js_version=actual"). // added workaround for download issues see https://github.com/yt-dlp/yt-dlp/issues/14680#issuecomment-3425394571
 		Output(tempFilenameTemplate) // set output path
 
 	// download
