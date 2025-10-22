@@ -154,6 +154,7 @@ func download(targetDirectory string, urlString string) ([]string, error) {
 		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
 			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
 		}).
+		ExtractorArgs("youtube:player_js_version=actual"). // workaround for details see https://github.com/yt-dlp/yt-dlp/issues/14680#issuecomment-3425394571
 		Output(tempFilenameTemplate) // set output path
 
 	// download
