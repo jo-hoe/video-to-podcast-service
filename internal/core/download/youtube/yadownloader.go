@@ -23,7 +23,7 @@ const (
 	youtubeShortsRegex   = `https://(?:.+)?youtube.com/shorts/([A-Za-z0-9_-]*)`
 	// types taken from API description
 	// https://wiki.sponsor.ajay.app/w/Types
-	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
+	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler,hook"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
 )
