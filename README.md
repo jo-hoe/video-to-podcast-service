@@ -47,6 +47,7 @@ All downloaded resources are placed in the `resources` directory. Podcasts are o
 ### Temporary Files
 
 During video download and processing, temporary files are stored in a configurable temp directory:
+
 - **Configuration**: Set via the `mediaConfig.TempPath` setting in the application configuration (defaults to `./mount/resources/temp`)
 - **Cleanup**: Temporary directories are automatically cleaned up after processing completes
 
@@ -56,7 +57,7 @@ The service exposes a REST API. See [`openapi.yaml`](./openapi.yaml) for the ful
 
 ## Linting
 
-The project uses `golangci-lint` for linting. See <https://golangci-lint.run/usage/install/> for installation instructions.
+The project uses `golangci-lint` for linting. See <https://golangci-lint.run/docs/welcome/install/> for installation instructions.
 
 To run linting locally:
 
