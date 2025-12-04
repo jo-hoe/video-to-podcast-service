@@ -45,8 +45,7 @@ func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *confi
 func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
 	results := make([]string, 0)
 	
-	// Create a unique subdirectory within the configured temp path
-	// (tempPath is guaranteed to be set by config.LoadConfig defaults)
+	// Create a unique subdirectory within the configured temp path for download processing
 	tempPath, err := os.MkdirTemp(y.mediaConfig.TempPath, "youtube-download-")
 	if err != nil {
 		return results, err
@@ -111,7 +110,7 @@ func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) (err error) {
 }
 
 func (y *YoutubeAudioDownloader) getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := y.getCommandBuilder().Print("thumbnail")
+	dl := y.getCommandBuilder(true).Print("thumbnail")
 
 	cliOutput, err := dl.Run(context.Background(), videoUrl)
 	if err != nil {
@@ -170,7 +169,8 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 	result := make([]string, 0)
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
-	dl := y.getCommandBuilder().
+	// Use getCommandBuilder but remove .Simulate() flag for actual downloading
+	dl := y.getCommandBuilder(false).
 		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
 		EmbedMetadata().                            // adds metadata such as artist to the file
 		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
@@ -199,7 +199,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl := y.getCommandBuilder().Simulate().Quiet()
+	dl := y.getCommandBuilder(true)
 	_, err := dl.Run(context.Background(), urlString)
 
 	if err != nil {
@@ -209,7 +209,12 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	return dl != nil
 }
 
-func (y *YoutubeAudioDownloader) getCommandBuilder() *ytdlp.Command {
-	dl := ytdlp.New().Simulate().Quiet()
+// getCommandBuilder creates a new yt-dlp command with cookie configuration
+// simulate: if true, adds Simulate() and Quiet() flags for dry-run operations
+func (y *YoutubeAudioDownloader) getCommandBuilder(simulate bool) *ytdlp.Command {
+	dl := ytdlp.New()
+	if simulate {
+		dl = dl.Simulate().Quiet()
+	}
 	return configureCookies(dl, y.cookiesConfig)
 }
