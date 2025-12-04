@@ -17,8 +17,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-const defaultPort = "8080"
-
 var defaultResourcePath string
 
 func StartServer(databaseService database.DatabaseService, cfg *config.Config) {

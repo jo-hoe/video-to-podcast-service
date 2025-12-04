@@ -73,7 +73,10 @@ func (service *APIService) checkCookieHealth() string {
 		log.Printf("cookie health: cannot write to %s: %v", cookieConfig.CookiePath, err)
 		return HealthStatusUnhealthy
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		log.Printf("cookie health: cannot close file %s: %v", cookieConfig.CookiePath, err)
+		return HealthStatusUnhealthy
+	}
 
 	// Try to read the file (this tests read permission)
 	if _, err := os.ReadFile(cookieConfig.CookiePath); err != nil {

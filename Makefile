@@ -25,7 +25,7 @@ start: ## start via docker
 
 .PHONY: lint
 lint: ## run golangci-lint
-	golangci-lint run ${ROOT_DIR}/...
+	golangci-lint run ${ROOT_DIR}...
 
 .PHONY: start-service
 start-service: ## start service
