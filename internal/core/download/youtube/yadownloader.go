@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
-	"github.com/lrstanley/go-ytdlp"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -28,14 +26,12 @@ const (
 	VideoUrlID3KeyAttribute = "purl"
 )
 
-type YoutubeAudioDownloader struct{
+type YoutubeAudioDownloader struct {
 	cookiesConfig *config.Cookies
 	mediaConfig   *config.Media
 }
 
 func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media) *YoutubeAudioDownloader {
-	ytdlp.MustInstall(context.Background(), nil)
-
 	return &YoutubeAudioDownloader{
 		cookiesConfig: cookiesConfig,
 		mediaConfig:   mediaConfig,
@@ -44,7 +40,7 @@ func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *confi
 
 func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
 	results := make([]string, 0)
-	
+
 	// Create a unique subdirectory within the configured temp path for download processing
 	tempPath, err := os.MkdirTemp(y.mediaConfig.TempPath, "youtube-download-")
 	if err != nil {
@@ -110,16 +106,20 @@ func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) (err error) {
 }
 
 func (y *YoutubeAudioDownloader) getThumbnailUrl(videoUrl string) (result string, err error) {
-	dl := y.getCommandBuilder(true).Print("thumbnail")
+	args := y.buildBaseArgs(true)
+	args = append(args, "--print", "thumbnail", videoUrl)
 
-	cliOutput, err := dl.Run(context.Background(), videoUrl)
+	cmd := exec.Command("yt-dlp", args...)
+	output, err := cmd.Output()
 	if err != nil {
 		log.Printf("error getting thumbnail url from '%s': '%v'", videoUrl, err)
 		return result, err
 	}
-	for _, output := range cliOutput.OutputLogs {
-		if strings.HasPrefix(output.Line, "https") {
-			result = output.Line
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "https") {
+			result = line
 		}
 	}
 
@@ -150,40 +150,30 @@ func moveToTarget(sourcePath, targetRootPath string) (results string, err error)
 	return targetPath, err
 }
 
-// configureCookies adds cookie configuration to yt-dlp instance
-func configureCookies(dl *ytdlp.Command, cookiesConfig *config.Cookies) *ytdlp.Command {
-	// Check if cookies are enabled and cookie file exists
-	if cookiesConfig != nil && cookiesConfig.Enabled && cookiesConfig.CookiePath != "" {
-		if _, err := os.Stat(cookiesConfig.CookiePath); err == nil {
-			log.Printf("using cookie file path: %s", cookiesConfig.CookiePath)
-			return dl.Cookies(cookiesConfig.CookiePath)
-		} else {
-			log.Printf("warning: cookie file path specified but not found: %s", cookiesConfig.CookiePath)
-		}
-	}
-
-	return dl
-}
-
 func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString string) ([]string, error) {
 	result := make([]string, 0)
+	
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
-	// Use getCommandBuilder but remove .Simulate() flag for actual downloading
-	dl := y.getCommandBuilder(false).
-		ExtractAudio().AudioFormat("mp3").          // convert get mp3 after downloading the video
-		EmbedMetadata().                            // adds metadata such as artist to the file
-		SponsorblockRemove(sponsorBlockCategories). // delete unneeded segments (e.g. sponsor, intro etc.)
-		ProgressFunc(1*time.Second, func(prog ytdlp.ProgressUpdate) {
-			log.Printf("download progress '%s' - %.1f%%", *prog.Info.Title, prog.Percent())
-		}).
-		ExtractorArgs("youtube:player_client=default,web_safari;player_js_version=actual"). // added workaround for download issues see https://github.com/yt-dlp/yt-dlp/issues/14680#issuecomment-3425394571
-		Output(tempFilenameTemplate) // set output path
+	
+	args := y.buildBaseArgs(false)
+	args = append(args,
+		"--extract-audio",
+		"--audio-format", "mp3",
+		"--embed-metadata",
+		"--sponsorblock-remove", sponsorBlockCategories,
+		"--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual",
+		"--output", tempFilenameTemplate,
+		urlString,
+	)
 
-	// download
-	_, err := dl.Run(context.Background(), urlString)
+	cmd := exec.Command("yt-dlp", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
 	if err != nil {
-		return result, err
+		return result, fmt.Errorf("yt-dlp command failed: %w", err)
 	}
 
 	// get file names
@@ -199,22 +189,38 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	dl := y.getCommandBuilder(true)
-	_, err := dl.Run(context.Background(), urlString)
+	
+	args := y.buildBaseArgs(true)
+	args = append(args, urlString)
+
+	cmd := exec.Command("yt-dlp", args...)
+	err := cmd.Run()
 
 	if err != nil {
 		log.Printf("error checking video availability: '%v'", err)
 		return false
 	}
-	return dl != nil
+	return true
 }
 
-// getCommandBuilder creates a new yt-dlp command with cookie configuration
-// simulate: if true, adds Simulate() and Quiet() flags for dry-run operations
-func (y *YoutubeAudioDownloader) getCommandBuilder(simulate bool) *ytdlp.Command {
-	dl := ytdlp.New()
-	if simulate {
-		dl = dl.Simulate().Quiet()
+// buildBaseArgs creates base arguments for yt-dlp command
+// simulate: if true, adds --simulate and --quiet flags for dry-run operations
+func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
+	args := make([]string, 0)
+
+	// Add cookie configuration if enabled
+	if y.cookiesConfig != nil && y.cookiesConfig.Enabled && y.cookiesConfig.CookiePath != "" {
+		if _, err := os.Stat(y.cookiesConfig.CookiePath); err == nil {
+			log.Printf("using cookie file path: %s", y.cookiesConfig.CookiePath)
+			args = append(args, "--cookies", y.cookiesConfig.CookiePath)
+		} else {
+			log.Printf("warning: cookie file path specified but not found: %s", y.cookiesConfig.CookiePath)
+		}
 	}
-	return configureCookies(dl, y.cookiesConfig)
+
+	if simulate {
+		args = append(args, "--simulate", "--quiet")
+	}
+
+	return args
 }

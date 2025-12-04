@@ -5,9 +5,10 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - "./volume/resources/:/home/appuser/app/resources"
-      - "./volume/database/:/home/appuser/app/database"
-      - "./volume/cookies/:/home/appuser/app/cookies"
+      - "./config/:/home/appuser/app/config"
+      - "./volume/resources/:/home/appuser/app/mount/resources"
+      - "./volume/database/:/home/appuser/app/mount/database"
+      - "./volume/cookies/:/home/appuser/app/mount/cookies"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080"]
       interval: 12s
