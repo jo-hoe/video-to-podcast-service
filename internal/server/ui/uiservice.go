@@ -43,8 +43,14 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 		templates: template.Must(template.New("").Funcs(funcMap).ParseFS(templateFS, viewsPattern)),
 	}
 	// Set UI routes
+	e.GET("/", service.rootRedirectHandler) // Redirect root to index.html
 	e.GET(MainPageName, service.indexHandler)
 	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
+}
+
+// rootRedirectHandler redirects root path to index.html
+func (service *UIService) rootRedirectHandler(ctx echo.Context) error {
+	return ctx.Redirect(http.StatusMovedPermanently, "/"+MainPageName)
 }
 
 // Helper function to extract feed title from audio file path
