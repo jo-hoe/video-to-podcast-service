@@ -14,21 +14,12 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                urls:
-                  type: array
-                  items:
-                    type: string
-              required:
-                - urls
+              $ref: '#/components/schemas/DownloadItems'
       responses:
-        '204':
+        '200':
           description: Items added successfully
         '400':
           description: Invalid request body or data
-        '500':
-          description: Failed to process download item
   /v1/feeds:
     get:
       summary: List all podcast feed links
@@ -104,7 +95,7 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        '200':
           description: Podcast item deleted
         '400':
           description: Invalid podcast item or feed title
@@ -118,6 +109,22 @@ paths:
       responses:
         '200':
           description: Service is running
+  /health:
+    get:
+      summary: Health check with detailed status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
 components:
   schemas:
     DownloadItems:
@@ -129,3 +136,18 @@ components:
             type: string
       required:
         - urls
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, disabled]
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+        message:
+          type: string
+      required:
+        - status
+        - checks
