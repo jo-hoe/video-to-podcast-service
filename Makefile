@@ -27,6 +27,6 @@ install-hooks: ## install git hooks
 	@echo Installing git hooks...
 	@go run -C .githooks install.go
 
-.PHONY: start
+.PHONY: start-docker
 start: ## start service
 	docker-compose up video-to-podcast-service --build
