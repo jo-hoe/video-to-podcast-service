@@ -27,8 +27,12 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v6
-    - name: Run tests
+    - name: Run tests with coverage
+      if: matrix.platform == 'ubuntu-latest'
       run: go test -v ./... -covermode=count -coverprofile=coverage.out
+    - name: Run tests
+      if: matrix.platform != 'ubuntu-latest'
+      run: go test -v ./...
     - name: Convert coverage.out to coverage.lcov
       if: matrix.platform == 'ubuntu-latest'
       uses: jandelgado/gcov2lcov-action@v1
