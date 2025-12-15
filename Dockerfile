@@ -1,5 +1,5 @@
 # Build stage: build the Go application
-FROM golang:1.24.4 AS build
+FROM golang:1.25.5 AS build
 # Set the working directory
 WORKDIR /app
 # Copy go.mod and go.sum to leverage caching for dependencies
@@ -13,7 +13,7 @@ COPY . ./
 RUN CGO_ENABLED=1 go build -o /go/bin/app ./
 
 # Runtime stage: use a minimal base image for runtime and set up a non-root user
-FROM jrottenberg/ffmpeg:7.1-ubuntu
+FROM jrottenberg/ffmpeg:8.0-ubuntu
 # Install required dependencies
 RUN apt-get update && \
     apt-get install -y \

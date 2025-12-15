@@ -177,7 +177,7 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 		err = service.coreService.DownloadItemsHandler(url)
 		if err != nil {
 			log.Printf("failed to handle download for url %s: %v", url, err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "failed to process download item")
+			return echo.NewHTTPError(http.StatusBadRequest, "unsupported URL")
 		}
 	}
 

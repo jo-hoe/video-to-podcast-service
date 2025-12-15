@@ -16,12 +16,13 @@ import (
 )
 
 const (
-	playlistRegex   = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
-	videoRegex      = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
-	videoShortRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+	playlistRegex        = `https://(?:.+)?youtube.com/(?:.+)?list=([A-Za-z0-9_-]*)`
+	youtubeVideoRegex    = `https://(?:.+)?youtube.com/(?:.+)?watch\?v=([A-Za-z0-9_-]*)`
+	youtubeTinyLinkRegex = `https://youtu\.be/([A-Za-z0-9_-]*)`
+	youtubeShortsRegex   = `https://(?:.+)?youtube.com/shorts/([A-Za-z0-9_-]*)`
 	// types taken from API description
 	// https://wiki.sponsor.ajay.app/w/Types
-	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler"
+	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler,hook"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
 )
@@ -183,8 +184,8 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 
 func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 	return regexp.MustCompile(playlistRegex).MatchString(url) ||
-		regexp.MustCompile(videoRegex).MatchString(url) ||
-		regexp.MustCompile(videoShortRegex).MatchString(url)
+		regexp.MustCompile(youtubeVideoRegex).MatchString(url) ||
+		regexp.MustCompile(youtubeTinyLinkRegex).MatchString(url)
 }
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
