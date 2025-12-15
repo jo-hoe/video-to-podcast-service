@@ -153,10 +153,10 @@ func moveToTarget(sourcePath, targetRootPath string) (results string, err error)
 
 func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString string) ([]string, error) {
 	result := make([]string, 0)
-	
+
 	// set download behavior
 	tempFilenameTemplate := fmt.Sprintf("%s%c%s", targetDirectory, os.PathSeparator, "%(channel)s/%(title)s_%(id)s.%(ext)s")
-	
+
 	args := y.buildBaseArgs(false)
 	args = append(args,
 		"--extract-audio",
@@ -190,7 +190,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	log.Printf("checking if video from '%s' can be downloaded", urlString)
-	
+
 	args := y.buildBaseArgs(true)
 	args = append(args, urlString)
 

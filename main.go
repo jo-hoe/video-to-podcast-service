@@ -15,7 +15,7 @@ func getConfigPath() string {
 	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
 		return configPath
 	}
-	
+
 	// Default to config/config.yaml in current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
