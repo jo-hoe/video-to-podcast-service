@@ -1,0 +1,18 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: podcastcluster # (will still be prefixed with `k3d-`)
+servers: 1
+agents: 1
+ports:
+  - port: 8080:80 # map port 8080 on host to port 80 on loadbalancer (Traefik)
+    nodeFilters:
+      - loadbalancer
+  - port: 8081:8081 # map port 8081 on host to port 8081 on loadbalancer (for our app)
+    nodeFilters:
+      - loadbalancer
+registries: # define how registries should be created or used
+  create: # creates a default registry to be used with the cluster; same as `--registry-create registry.localhost`
+    name: registry.localhost
+    host: "0.0.0.0"
+    hostPort: "5000"

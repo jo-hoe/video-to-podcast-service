@@ -1,0 +1,32 @@
+# Example values file for deploying with YouTube cookies
+
+# Option 1: Provide base64 encoded cookie content directly
+# The chart will automatically create a secret with this content
+cookies:
+  enabled: true
+  cookieContent: "IyBOZXRzY2FwZSBIVFRQIENvb2tpZSBGaWxlCi55b3V0dWJlLmNvbQlUUlVFCS8JVFJVRQkwCVRFU1RfQ09PS0lFCXRlc3RfdmFsdWU="
+
+# Option 2: Use an existing Kubernetes secret
+# Note: secretName takes precedence over cookieContent
+# cookies:
+#   enabled: true
+#   secretName: "my-youtube-cookies-secret"
+
+# Option 3: Disable cookies (cookies won't be mounted)
+# cookies:
+#   enabled: false
+
+---
+# If you want to create the secret manually first:
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: my-youtube-cookies-secret
+# type: Opaque
+# data:
+#   youtube-cookies.txt: <base64-encoded-cookie-content>
+
+---
+# To encode your cookies file to base64:
+# Linux/Mac: base64 -w 0 youtube-cookies.txt
+# Windows PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("youtube-cookies.txt"))

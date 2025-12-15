@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "video-to-podcast-service.fullname" . }}
+  labels:
+    {{- include "video-to-podcast-service.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "video-to-podcast-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "video-to-podcast-service.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "video-to-podcast-service.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: CONFIG_PATH
+              value: /etc/video-to-podcast/config.yaml
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort | default .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/video-to-podcast
+              readOnly: true
+            - name: data
+              mountPath: /app/data
+            {{- if .Values.cookies.enabled }}
+            {{- if or .Values.cookies.secretName .Values.cookies.cookieContent }}
+            - name: cookies-secret
+              mountPath: /app/data/cookies
+              readOnly: true
+            {{- end }}
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "video-to-podcast-service.fullname" . }}-config
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "video-to-podcast-service.fullname" .)) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.cookies.enabled }}
+        {{- if .Values.cookies.secretName }}
+        - name: cookies-secret
+          secret:
+            secretName: {{ .Values.cookies.secretName }}
+        {{- else if .Values.cookies.cookieContent }}
+        - name: cookies-secret
+          secret:
+            secretName: {{ include "video-to-podcast-service.fullname" . }}-cookies
+        {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -14,6 +14,45 @@ Video To Podcast Service is a backend service that downloads video files (curren
 - Serve podcast feeds as RSS for use in podcast apps
 - REST API for adding, listing, retrieving, and deleting podcast items
 - Dockerized for easy deployment
+- Kubernetes/Helm chart for k3s deployment
+
+## Deployment Options
+
+### Docker Deployment
+
+See the sections below for Docker and Docker Compose deployment.
+
+### Kubernetes (k3s) Deployment
+
+The service can be deployed to Kubernetes (specifically tested on k3s) using Helm:
+
+```bash
+# Basic installation
+helm install video-to-podcast ./charts/video-to-podcast-service
+
+# With custom values
+helm install video-to-podcast ./charts/video-to-podcast-service -f custom-values.yaml
+```
+
+For detailed Kubernetes deployment instructions, see the [Helm Chart README](./charts/video-to-podcast-service/README.md).
+
+### Local k3d Development Cluster
+
+For local development and testing, you can use k3d (k3s in Docker):
+
+```bash
+# Start k3d cluster and deploy the service
+make start-k3d
+
+# Access the service
+# The service will be available at http://localhost:8080
+
+# Stop the cluster
+make stop-k3d
+
+# Restart the cluster
+make restart-k3d
+```
 
 ## How to Use
 
