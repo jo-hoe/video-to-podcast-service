@@ -1,6 +1,6 @@
 # video-to-podcast-service
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.0.0](https://img.shields.io/badge/AppVersion-1.0.0-informational?style=flat-square)
+![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.3.0](https://img.shields.io/badge/AppVersion-1.3.0-informational?style=flat-square)
 
 Service for converting videos to podcast feeds
 
@@ -9,9 +9,10 @@ Service for converting videos to podcast feeds
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| cookies.cookiePath | string | `"/app/data/cookies/youtube-cookies.txt"` |  |
-| cookies.enabled | bool | `true` |  |
-| cookies.secretName | string | `""` |  |
+| cookies.cookieContent | string | `""` | Base64 encoded content of the YouTube cookies file (optional) If provided, a secret will be automatically created with this content Example: cookieContent: "BASE64_ENCODED_COOKIE_STRING" |
+| cookies.cookiePath | string | `"/app/data/cookies/youtube-cookies.txt"` | Path is relative to the mount point in the container |
+| cookies.enabled | bool | `false` |  |
+| cookies.secretName | string | `""` | Secret name containing the cookies file (optional) If provided, will use the existing secret instead of creating one Note: secretName takes precedence over cookieContent |
 | database.connectionString | string | `"file:/app/data/database/video-to-podcast-service.db"` |  |
 | database.driver | string | `"sqlite3"` |  |
 | fullnameOverride | string | `""` |  |
@@ -59,7 +60,8 @@ Service for converting videos to podcast feeds
 | securityContext.runAsNonRoot | bool | `true` |  |
 | securityContext.runAsUser | int | `1000` |  |
 | service.enabled | bool | `true` |  |
-| service.port | int | `8080` |  |
+| service.port | int | `8081` |  |
+| service.targetPort | int | `8080` |  |
 | service.type | string | `"LoadBalancer"` |  |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.automount | bool | `true` | Automatically mount a ServiceAccount's API credentials? |

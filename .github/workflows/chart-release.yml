@@ -1,0 +1,48 @@
+name: Release Charts
+
+# Currently we cannot release based on tags until this issue is addressed:
+# https://github.com/helm/chart-releaser-action/issues/150
+
+## to release via github
+## - bump the appVersion and chartVersion in the Chart.yaml
+## - create a new release in github and tag it with new version number
+## the version number should conform to the regex below
+# on:
+#  push:
+#    tags:
+#      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+# New Charts are released by altering the 'charts' folder
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/**'
+
+jobs:
+  release:
+    # depending on default permission settings for your org (contents being read-only or read-write for workloads), you will have to add permissions
+    # see: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.5.0
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
