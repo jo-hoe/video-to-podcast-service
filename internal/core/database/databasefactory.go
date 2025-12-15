@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/filemanagement"
 )
 
 func NewDatabase(connectionString string, resourcePath string) (database DatabaseService, err error) {
+	cfg := config.GetConfig()
 	var dbInstance DatabaseService
-	dbType := getDatabaseType(connectionString)
 
-	switch dbType {
-	case "sqlite":
+	switch cfg.Persistence.Database.Driver {
+	case "sqlite3", "sqlite":
 		dbInstance = NewSQLiteDatabase(connectionString)
 	default:
-		return nil, fmt.Errorf("unsupported database type: %s", dbType)
+		return nil, fmt.Errorf("unsupported database driver: %s", cfg.Persistence.Database.Driver)
 	}
 
 	if !dbInstance.DoesDatabaseExist() {
@@ -35,17 +36,6 @@ func NewDatabase(connectionString string, resourcePath string) (database Databas
 	addPreexistingElements(dbInstance, resourcePath)
 
 	return dbInstance, nil
-}
-
-func getDatabaseType(connectionString string) string {
-	if connectionString == "" {
-		return "sqlite"
-	}
-	if len(connectionString) > 7 && connectionString[:7] == "sqlite:" {
-		return "sqlite"
-	}
-	// Add more database types as needed
-	return "unknown"
 }
 
 func addPreexistingElements(database DatabaseService, resourcePath string) {

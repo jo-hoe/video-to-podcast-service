@@ -1,0 +1,11 @@
+port: 8080
+persistence:
+  database:
+    driver: sqlite3
+    connectionString: file:./mount/database/video-to-podcast-service.db
+  cookies:
+    enabled: true
+    cookiePath: ./mount/cookies/youtube-cookies.txt
+  media:
+    mediaPath: ./mount/resources/media
+    tempPath: ./mount/resources/temp

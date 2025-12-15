@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 )
 
@@ -36,7 +37,18 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 		t.Error("could not create folder")
 	}
 
-	y := NewYoutubeAudioDownloader()
+	// Create temp directory for download processing
+	tempDir, err := os.MkdirTemp(os.TempDir(), "testTempDir")
+	if err != nil {
+		t.Fatalf("could not create temp folder: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Error removing temp directory: %v", err)
+		}
+	}()
+
+	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir})
 	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
 	if err != nil {
 		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
@@ -98,6 +110,17 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 		t.Error("could not create folder")
 	}
 
+	// Create temp directory for download processing
+	tempDir, err := os.MkdirTemp(os.TempDir(), "testTempDir")
+	if err != nil {
+		t.Fatalf("could not create temp folder: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Errorf("Error removing temp directory: %v", err)
+		}
+	}()
+
 	type args struct {
 		urlString string
 		path      string
@@ -111,7 +134,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}{
 		{
 			name: "Video Download Test",
-			y:    NewYoutubeAudioDownloader(),
+			y:    NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}),
 			args: args{
 				urlString: validYoutubeVideoUrl,
 				path:      rootDirectory,
@@ -121,7 +144,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 		},
 		{
 			name: "Playlist Download Test",
-			y:    NewYoutubeAudioDownloader(),
+			y:    NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}),
 			args: args{
 				urlString: validYoutubePlaylistUrl,
 				path:      filepath.Join(rootDirectory, "Cat"),
@@ -155,7 +178,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader()
+	downloader := NewYoutubeAudioDownloader(nil, nil)
 
 	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
 	if isAvailable {
@@ -165,7 +188,7 @@ func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader()
+	downloader := NewYoutubeAudioDownloader(nil, nil)
 
 	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
 	if !isAvailable {

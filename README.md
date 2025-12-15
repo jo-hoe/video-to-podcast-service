@@ -44,13 +44,20 @@ make start-services-rebuild
 
 All downloaded resources are placed in the `resources` directory. Podcasts are organized in subdirectories named after the channel the video belongs to. Each feed has its own directory containing audio files and the RSS XML.
 
+### Temporary Files
+
+During video download and processing, temporary files are stored in a configurable temp directory:
+
+- **Configuration**: Set via the `mediaConfig.TempPath` setting in the application configuration (defaults to `./mount/resources/temp`)
+- **Cleanup**: Temporary directories are automatically cleaned up after processing completes
+
 ## API Usage
 
 The service exposes a REST API. See [`openapi.yaml`](./openapi.yaml) for the full OpenAPI/Swagger specification.
 
 ## Linting
 
-The project uses `golangci-lint` for linting. See <https://golangci-lint.run/usage/install/> for installation instructions.
+The project uses `golangci-lint` for linting. See <https://golangci-lint.run/docs/welcome/install/> for installation instructions.
 
 To run linting locally:
 

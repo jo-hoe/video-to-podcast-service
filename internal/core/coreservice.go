@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
@@ -15,12 +16,16 @@ import (
 type CoreService struct {
 	databaseService      database.DatabaseService
 	audioSourceDirectory string
+	cookiesConfig        *config.Cookies
+	mediaConfig          *config.Media
 }
 
-func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string) *CoreService {
+func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string, cookiesConfig *config.Cookies, mediaConfig *config.Media) *CoreService {
 	return &CoreService{
 		databaseService:      databaseService,
 		audioSourceDirectory: audioSourceDirectory,
+		cookiesConfig:        cookiesConfig,
+		mediaConfig:          mediaConfig,
 	}
 }
 
@@ -30,6 +35,10 @@ func (cs *CoreService) GetDatabaseService() database.DatabaseService {
 
 func (cs *CoreService) GetAudioSourceDirectory() string {
 	return cs.audioSourceDirectory
+}
+
+func (cs *CoreService) GetCookieConfig() *config.Cookies {
+	return cs.cookiesConfig
 }
 
 func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
@@ -65,7 +74,7 @@ func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
-	downloaderInstance, err := download.GetVideoDownloader(url)
+	downloaderInstance, err := download.GetVideoDownloader(url, cs.cookiesConfig, cs.mediaConfig)
 	if err != nil {
 		return fmt.Errorf("url %s not supported", url)
 	}

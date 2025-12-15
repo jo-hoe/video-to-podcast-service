@@ -1,36 +1,44 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
+	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server"
 )
 
-const (
-	resourcePathEnvVar     = "BASE_PATH"
-	connectionStringEnvVar = "CONNECTION_STRING"
-)
-
-func getResourcePath() string {
-	ex, err := os.Executable()
+func getConfigPath() string {
+	// First check if config path is provided via environment variable
+	if configPath := os.Getenv("CONFIG_PATH"); configPath != "" {
+		return configPath
+	}
+	
+	// Default to config/config.yaml in current working directory
+	cwd, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	exPath := filepath.Dir(ex)
-	defaultResourcePath := common.ValueOrDefault(os.Getenv(resourcePathEnvVar), filepath.Join(exPath, "resources"))
-	return defaultResourcePath
+	return filepath.Join(cwd, "config", "config.yaml")
 }
 
 func main() {
-	defaultResourcePath := getResourcePath()
+	// Load configuration
+	configPath := getConfigPath()
+	cfg, err := config.LoadConfig(configPath)
+	if err != nil {
+		log.Printf("Failed to load config from %s: %v", configPath, err)
+		panic(err)
+	}
 
-	databaseService, err := database.NewDatabase(common.ValueOrDefault(os.Getenv(connectionStringEnvVar), ""), defaultResourcePath)
+	// Initialize database
+	databaseService, err := database.NewDatabase(cfg.Persistence.Database.ConnectionString, cfg.Persistence.Media.MediaPath)
 	if err != nil {
 		panic(err)
 	}
 
-	server.StartServer(databaseService, defaultResourcePath)
+	// Start server
+	server.StartServer(databaseService, cfg)
 }

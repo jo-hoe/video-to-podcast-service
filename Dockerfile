@@ -19,14 +19,23 @@ RUN apt-get update && \
     apt-get install -y \
     ca-certificates \
     wget \
+    unzip \
     python3-minimal && \
     update-ca-certificates && \
+    # Download and install Deno (required for yt-dlp YouTube support)
+    wget https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -O /tmp/deno.zip && \
+    unzip /tmp/deno.zip -d /usr/local/bin && \
+    chmod a+rx /usr/local/bin/deno && \
+    rm /tmp/deno.zip && \
     # Download yt-dlp binary
     wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
-    # Verify yt-dlp works
+    # Verify installations
+    /usr/local/bin/deno --version && \
     /usr/local/bin/yt-dlp --version && \
     # Cleanup
+    apt-get remove -y unzip && \
+    apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

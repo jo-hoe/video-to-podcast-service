@@ -1,15 +1,14 @@
 services:
-  mail-webhook-service:
-    image: ghcr.io/jo-hoe/go-mail-webhook-service:1.0.0
-    volumes:
-      - "./mail-webhook-config/:/go/config"
   video-to-podcast-service:
     build: .
     image: video-to-podcast-service
     ports:
       - "8080:8080"
     volumes:
-      - "./resources/:/home/appuser/app/resources"
+      - "./config/:/home/appuser/app/config"
+      - "./volume/resources/:/home/appuser/app/mount/resources"
+      - "./volume/database/:/home/appuser/app/mount/database"
+      - "./volume/cookies/:/home/appuser/app/mount/cookies"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080"]
       interval: 12s
