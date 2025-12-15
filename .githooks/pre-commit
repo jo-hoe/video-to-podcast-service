@@ -1,0 +1,17 @@
+#!/bin/sh
+# Pre-commit hook to run go fmt on all Go files
+
+echo "Running go fmt on all Go files..."
+
+# Run go fmt on all .go files in the project
+go fmt ./...
+
+# Check if there are any formatting changes
+if ! git diff --quiet; then
+    echo "✓ Code formatted successfully"
+    echo "Note: Formatted files have been modified. Please review and stage the changes."
+    exit 0
+fi
+
+echo "✓ All files are properly formatted"
+exit 0

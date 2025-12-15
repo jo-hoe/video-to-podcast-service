@@ -17,6 +17,16 @@ Video To Podcast Service is a backend service that downloads video files (curren
 
 ## How to Use
 
+### Initial Setup
+
+After cloning the repository, install the git hooks:
+
+```bash
+make install-hooks
+```
+
+This installs a pre-commit hook that automatically runs `go fmt` on all Go files before each commit, ensuring consistent code formatting across the project.
+
 ### Start the Service
 
 You can start the service using `make` (recommended):

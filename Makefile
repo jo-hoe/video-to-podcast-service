@@ -22,6 +22,11 @@ test: ## run golang test (including integration tests)
 lint: ## run golangci-lint
 	golangci-lint run ${ROOT_DIR}...
 
+.PHONY: install-hooks
+install-hooks: ## install git hooks
+	@echo Installing git hooks...
+	@go run -C .githooks install.go
+
 .PHONY: start
 start: ## start service
 	docker-compose up video-to-podcast-service --build
