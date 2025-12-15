@@ -3,7 +3,7 @@ include help.mk
 # get root dir
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
-.DEFAULT_GOAL := start-service
+.DEFAULT_GOAL := start
 
 .PHONY: build
 build: ## build binary
