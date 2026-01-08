@@ -1,61 +1,60 @@
-# Build stage: build the Go application
-FROM golang:1.25.5 AS build
+# Build stage: build the Go application against musl (Alpine) for CGO compatibility
+FROM golang:1.25.5-alpine AS build
+
 # Set the working directory
-WORKDIR /app
+WORKDIR /src
+
 # Copy go.mod and go.sum to leverage caching for dependencies
 COPY go.mod go.sum ./
 RUN go mod download
-# Install build dependencies for CGO
-RUN apt-get update && apt-get install -y gcc libc6-dev && rm -rf /var/lib/apt/lists/*
+
+# Install build dependencies for CGO on Alpine (musl)
+RUN apk add --no-cache build-base sqlite-dev
+
 # Copy the rest of the code and build the application
 COPY . ./
-# Build with CGO (required for sqlite dependency) and output to a specific location
-RUN CGO_ENABLED=1 go build -o /go/bin/app ./
 
-# Runtime stage: use a minimal base image for runtime and set up a non-root user
-FROM jrottenberg/ffmpeg:8.0-ubuntu
-# Install required dependencies
-RUN apt-get update && \
-    apt-get install -y \
+# Build with CGO (required for sqlite dependency) and output to a specific location
+RUN CGO_ENABLED=1 go build -o /out/app -ldflags="-s -w" ./
+
+# Runtime stage: use the Alpine ffmpeg base image to reduce size
+FROM jrottenberg/ffmpeg:8.0-alpine
+
+# Install required runtime dependencies
+# - ca-certificates: TLS trust store
+# - python3: runtime for yt-dlp
+# - deno: JS runtime for yt-dlp's JS operations
+# - wget: to fetch yt-dlp standalone binary (zipapp)
+RUN apk add --no-cache \
     ca-certificates \
-    wget \
-    unzip \
-    python3-minimal && \
+    python3 \
+    deno \
+    wget && \
     update-ca-certificates && \
-    # Download and install Deno (required for yt-dlp YouTube support)
-    wget https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -O /tmp/deno.zip && \
-    unzip /tmp/deno.zip -d /usr/local/bin && \
-    chmod a+rx /usr/local/bin/deno && \
-    rm /tmp/deno.zip && \
-    # Download yt-dlp binary
     wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
     # Verify installations
-    /usr/local/bin/deno --version && \
-    /usr/local/bin/yt-dlp --version && \
+    deno --version && \
+    yt-dlp --version && \
     # Cleanup
-    apt-get remove -y unzip && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    apk del wget && \
+    rm -rf /root/.cache /var/cache/apk/*
 
-# Create a non-root user and set up directories
-RUN useradd --create-home --shell /bin/bash appuser
-RUN mkdir -p /home/appuser/app/resources
-
-# Create cache directory and set permissions
-RUN mkdir -p /home/appuser/.cache && \
-    chown -R appuser:appuser /home/appuser/.cache && \
+# Create a non-root user and set up directories (BusyBox adduser)
+RUN adduser -D -h /home/appuser appuser && \
+    mkdir -p /home/appuser/app/resources && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appuser /home/appuser && \
     chmod 755 /home/appuser/.cache
 
 # Set the working directory
 WORKDIR /home/appuser/app
 
 # Copy the built application from the build stage
-COPY --from=build /go/bin/app .
+COPY --from=build /out/app ./app
 
 # Ensure the executable has execute permissions and set ownership
-RUN chmod +x /home/appuser/app/app && \
+RUN chmod +x ./app && \
     chown -R appuser:appuser /home/appuser/app
 
 # Set the user to the non-root user

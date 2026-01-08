@@ -11,8 +11,12 @@ ports:
   - port: 8081:8081 # map port 8081 on host to port 8081 on loadbalancer (for our app)
     nodeFilters:
       - loadbalancer
-registries: # define how registries should be created or used
-  create: # creates a default registry to be used with the cluster; same as `--registry-create registry.localhost`
+kubeAPI:
+  # setting port and IP on Windows explicitly as the default k3d port can lead to kubectl not being able to connect
+  hostIP: "127.0.0.1"
+  hostPort: "6550"
+registries:
+  create:
     name: registry.localhost
     host: "0.0.0.0"
     hostPort: "5000"

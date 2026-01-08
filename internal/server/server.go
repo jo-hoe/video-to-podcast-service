@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
@@ -23,9 +24,17 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 	defaultResourcePath = cfg.Persistence.Media.MediaPath
 
 	e := echo.New()
+	// Use RequestLogger with LogValuesFunc to satisfy linter and avoid panic.
+	// Skip logging for probe and health endpoints.
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		Skipper: func(c echo.Context) bool {
 			return c.Path() == api.ProbePath || c.Path() == api.HealthPath
+		},
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			// Basic structured log line
+			log.Printf("%s method=%s uri=%s status=%d latency=%s",
+				v.StartTime.Format(time.RFC3339), v.Method, v.URI, v.Status, v.Latency)
+			return nil
 		},
 	}))
 	e.Use(middleware.Recover())
