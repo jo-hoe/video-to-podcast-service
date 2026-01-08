@@ -11,6 +11,7 @@ import (
 
 const (
 	HealthPath = "health"
+	ProbePath  = "probe"
 )
 
 // Health status constants

@@ -23,7 +23,11 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 	defaultResourcePath = cfg.Persistence.Media.MediaPath
 
 	e := echo.New()
-	e.Use(middleware.RequestLogger())
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		Skipper: func(c echo.Context) bool {
+			return c.Path() == api.ProbePath || c.Path() == api.HealthPath
+		},
+	}))
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
 

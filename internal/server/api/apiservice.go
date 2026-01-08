@@ -55,7 +55,7 @@ func (service *APIService) SetAPIRoutes(e *echo.Echo) {
 	e.GET(HealthPath, service.healthHandler)
 
 	// Set probe route
-	e.GET("/", service.probeHandler)
+	e.GET(ProbePath, service.probeHandler)
 }
 
 func (service *APIService) deleteFeedItem(ctx echo.Context) error {
