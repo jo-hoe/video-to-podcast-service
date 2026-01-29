@@ -163,7 +163,9 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 		"--audio-format", "mp3",
 		"--embed-metadata",
 		"--sponsorblock-remove", sponsorBlockCategories,
-		"--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual",
+		// Workaround: using lower resolution to avoid issues with download of videos
+		// Remove when after upstream fix of https://github.com/yt-dlp/yt-dlp/issues/12482 is available and integration tests pass without this code.
+		"--format", "bestaudio/best[height<=360]",
 		"--output", tempFilenameTemplate,
 		urlString,
 	)
@@ -218,6 +220,10 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 			slog.Warn("cookie file path specified but not found", "path", y.cookiesConfig.CookiePath)
 		}
 	}
+
+	// Workaround: use Android client
+	// Remove when after upstream fix of https://github.com/yt-dlp/yt-dlp/issues/12482 is available and integration tests pass without this code.
+	args = append(args, "--extractor-args", "youtube:player_client=android;player_js_version=actual")
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
