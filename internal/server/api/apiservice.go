@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -68,19 +68,19 @@ func (service *APIService) deleteFeedItem(ctx echo.Context) error {
 
 	podcastItem, err := service.coreService.GetDatabaseService().GetPodcastItemByID(podcastItemID)
 	if err != nil {
-		log.Printf("failed to retrieve podcast item with ID %s: %v", podcastItemID, err)
+		slog.Error("failed to retrieve podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
 	}
 	err = service.coreService.GetDatabaseService().DeletePodcastItem(podcastItem.ID)
 	if err != nil {
-		log.Printf("failed to delete podcast item with ID %s: %v", podcastItemID, err)
+		slog.Error("failed to delete podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
 	}
 
 	// Remove the audio file if it exists
 	err = os.Remove(podcastItem.AudioFilePath)
 	if err != nil && !os.IsNotExist(err) {
-		log.Printf("failed to delete audio file for podcast item with ID %s: %v", podcastItemID, err)
+		slog.Error("failed to delete audio file for podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
 	}
 
@@ -89,21 +89,21 @@ func (service *APIService) deleteFeedItem(ctx echo.Context) error {
 	if _, err := os.Stat(feedDirectory); err == nil {
 		files, err := os.ReadDir(feedDirectory)
 		if err != nil {
-			log.Printf("failed to read directory %s: %v", feedDirectory, err)
+			slog.Error("failed to read directory", "directory", feedDirectory, "err", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
 		}
 		if len(files) == 0 {
 			err = os.Remove(feedDirectory)
 			if err != nil {
-				log.Printf("failed to remove empty feed directory %s: %v", feedDirectory, err)
+				slog.Error("failed to remove empty feed directory", "directory", feedDirectory, "err", err)
 				return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
 			}
-			log.Printf("removed empty feed directory: %s", feedDirectory)
+			slog.Info("removed empty feed directory", "directory", feedDirectory)
 		} else {
-			log.Printf("feed directory %s is not empty, skipping removal", feedDirectory)
+			slog.Info("feed directory not empty, skipping removal", "directory", feedDirectory)
 		}
 	} else if !os.IsNotExist(err) {
-		log.Printf("failed to check if feed directory %s exists: %v", feedDirectory, err)
+		slog.Error("failed to check if feed directory exists", "directory", feedDirectory, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
 	}
 
@@ -113,26 +113,26 @@ func (service *APIService) deleteFeedItem(ctx echo.Context) error {
 func (service *APIService) validateItemPathComponents(podcastItemID string, feedTitle string) *echo.HTTPError {
 	// validate podcastItemID
 	if podcastItemID == "" {
-		log.Printf("podcastItemID is required for validation")
+		slog.Warn("podcastItemID is required for validation")
 		return echo.NewHTTPError(http.StatusBadRequest, "podcastItemID is required")
 	}
 
 	databaseService := service.coreService.GetDatabaseService()
 	podcastItem, err := databaseService.GetPodcastItemByID(podcastItemID)
 	if err != nil || podcastItem == nil {
-		log.Printf("no podcast item found with ID %s", podcastItemID)
+		slog.Warn("no podcast item found", "podcastItemID", podcastItemID)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid podcast item")
 	}
 
 	// validate feedTitle
 	if feedTitle == "" {
-		log.Printf("feedTitle is required for validation")
+		slog.Warn("feedTitle is required for validation")
 		return echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
 
 	feedDirectory, err := service.coreService.GetFeedDirectory(podcastItem.AudioFilePath)
 	if err != nil {
-		log.Printf("feed item not found (feed directory error) for podcast item ID %s", podcastItemID)
+		slog.Warn("feed item not found (feed directory error)", "podcastItemID", podcastItemID)
 		return echo.NewHTTPError(http.StatusNotFound, "feed item not found")
 	}
 
@@ -140,7 +140,7 @@ func (service *APIService) validateItemPathComponents(podcastItemID string, feed
 	normFeedTitle, _ := url.PathUnescape(feedTitle)
 	normFeedDirectory, _ := url.PathUnescape(feedDirectory)
 	if !equalPath(normFeedTitle, normFeedDirectory) {
-		log.Printf("feed item not found (feed title mismatch) for podcast item ID %s", podcastItemID)
+		slog.Warn("feed item not found (feed title mismatch)", "podcastItemID", podcastItemID)
 		return echo.NewHTTPError(http.StatusNotFound, "feed item not found")
 	}
 
@@ -150,7 +150,7 @@ func (service *APIService) validateItemPathComponents(podcastItemID string, feed
 func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
 	feeds, err := service.getFeedService().GetFeeds(ctx.Request().Host)
 	if err != nil {
-		log.Printf("failed to get feeds: %v", err)
+		slog.Error("failed to get feeds", "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get feeds")
 	}
 
@@ -165,18 +165,18 @@ func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
 func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 	downloadItems := new(DownloadItems)
 	if err = ctx.Bind(downloadItems); err != nil {
-		log.Printf("failed to bind download items: %v", err)
+		slog.Error("failed to bind download items", "err", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 	if err = ctx.Validate(downloadItems); err != nil {
-		log.Printf("failed to validate download items: %v", err)
+		slog.Error("failed to validate download items", "err", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request data")
 	}
 
 	for _, url := range downloadItems.URLS {
 		err = service.coreService.DownloadItemsHandler(url)
 		if err != nil {
-			log.Printf("failed to handle download for url %s: %v", url, err)
+			slog.Error("failed to handle download", "url", url, "err", err)
 			return echo.NewHTTPError(http.StatusBadRequest, "unsupported URL")
 		}
 	}
@@ -188,13 +188,13 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
 	result, err := service.getFeed(ctx.Request().Host, feedTitle)
 	if err != nil {
-		log.Printf("failed to get feed for title %s: %v", feedTitle, err)
+		slog.Error("failed to get feed", "feedTitle", feedTitle, "err", err)
 		return echo.NewHTTPError(http.StatusNotFound, "feed not found")
 	}
 
 	rss, err := result.ToRss()
 	if err != nil {
-		log.Printf("failed to generate RSS for feed %s: %v", feedTitle, err)
+		slog.Error("failed to generate RSS", "feedTitle", feedTitle, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate RSS")
 	}
 	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationXMLCharsetUTF8)
@@ -205,19 +205,19 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 	decodedFeedTitle, err := service.getPathAttributeValue(ctx, "feedTitle")
 	if err != nil {
-		log.Printf("failed to get feedTitle from path: %v", err)
+		slog.Error("failed to get feedTitle from path", "err", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid feed title")
 	}
 	decodedAudioFileName, err := service.getPathAttributeValue(ctx, "audioFileName")
 	if err != nil {
-		log.Printf("failed to get audioFileName from path: %v", err)
+		slog.Error("failed to get audioFileName from path", "err", err)
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid audio file name")
 	}
 
 	expectedPath := filepath.Clean(filepath.Join(service.coreService.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName))
 	podcastItems, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
-		log.Printf("failed to retrieve podcast items: %v", err)
+		slog.Error("failed to retrieve podcast items", "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to retrieve podcast items")
 	}
 
@@ -231,7 +231,7 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 		}
 	}
 	if !foundItem {
-		log.Printf("audio file not found for feed %s and audio file %s", decodedFeedTitle, decodedAudioFileName)
+		slog.Warn("audio file not found", "feedTitle", decodedFeedTitle, "audioFileName", decodedAudioFileName)
 		return echo.NewHTTPError(http.StatusNotFound, "audio file not found")
 	}
 

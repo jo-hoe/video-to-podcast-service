@@ -2,7 +2,7 @@ package youtube
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -49,27 +49,27 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	}
 	defer func() {
 		if err := os.RemoveAll(tempPath); err != nil {
-			log.Printf("error removing temp directory: %v", err)
+			slog.Warn("error removing temp directory", "err", err)
 		}
 	}()
 
-	log.Printf("downloading from '%s' to '%s'", urlString, tempPath)
+	slog.Info("downloading", "url", urlString, "tempPath", tempPath)
 	tempResults, err := y.download(tempPath, urlString)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("done downloading %d files", len(tempResults))
+	slog.Info("done downloading files", "count", len(tempResults))
 
 	for _, filePath := range tempResults {
-		log.Printf("setting metadata for '%s'", filePath)
+		slog.Info("setting metadata", "filePath", filePath)
 		err = y.setMetadata(filePath)
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("set metadata for '%s'", filePath)
+		slog.Info("set metadata", "filePath", filePath)
 	}
 
-	log.Printf("moving files to target folder")
+	slog.Info("moving files to target folder")
 	for _, filePath := range tempResults {
 		movedItem, err := moveToTarget(filePath, targetPath)
 		if err != nil {
@@ -77,7 +77,7 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 		}
 		results = append(results, movedItem)
 	}
-	log.Printf("completed moving all relevant files")
+	slog.Info("completed moving all relevant files")
 
 	return results, err
 }
@@ -113,7 +113,7 @@ func (y *YoutubeAudioDownloader) getThumbnailUrl(videoUrl string) (result string
 	cmd := exec.Command("yt-dlp", args...)
 	output, err := cmd.Output()
 	if err != nil {
-		log.Printf("error getting thumbnail url from '%s': '%v'", videoUrl, err)
+		slog.Error("error getting thumbnail url", "videoUrl", videoUrl, "err", err)
 		return result, err
 	}
 
@@ -189,7 +189,7 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 }
 
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
-	log.Printf("checking if video from '%s' can be downloaded", urlString)
+	slog.Info("checking video availability", "url", urlString)
 
 	args := y.buildBaseArgs(true)
 	args = append(args, urlString)
@@ -198,7 +198,7 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	err := cmd.Run()
 
 	if err != nil {
-		log.Printf("error checking video availability: '%v'", err)
+		slog.Error("error checking video availability", "err", err)
 		return false
 	}
 	return true
@@ -212,10 +212,10 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 	// Add cookie configuration if enabled
 	if y.cookiesConfig != nil && y.cookiesConfig.Enabled && y.cookiesConfig.CookiePath != "" {
 		if _, err := os.Stat(y.cookiesConfig.CookiePath); err == nil {
-			log.Printf("using cookie file path: %s", y.cookiesConfig.CookiePath)
+			slog.Info("using cookie file path", "path", y.cookiesConfig.CookiePath)
 			args = append(args, "--cookies", y.cookiesConfig.CookiePath)
 		} else {
-			log.Printf("warning: cookie file path specified but not found: %s", y.cookiesConfig.CookiePath)
+			slog.Warn("cookie file path specified but not found", "path", y.cookiesConfig.CookiePath)
 		}
 	}
 

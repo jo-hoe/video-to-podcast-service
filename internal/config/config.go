@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +13,7 @@ import (
 // Config represents the application configuration
 type Config struct {
 	Port        int         `yaml:"port"`
+	LogLevel    string      `yaml:"logLevel"`
 	Persistence Persistence `yaml:"persistence"`
 }
 
@@ -161,6 +162,10 @@ func setDefaults(config *Config) error {
 	if config.Port == 0 {
 		config.Port = 8080
 	}
+	// Set default log level if not specified
+	if strings.TrimSpace(config.LogLevel) == "" {
+		config.LogLevel = "info"
+	}
 
 	// Set default database configuration if not specified
 	if config.Persistence.Database.Driver == "" {
@@ -188,17 +193,18 @@ func setDefaults(config *Config) error {
 	return nil
 }
 
-// logLoadedConfig logs the loaded configuration values
+	// logLoadedConfig logs the loaded configuration values
 func logLoadedConfig(config *Config) {
-	log.Printf("=== Configuration Loaded ===")
-	log.Printf("Port: %d", config.Port)
-	log.Printf("Database Driver: %s", config.Persistence.Database.Driver)
-	log.Printf("Database Connection: %s", config.Persistence.Database.ConnectionString)
-	log.Printf("Cookies Enabled: %v", config.Persistence.Cookies.Enabled)
-	log.Printf("Cookie Path: %s", config.Persistence.Cookies.CookiePath)
-	log.Printf("Media Path: %s", config.Persistence.Media.MediaPath)
-	log.Printf("Temp Path: %s", config.Persistence.Media.TempPath)
-	log.Printf("============================")
+	slog.Info("=== Configuration Loaded ===")
+	slog.Info("Port", "value", config.Port)
+	slog.Info("Log Level", "value", config.LogLevel)
+	slog.Info("Database Driver", "value", config.Persistence.Database.Driver)
+	slog.Info("Database Connection", "value", config.Persistence.Database.ConnectionString)
+	slog.Info("Cookies Enabled", "value", config.Persistence.Cookies.Enabled)
+	slog.Info("Cookie Path", "value", config.Persistence.Cookies.CookiePath)
+	slog.Info("Media Path", "value", config.Persistence.Media.MediaPath)
+	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
+	slog.Info("============================")
 }
 
 // createDirectoriesFromPaths creates directories from a list of paths

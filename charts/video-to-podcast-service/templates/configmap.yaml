@@ -7,6 +7,7 @@ metadata:
 data:
   config.yaml: |
     port: {{ .Values.service.targetPort | default .Values.service.port }}
+    logLevel: {{ .Values.logLevel }}
     persistence:
       database:
         driver: {{ .Values.database.driver }}

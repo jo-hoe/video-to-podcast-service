@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -31,9 +31,13 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 			return c.Path() == api.ProbePath || c.Path() == api.HealthPath
 		},
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			// Basic structured log line
-			log.Printf("%s method=%s uri=%s status=%d latency=%s",
-				v.StartTime.Format(time.RFC3339), v.Method, v.URI, v.Status, v.Latency)
+			slog.Info("request",
+				"time", v.StartTime.Format(time.RFC3339),
+				"method", v.Method,
+				"uri", v.URI,
+				"status", v.Status,
+				"latency", v.Latency,
+			)
 			return nil
 		},
 	}))
@@ -53,9 +57,9 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 
 	// start server
 	port := strconv.Itoa(cfg.Port)
-	log.Print("starting server")
-	log.Printf("UI available at http://localhost:%s/%s", port, ui.MainPageName)
-	log.Printf("Explore all feeds via API at http://localhost:%s/%s ", port, api.FeedsPath)
+	slog.Info("starting server")
+	slog.Info(fmt.Sprintf("UI available at http://localhost:%s/%s", port, ui.MainPageName))
+	slog.Info(fmt.Sprintf("Explore all feeds via API at http://localhost:%s/%s ", port, api.FeedsPath))
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", port)))
 }
 

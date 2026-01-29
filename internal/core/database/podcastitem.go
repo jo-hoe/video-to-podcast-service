@@ -3,7 +3,7 @@ package database
 import (
 	"crypto/md5"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,7 +49,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 
 	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
-		log.Printf("could not parse date tag, reverting to default. error: %v", err)
+		slog.Warn("could not parse date tag, reverting to default", "err", err)
 		uploadTime = fileInfo.ModTime()
 	}
 

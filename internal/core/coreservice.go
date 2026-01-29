@@ -2,7 +2,7 @@ package core
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"strings"
@@ -46,7 +46,7 @@ func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath 
 	// get first part of the path as feed title
 	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
 	if len(parts) == 0 {
-		log.Printf("error: audio file path '%s' does not contain a valid feed title", audioFilePath)
+		slog.Error("audio file path does not contain a valid feed title", "audioFilePath", audioFilePath)
 		return ""
 	}
 	feedTitle := parts[0]
@@ -81,7 +81,7 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	if !downloaderInstance.IsVideoAvailable(url) {
 		return fmt.Errorf("video %s is not available", url)
 	}
-	log.Printf("downloading '%s'", url)
+	slog.Info("downloading", "url", url)
 
 	// Refactored: move download logic to a helper function to reduce nesting and improve error handling
 	go cs.handleDownload(url, downloaderInstance)
@@ -108,7 +108,7 @@ func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDow
 
 	filePaths, err := downloader.Download(url, cs.audioSourceDirectory)
 	if err != nil {
-		log.Printf("failed to download '%s': %v", url, err)
+		slog.Error("failed to download", "url", url, "err", err)
 		return
 	}
 
@@ -117,23 +117,23 @@ func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDow
 		for retries < maxErrorCount {
 			podcastItem, err := database.NewPodcastItem(filePath)
 			if err != nil {
-				log.Printf("failed to create podcast item for '%s': %v", filePath, err)
+				slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
 				retries++
 				continue
 			}
 
 			err = cs.databaseService.CreatePodcastItem(podcastItem)
 			if err != nil {
-				log.Printf("failed to create podcast item for '%s': %v", filePath, err)
+				slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
 				retries++
 				continue
 			}
 
-			log.Printf("successfully created podcast item for '%s'", filePath)
+			slog.Info("successfully created podcast item", "filePath", filePath)
 			break // success, move to next file
 		}
 		if retries == maxErrorCount {
-			log.Printf("giving up on '%s' after %d attempts", filePath, maxErrorCount)
+			slog.Warn("giving up on file after max attempts", "filePath", filePath, "attempts", maxErrorCount)
 		}
 	}
 }

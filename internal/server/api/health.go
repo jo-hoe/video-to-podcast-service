@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -71,17 +71,17 @@ func (service *APIService) checkCookieHealth() string {
 	// Try to open/create file for writing (this tests write permission)
 	file, err := os.OpenFile(cookieConfig.CookiePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		log.Printf("cookie health: cannot write to %s: %v", cookieConfig.CookiePath, err)
+		slog.Error("cookie health: cannot write", "path", cookieConfig.CookiePath, "err", err)
 		return HealthStatusUnhealthy
 	}
 	if err := file.Close(); err != nil {
-		log.Printf("cookie health: cannot close file %s: %v", cookieConfig.CookiePath, err)
+		slog.Error("cookie health: cannot close file", "path", cookieConfig.CookiePath, "err", err)
 		return HealthStatusUnhealthy
 	}
 
 	// Try to read the file (this tests read permission)
 	if _, err := os.ReadFile(cookieConfig.CookiePath); err != nil {
-		log.Printf("cookie health: cannot read %s: %v", cookieConfig.CookiePath, err)
+		slog.Error("cookie health: cannot read", "path", cookieConfig.CookiePath, "err", err)
 		return HealthStatusUnhealthy
 	}
 
@@ -96,7 +96,7 @@ func (service *APIService) checkDatabaseHealth() string {
 	}
 
 	if _, err := databaseService.GetAllPodcastItems(); err != nil {
-		log.Printf("database health: %v", err)
+		slog.Error("database health", "err", err)
 		return HealthStatusUnhealthy
 	}
 
@@ -111,7 +111,7 @@ func (service *APIService) checkMediaHealth() string {
 	}
 
 	if err := os.MkdirAll(mediaPath, 0755); err != nil {
-		log.Printf("media health: cannot create directory %s: %v", mediaPath, err)
+		slog.Error("media health: cannot create directory", "path", mediaPath, "err", err)
 		return HealthStatusUnhealthy
 	}
 

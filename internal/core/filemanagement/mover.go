@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -18,7 +18,7 @@ func calculateFileHash(filePath string) ([]byte, error) {
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			log.Printf("Error closing file: %v", err)
+			slog.Warn("Error closing file", "err", err)
 		}
 	}()
 
@@ -34,7 +34,7 @@ func areFileEqual(leftFilePath string, rightFilePath string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Print("creating hash of pre-existing file in target location")
+	slog.Info("creating hash of pre-existing file in target location")
 	rightFileHash, err := calculateFileHash(rightFilePath)
 	if err != nil {
 		return false, err
@@ -54,21 +54,21 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	}
 	defer func() {
 		if err := inputFile.Close(); err != nil {
-			log.Printf("Error closing input file: %v", err)
+			slog.Warn("Error closing input file", "err", err)
 		}
 	}()
 	fileName := filepath.Base(inputFile.Name())
 
 	if doesFileExist(targetPath) {
-		log.Printf("file '%s' already exists at target", fileName)
-		log.Print("creating hash of original file")
+		slog.Info("file already exists at target", "fileName", fileName)
+		slog.Info("creating hash of original file")
 		// check if this is the same file
 		filesEqual, err := areFileEqual(sourcePath, targetPath)
 		if err != nil {
 			return err
 		}
 		if filesEqual {
-			log.Print("hash was equal, deleting file at origin")
+			slog.Info("hash equal, deleting file at origin")
 			// same file already exists and can be removed from source
 			err = inputFile.Close()
 			if err != nil {
@@ -81,7 +81,7 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 			// stop process
 			return nil
 		} else {
-			log.Print("hash was not equal deleting file from target folder")
+			slog.Info("hash not equal, deleting file from target folder")
 			// remove destination file and continue
 			err = os.Remove(targetPath)
 			if err != nil {
@@ -94,15 +94,15 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	outputFile, err := os.Create(tempFileName)
 	if err != nil {
 		if err := inputFile.Close(); err != nil {
-			log.Printf("Error closing input file: %v", err)
+			slog.Warn("Error closing input file", "err", err)
 		}
 		return err
 	}
 	defer func() {
-		log.Print("securely cleaning cache and closing file")
+		slog.Info("securely cleaning cache and closing file")
 		fileClosingError := outputFile.Close()
 		if fileClosingError != nil {
-			log.Print("could not close file")
+			slog.Warn("could not close file")
 			return
 		}
 
@@ -111,23 +111,23 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 			return
 		}
 
-		log.Printf("renaming file temp file to '%s'", targetPath)
+		slog.Info("renaming temp file", "targetPath", targetPath)
 		// rename file to actual file name
 		err = os.Rename(tempFileName, targetPath)
 		if err != nil {
-			log.Printf("could not rename file %+v", err)
+			slog.Error("could not rename file", "err", err)
 			return
 		}
 
 		// currently double-check of file hash
 		// target/source file has been omitted
 
-		log.Printf("file '%s' moved successfully", fileName)
+		slog.Info("file moved successfully", "fileName", fileName)
 		// The copy was successful, so now delete the original file
-		log.Printf("deleting file '%s' from source folder", fileName)
+		slog.Info("deleting file from source folder", "fileName", fileName)
 		err = os.Remove(sourcePath)
 		if err != nil {
-			log.Printf("could not close file %+v", err)
+			slog.Warn("could not close file", "err", err)
 		}
 
 	}()
@@ -135,7 +135,7 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	// actual file copy
 	_, err = io.Copy(outputFile, inputFile)
 	if err := inputFile.Close(); err != nil {
-		log.Printf("Error closing input file: %v", err)
+		slog.Warn("Error closing input file", "err", err)
 	}
 	if err != nil {
 		return err
