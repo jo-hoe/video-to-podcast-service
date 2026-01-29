@@ -26,21 +26,30 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 	e := echo.New()
 	// Use RequestLogger with LogValuesFunc to satisfy linter and avoid panic.
 	// Skip logging for probe and health endpoints.
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		Skipper: func(c echo.Context) bool {
-			return c.Path() == api.ProbePath || c.Path() == api.HealthPath
-		},
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+	// Minimal custom request logger that reliably logs method, uri, status, latency, and user agent.
+	// Skip logging for /health and /probe.
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			path := c.Request().URL.Path
+			if path == "/health" || path == "/probe" {
+				return next(c)
+			}
+			start := time.Now()
+			err := next(c)
+			req := c.Request()
+			res := c.Response()
 			slog.Info("request",
-				"time", v.StartTime.Format(time.RFC3339),
-				"method", v.Method,
-				"uri", v.URI,
-				"status", v.Status,
-				"latency", v.Latency,
+				"time", start.Format(time.RFC3339),
+				"method", req.Method,
+				"uri", req.URL.RequestURI(),
+				"status", res.Status,
+				"latency", time.Since(start),
+				"user_agent", req.UserAgent(),
+				"remote_ip", c.RealIP(),
 			)
-			return nil
-		},
-	}))
+			return err
+		}
+	})
 	e.Use(middleware.Recover())
 	e.Pre(middleware.RemoveTrailingSlash())
 
