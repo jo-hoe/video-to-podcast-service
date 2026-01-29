@@ -193,7 +193,7 @@ func setDefaults(config *Config) error {
 	return nil
 }
 
-	// logLoadedConfig logs the loaded configuration values
+// logLoadedConfig logs the loaded configuration values
 func logLoadedConfig(config *Config) {
 	slog.Info("=== Configuration Loaded ===")
 	slog.Info("Port", "value", config.Port)
