@@ -221,9 +221,9 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 		}
 	}
 
-	// Workaround: use Android client
+	// Workaround: use web_safari client
 	// Remove when after upstream fix of https://github.com/yt-dlp/yt-dlp/issues/12482 is available and integration tests pass without this code.
-	args = append(args, "--extractor-args", "youtube:player_client=android;player_js_version=actual")
+	args = append(args, "--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual")
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
