@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"sort"
@@ -46,6 +47,7 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	e.GET("/", service.rootRedirectHandler) // Redirect root to index.html
 	e.GET(MainPageName, service.indexHandler)
 	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
+	e.GET("/icon.svg", service.iconHandler)
 }
 
 // rootRedirectHandler redirects root path to index.html
@@ -103,6 +105,19 @@ func (service *UIService) htmxAddItemHandler(ctx echo.Context) error {
 		return ctx.HTML(http.StatusInternalServerError, "<span style='color:red'>Failed to process: "+req.URL+"</span>")
 	}
 	return ctx.HTML(http.StatusOK, "<span style='color:green'>Submitted successfully!</span>")
+}
+
+ // Icon handler to serve the embedded favicon
+func (service *UIService) iconHandler(ctx echo.Context) error {
+	file, err := templateFS.Open("views/icon.svg")
+	if err != nil {
+		return ctx.NoContent(http.StatusNotFound)
+	}
+	defer file.Close()
+
+	ctx.Response().Header().Set(echo.HeaderContentType, "image/svg+xml")
+	_, err = io.Copy(ctx.Response().Writer, file)
+	return err
 }
 
 // Helper function to format duration from milliseconds to HH:MM:SS or MM:SS

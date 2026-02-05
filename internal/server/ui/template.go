@@ -11,7 +11,7 @@ import (
 const viewsPattern = "views/*.html"
 
 var (
-	//go:embed views/*.html
+	//go:embed views/*.html views/*.svg
 	templateFS embed.FS
 )
 
