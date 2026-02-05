@@ -162,15 +162,19 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 		"--extract-audio",
 		"--audio-format", "mp3",
 		"--embed-metadata",
+		"--no-progress",
 		"--sponsorblock-remove", sponsorBlockCategories,
 		// Workaround: using lower resolution to avoid issues with download of videos
-		// Remove when after upstream fix of https://github.com/yt-dlp/yt-dlp/issues/12482 is available and integration tests pass without this code.
+		// Remove when after upstream fix of
+		// https://github.com/yt-dlp/yt-dlp/issues/12482
+		// is available and integration tests pass without this code.
 		"--format", "bestaudio/best[height<=360]",
 		"--output", tempFilenameTemplate,
 		urlString,
 	)
 
 	cmd := exec.Command("yt-dlp", args...)
+	slog.Info("constructed yt-dlp command", "args", args)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

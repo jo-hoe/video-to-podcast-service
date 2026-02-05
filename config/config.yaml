@@ -9,4 +9,4 @@ persistence:
     cookiePath: ./mount/cookies/youtube-cookies.txt
   media:
     mediaPath: ./mount/resources/media
-    tempPath: ./mount/resources/temp
+    tempPath: ./tmp

@@ -3,7 +3,7 @@ include help.mk
 # get root dir
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
-.DEFAULT_GOAL := start
+.DEFAULT_GOAL := start-docker
 
 .PHONY: build
 build: ## build binary
@@ -62,7 +62,7 @@ stop-k3d: ## stop K3d cluster
 restart-k3d: stop-k3d start-k3d ## restart the k3d cluster
 
 .PHONY: start-docker
-start: ## start service
+start-docker: ## start service
 	docker-compose up video-to-podcast-service --build
 
 .PHONY: generate-helm-docs

@@ -2,6 +2,7 @@ services:
   video-to-podcast-service:
     build: .
     image: video-to-podcast-service
+    user: "0:0"
     ports:
       - "8080:8080"
     volumes:
