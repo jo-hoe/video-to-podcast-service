@@ -113,7 +113,11 @@ func (service *UIService) iconHandler(ctx echo.Context) error {
 	if err != nil {
 		return ctx.NoContent(http.StatusNotFound)
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			ctx.Logger().Errorf("failed to close icon file: %v", cerr)
+		}
+	}()
 
 	ctx.Response().Header().Set(echo.HeaderContentType, "image/svg+xml")
 	_, err = io.Copy(ctx.Response().Writer, file)
