@@ -107,7 +107,7 @@ func (service *UIService) htmxAddItemHandler(ctx echo.Context) error {
 	return ctx.HTML(http.StatusOK, "<span style='color:green'>Submitted successfully!</span>")
 }
 
- // Icon handler to serve the embedded favicon
+// Icon handler to serve the embedded favicon
 func (service *UIService) iconHandler(ctx echo.Context) error {
 	file, err := templateFS.Open("views/icon.svg")
 	if err != nil {
