@@ -16,7 +16,7 @@ func NewMockDatabase() *MockDatabase {
 	return &MockDatabase{Items: make(map[string]*PodcastItem)}
 }
 
-func (m *MockDatabase) CreatePodcastItem(item *PodcastItem) error {
+func (m *MockDatabase) InsertReplacePodcastItem(item *PodcastItem) error {
 	if m.CreatePodcastItemFunc != nil {
 		return m.CreatePodcastItemFunc(item)
 	}

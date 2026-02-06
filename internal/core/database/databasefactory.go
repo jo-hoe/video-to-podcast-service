@@ -58,7 +58,7 @@ func addPreexistingElements(database DatabaseService, resourcePath string) {
 			continue
 		}
 
-		err = database.CreatePodcastItem(podcastItem)
+		err = database.InsertReplacePodcastItem(podcastItem)
 		if err != nil {
 			fmt.Printf("error saving podcast item for file %s: %v\n", file, err)
 		}

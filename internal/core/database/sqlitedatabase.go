@@ -84,7 +84,7 @@ func (s *SQLiteDatabase) DoesDatabaseExist() bool {
 	return exists
 }
 
-func (s *SQLiteDatabase) CreatePodcastItem(item *PodcastItem) error {
+func (s *SQLiteDatabase) InsertReplacePodcastItem(item *PodcastItem) error {
 	stmt, err := s.db.Prepare(fmt.Sprintf(`INSERT OR REPLACE INTO %s (
 		id, title, description, author, thumbnail, duration_in_milliseconds, video_url, audio_file_path, created_at, updated_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, defaultDatabaseName))

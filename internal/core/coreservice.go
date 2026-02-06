@@ -122,7 +122,7 @@ func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDow
 				continue
 			}
 
-			err = cs.databaseService.CreatePodcastItem(podcastItem)
+			err = cs.databaseService.InsertReplacePodcastItem(podcastItem)
 			if err != nil {
 				slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
 				retries++

@@ -54,7 +54,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	}
 
 	podcastItem = &PodcastItem{
-		ID:                     hashVideoUrl(audioFilePath),
+		ID:                     stringToHash(downloader.VideoDownloadLink),
 		Title:                  title,
 		Description:            description,
 		Author:                 audioMetadata[downloader.Artist],
@@ -69,9 +69,9 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	return podcastItem, err
 }
 
-func hashVideoUrl(filename string) string {
+func stringToHash(input string) string {
 	// take an audio file path and hash it to a UUIDv4
-	data := []byte(filename)
+	data := []byte(input)
 	hash := md5.Sum(data)
 	hashBytes := hash[:]
 

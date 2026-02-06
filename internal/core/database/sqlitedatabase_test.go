@@ -18,11 +18,11 @@ const (
 	duration     = 120000 // 2 minutes in milliseconds
 )
 
-func TestCreatePodcastItem(t *testing.T) {
+func TestInsertReplacePodcastItem(t *testing.T) {
 	db := setupTestDB(t)
 	defer cleanupTestDB(t, db)
 	item := getDemoPodcastItem()
-	err := db.CreatePodcastItem(item)
+	err := db.InsertReplacePodcastItem(item)
 	if err != nil {
 		t.Fatalf("failed to create podcast item: %v", err)
 	}
@@ -55,11 +55,11 @@ func TestCreatePodcastItemTwice(t *testing.T) {
 		UpdatedAt:              time.Now(), // Updated time
 	}
 
-	err := db.CreatePodcastItem(item)
+	err := db.InsertReplacePodcastItem(item)
 	if err != nil {
 		t.Fatalf("failed to create podcast item: %v", err)
 	}
-	err = db.CreatePodcastItem(updated)
+	err = db.InsertReplacePodcastItem(updated)
 	if err != nil {
 		t.Fatalf("failed to update podcast item: %v", err)
 	}

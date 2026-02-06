@@ -3,8 +3,8 @@ package database
 import "testing"
 
 func Test_hashVideoUrl(t *testing.T) {
-	result := hashVideoUrl("https://example.com/my_demo_file.mp3")
-	result2 := hashVideoUrl("https://example.com/my_demo_file'.mp3")
+	result := stringToHash("https://example.com/my_demo_file.mp3")
+	result2 := stringToHash("https://example.com/my_demo_file'.mp3")
 
 	//the that result is a valid UUIDv4
 	if result == "" {
