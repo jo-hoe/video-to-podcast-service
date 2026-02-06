@@ -44,6 +44,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	}
 	fileNameWithoutExtension := strings.TrimSuffix(fileInfo.Name(), filepath.Ext(fileInfo.Name()))
 
+	videoUrl := audioMetadata[downloader.VideoDownloadLink]
 	title := common.ValueOrDefault(audioMetadata[downloader.Title], fileNameWithoutExtension)
 	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
 
@@ -54,13 +55,13 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	}
 
 	podcastItem = &PodcastItem{
-		ID:                     stringToHash(downloader.VideoDownloadLink),
+		ID:                     stringToHash(videoUrl),
 		Title:                  title,
 		Description:            description,
 		Author:                 audioMetadata[downloader.Artist],
 		Thumbnail:              audioMetadata[downloader.ThumbnailUrlTag],
 		DurationInMilliseconds: int64(lengthInSeconds * 1000), // Convert seconds to milliseconds
-		VideoURL:               audioMetadata[downloader.VideoDownloadLink],
+		VideoURL:               videoUrl,
 		AudioFilePath:          audioFilePath,
 		CreatedAt:              uploadTime,
 		UpdatedAt:              time.Now(),
