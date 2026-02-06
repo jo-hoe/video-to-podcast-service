@@ -31,7 +31,7 @@ RUN apk add --no-cache \
     deno \
     wget && \
     update-ca-certificates && \
-    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.01.29/yt-dlp -O /usr/local/bin/yt-dlp && \
+    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.02.04/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
     # Verify installations
     deno --version && \
