@@ -96,7 +96,8 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 		Description: podcastItem.Description,
 		Author:      &feeds.Author{Name: common.ValueOrDefault(podcastItem.Author, "")},
 		Created:     podcastItem.CreatedAt,
-		IsPermaLink: "false",
+		Updated:     podcastItem.UpdatedAt,
+		IsPermaLink: "false", //  always false, see https://validator.w3.org/feed/docs/error/InvalidPermalink.html
 		Enclosure: &feeds.Enclosure{
 			Url:    link,
 			Type:   "audio/mpeg",
