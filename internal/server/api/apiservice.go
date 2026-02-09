@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"regexp"
 	"strings"
 
 	"github.com/gorilla/feeds"
@@ -192,12 +193,14 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "feed not found")
 	}
 
-	rss, err := result.ToRss()
+	rss, err := result.ToAtom()
 	if err != nil {
 		slog.Error("failed to generate RSS", "feedTitle", feedTitle, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate RSS")
 	}
-	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationXMLCharsetUTF8)
+	// Wrap title and description tags in CDATA as requested
+	rss = wrapTagsWithCDATA(rss, []string{"title", "description"})
+	ctx.Response().Header().Set(echo.HeaderContentType, "application/atom+xml; charset=UTF-8")
 	_, err = ctx.Response().Writer.Write([]byte(rss))
 	return err
 }
@@ -287,4 +290,15 @@ func (service *APIService) probeHandler(ctx echo.Context) (err error) {
 
 func (service *APIService) getFeedService() *feed.FeedService {
 	return feed.NewFeedService(service.coreService, service.defaultPort, FeedsPath)
+}
+
+// wrapTagsWithCDATA wraps the inner text of specified tags in CDATA sections.
+// Note: This is a simplistic approach and assumes tags do not contain nested elements.
+func wrapTagsWithCDATA(xmlStr string, tags []string) string {
+	for _, tag := range tags {
+		// (?s) enables dot to match newlines; avoid double-wrapping if already CDATA
+		re := regexp.MustCompile(fmt.Sprintf("(?s)<%s>(?!<!\\[CDATA\\[)(.*?)</%s>", tag, tag))
+		xmlStr = re.ReplaceAllString(xmlStr, fmt.Sprintf("<%s><![CDATA[$1]]></%s>", tag, tag))
+	}
+	return xmlStr
 }
