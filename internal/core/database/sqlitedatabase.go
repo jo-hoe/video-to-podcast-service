@@ -94,7 +94,7 @@ func (s *SQLiteDatabase) InsertReplacePodcastItem(item *PodcastItem) error {
 	defer func() { _ = stmt.Close() }()
 	_, err = stmt.Exec(
 		item.ID, item.Title, item.Description, item.Author, item.Thumbnail,
-		item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt, item.UpdatedAt,
+		item.DurationInMilliseconds, item.VideoURL, item.AudioFilePath, item.CreatedAt.UTC(), item.UpdatedAt.UTC(),
 	)
 	return err
 }
@@ -106,14 +106,16 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	}
 	defer func() { _ = rows.Close() }()
 	var items []*PodcastItem
-	for rows.Next() {
-		item := &PodcastItem{}
-		err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
-		if err != nil {
-			return nil, err
+		for rows.Next() {
+			item := &PodcastItem{}
+			err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
+			if err != nil {
+				return nil, err
+			}
+			item.CreatedAt = item.CreatedAt.UTC()
+			item.UpdatedAt = item.UpdatedAt.UTC()
+			items = append(items, item)
 		}
-		items = append(items, item)
-	}
 	return items, nil
 }
 
@@ -144,6 +146,8 @@ func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
 		}
 		return nil, err
 	}
+	item.CreatedAt = item.CreatedAt.UTC()
+	item.UpdatedAt = item.UpdatedAt.UTC()
 	return item, nil
 }
 

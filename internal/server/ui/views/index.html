@@ -91,7 +91,7 @@
                             <h3>{{.Title}}</h3>
                             <p><strong>Author:</strong> {{.Author}}</p>
                             <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
-                            <p><strong>Updated:</strong> {{.UpdatedAt.Format "2006-01-02 15:04"}}</p>
+                            <p><strong>Updated:</strong> <time class="updated-time" datetime="{{.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}"></time></p>
 
                             <div class="grid"> <!-- Nested grid for RSS and Delete button -->
                                 <div>
@@ -121,6 +121,37 @@
             {{end}}
         </section>
     </main>
+<script>
+    // Format "Updated" timestamps in the browser's local timezone with format YYYY-MM-DD HH:MM
+    function renderUpdatedTimes(root) {
+        const scope = root || document;
+        const times = scope.querySelectorAll('time.updated-time');
+        times.forEach(function (t) {
+            const iso = t.getAttribute('datetime');
+            if (!iso) return;
+            const d = new Date(iso); // Parsed as UTC if Z/offset provided; displayed in local time
+            if (isNaN(d.getTime())) {
+                t.textContent = iso; // Fallback to raw value
+                return;
+            }
+            const pad = (n) => String(n).padStart(2, '0');
+            const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            t.textContent = local;
+            t.title = d.toString(); // Hover shows full localized string
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        renderUpdatedTimes(document);
+    });
+
+    // Ensure times are formatted for any HTMX-updated fragments as well
+    if (document.body && document.body.addEventListener) {
+        document.body.addEventListener('htmx:afterSwap', function (evt) {
+            renderUpdatedTimes(evt.target || document);
+        });
+    }
+</script>
 </body>
 
 </html>

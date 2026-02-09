@@ -51,7 +51,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
 	if err != nil {
 		slog.Warn("could not parse date tag, reverting to default", "err", err)
-		uploadTime = fileInfo.ModTime()
+		uploadTime = fileInfo.ModTime().UTC()
 	}
 
 	podcastItem = &PodcastItem{
@@ -63,8 +63,8 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 		DurationInMilliseconds: int64(lengthInSeconds * 1000), // Convert seconds to milliseconds
 		VideoURL:               videoUrl,
 		AudioFilePath:          audioFilePath,
-		CreatedAt:              uploadTime,
-		UpdatedAt:              time.Now(),
+		CreatedAt:              uploadTime.UTC(),
+		UpdatedAt:              time.Now().UTC(),
 	}
 
 	return podcastItem, err
