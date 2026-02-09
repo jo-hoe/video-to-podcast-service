@@ -106,16 +106,16 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 	}
 	defer func() { _ = rows.Close() }()
 	var items []*PodcastItem
-		for rows.Next() {
-			item := &PodcastItem{}
-			err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
-			if err != nil {
-				return nil, err
-			}
-			item.CreatedAt = item.CreatedAt.UTC()
-			item.UpdatedAt = item.UpdatedAt.UTC()
-			items = append(items, item)
+	for rows.Next() {
+		item := &PodcastItem{}
+		err := rows.Scan(&item.ID, &item.Title, &item.Description, &item.Author, &item.Thumbnail, &item.DurationInMilliseconds, &item.VideoURL, &item.AudioFilePath, &item.CreatedAt, &item.UpdatedAt)
+		if err != nil {
+			return nil, err
 		}
+		item.CreatedAt = item.CreatedAt.UTC()
+		item.UpdatedAt = item.UpdatedAt.UTC()
+		items = append(items, item)
+	}
 	return items, nil
 }
 
