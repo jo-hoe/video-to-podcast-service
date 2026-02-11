@@ -16,7 +16,7 @@ update: ## pulls git repo
 
 .PHONY: test
 test: ## run golang test (including integration tests)
-	go test -timeout 0  ./...
+	go test -timeout 0  ./... -covermode=count
 
 .PHONY: lint
 lint: ## run golangci-lint
