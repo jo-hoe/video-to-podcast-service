@@ -39,13 +39,13 @@ func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *confi
 	}
 }
 
-func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) ([]string, error) {
-	results := make([]string, 0)
+func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (string, error) {
+	var result string
 
 	// Create a unique subdirectory within the configured temp path for download processing
 	tempPath, err := os.MkdirTemp(y.mediaConfig.TempPath, "youtube-download-")
 	if err != nil {
-		return results, err
+		return result, err
 	}
 	defer func() {
 		if err := os.RemoveAll(tempPath); err != nil {
@@ -56,30 +56,31 @@ func (y *YoutubeAudioDownloader) Download(urlString string, targetPath string) (
 	slog.Info("downloading", "url", urlString, "tempPath", tempPath)
 	tempResults, err := y.download(tempPath, urlString)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	slog.Info("done downloading files", "count", len(tempResults))
-
-	for _, filePath := range tempResults {
-		slog.Info("setting metadata", "filePath", filePath)
-		err = y.setMetadata(filePath)
-		if err != nil {
-			return nil, err
-		}
-		slog.Info("set metadata", "filePath", filePath)
+	if len(tempResults) == 0 {
+		return "", fmt.Errorf("no audio files downloaded for url %s", urlString)
 	}
+	// Expect single file for a single video URL, but pick the first if multiple are found
+	filePath := tempResults[0]
+	slog.Info("done downloading file", "filePath", filePath)
 
-	slog.Info("moving files to target folder")
-	for _, filePath := range tempResults {
-		movedItem, err := moveToTarget(filePath, targetPath)
-		if err != nil {
-			return results, err
-		}
-		results = append(results, movedItem)
+	slog.Info("setting metadata", "filePath", filePath)
+	err = y.setMetadata(filePath)
+	if err != nil {
+		return "", err
 	}
-	slog.Info("completed moving all relevant files")
+	slog.Info("set metadata", "filePath", filePath)
 
-	return results, err
+	slog.Info("moving file to target folder")
+	movedItem, err := moveToTarget(filePath, targetPath)
+	if err != nil {
+		return "", err
+	}
+	result = movedItem
+	slog.Info("completed moving file", "targetPath", result)
+
+	return result, nil
 }
 
 func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) (err error) {

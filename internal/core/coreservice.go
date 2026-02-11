@@ -133,34 +133,32 @@ func (cs *CoreService) GetFeedDirectory(audioFilePath string) (string, error) {
 func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDownloader) {
 	const maxErrorCount = 4
 
-	filePaths, err := downloader.Download(url, cs.audioSourceDirectory)
+	filePath, err := downloader.Download(url, cs.audioSourceDirectory)
 	if err != nil {
 		slog.Error("failed to download", "url", url, "err", err)
 		return
 	}
 
-	for _, filePath := range filePaths {
-		retries := 0
-		for retries < maxErrorCount {
-			podcastItem, err := database.NewPodcastItem(filePath)
-			if err != nil {
-				slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
-				retries++
-				continue
-			}
-
-			err = cs.databaseService.InsertReplacePodcastItem(podcastItem)
-			if err != nil {
-				slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
-				retries++
-				continue
-			}
-
-			slog.Info("successfully created podcast item", "filePath", filePath)
-			break // success, move to next file
+	retries := 0
+	for retries < maxErrorCount {
+		podcastItem, err := database.NewPodcastItem(filePath)
+		if err != nil {
+			slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
+			retries++
+			continue
 		}
-		if retries == maxErrorCount {
-			slog.Warn("giving up on file after max attempts", "filePath", filePath, "attempts", maxErrorCount)
+
+		err = cs.databaseService.InsertReplacePodcastItem(podcastItem)
+		if err != nil {
+			slog.Error("failed to create podcast item", "filePath", filePath, "err", err)
+			retries++
+			continue
 		}
+
+		slog.Info("successfully created podcast item", "filePath", filePath)
+		break // success
+	}
+	if retries == maxErrorCount {
+		slog.Warn("giving up on file after max attempts", "filePath", filePath, "attempts", maxErrorCount)
 	}
 }

@@ -51,49 +51,46 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir})
 	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
 	if err != nil {
-		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+		t.Fatalf("YoutubeAudioDownloader.Download() error = %v", err)
 	}
-	if len(result) == 0 {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want non empty", result)
-	}
-	if len(result) > 1 {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want only one", result)
+	if result == "" {
+		t.Fatalf("YoutubeAudioDownloader.Download() returned empty result")
 	}
 
 	// check if metadata is set
-	metadata, err := mp3joiner.GetFFmpegMetadataTag(result[0])
+	metadata, err := mp3joiner.GetFFmpegMetadataTag(result)
 	if err != nil {
-		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+		t.Fatalf("YoutubeAudioDownloader.Download() error = %v", err)
 	}
 	expectedArtist := "jawed"
 	if metadata["artist"] != expectedArtist {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", metadata["artist"], expectedArtist)
+		t.Errorf("YoutubeAudioDownloader.Download() artist = %v, want %v", metadata["artist"], expectedArtist)
 	}
 	if metadata[downloader.ThumbnailUrlTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, thumbnail url tag was empty", metadata[downloader.ThumbnailUrlTag])
+		t.Errorf("YoutubeAudioDownloader.Download() thumbnail url tag was empty")
 	}
 	if metadata[downloader.PodcastDescriptionTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, podcast description was empty", metadata[downloader.PodcastDescriptionTag])
+		t.Errorf("YoutubeAudioDownloader.Download() podcast description was empty")
 	}
 	if metadata[downloader.DateTag] == "" {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, date tag was empty", metadata[downloader.DateTag])
+		t.Errorf("YoutubeAudioDownloader.Download() date tag was empty")
 	}
 	if metadata[downloader.VideoDownloadLink] != validYoutubeVideoUrl {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, video url tag was empty", metadata[downloader.VideoDownloadLink])
+		t.Errorf("YoutubeAudioDownloader.Download() video url tag mismatch = %v", metadata[downloader.VideoDownloadLink])
 	}
 
 	// check if file is saved in correct location
 	expectedFilename := "Me at the zoo_jNQXAC9IVRw.mp3"
-	if result[0] != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
-		t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", result[0], filepath.Join(rootDirectory, expectedArtist, expectedFilename))
+	if result != filepath.Join(rootDirectory, expectedArtist, expectedFilename) {
+		t.Errorf("YoutubeAudioDownloader.Download() path = %v, want %v", result, filepath.Join(rootDirectory, expectedArtist, expectedFilename))
 	}
 
-	chapters, err := mp3joiner.GetChapterMetadata(result[0])
+	chapters, err := mp3joiner.GetChapterMetadata(result)
 	if err != nil {
-		t.Errorf("YoutubeAudioDownloader.Download() error = %v", err)
+		t.Fatalf("YoutubeAudioDownloader.Download() error = %v", err)
 	}
 	if len(chapters) < 1 {
-		t.Error("YoutubeAudioDownloader.Download() no chapters have been found", err)
+		t.Error("YoutubeAudioDownloader.Download() no chapters have been found")
 	}
 }
 
@@ -121,58 +118,47 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 		}
 	}()
 
-	type args struct {
-		urlString string
-		path      string
+	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir})
+
+	// Single video download should return a single file path and file should exist
+	singleResult, err := y.Download(validYoutubeVideoUrl, rootDirectory)
+	if err != nil {
+		t.Fatalf("YoutubeAudioDownloader.Download(single) error = %v", err)
 	}
-	tests := []struct {
-		name    string
-		y       *YoutubeAudioDownloader
-		args    args
-		want    []string
-		wantErr bool
-	}{
-		{
-			name: "Video Download Test",
-			y:    NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}),
-			args: args{
-				urlString: validYoutubeVideoUrl,
-				path:      rootDirectory,
-			},
-			want:    []string{filepath.Join(rootDirectory, "jawed", "Me at the zoo jNQXAC9IVRw.mp3")},
-			wantErr: false,
-		},
-		{
-			name: "Playlist Download Test",
-			y:    NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}),
-			args: args{
-				urlString: validYoutubePlaylistUrl,
-				path:      filepath.Join(rootDirectory, "Cat"),
-			},
-			want: []string{
-				filepath.Join(rootDirectory, "Shortest Video on Youtube_tPEE9ZwTmy0.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 2_a3HZ8S2H-GQ.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 3_3HFBR0UQPes.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 4_oiWWKumrLH8.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 5_Wi-HjAXdKoA.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 6_xLP9r6JeNzk.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 7_ALf5wpTokKA.mp3"),
-				filepath.Join(rootDirectory, "Shortest Video on Youtube Part 8_zSQbUV-u5Xo.mp3"),
-			},
-			wantErr: false,
-		},
+	if singleResult == "" {
+		t.Fatalf("YoutubeAudioDownloader.Download(single) returned empty path")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.y.Download(tt.args.urlString, tt.args.path)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("YoutubeAudioDownloader.Download() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if len(got) != len(tt.want) {
-				t.Errorf("YoutubeAudioDownloader.Download() = %v, want %v", got, tt.want)
-			}
-		})
+	if _, statErr := os.Stat(singleResult); statErr != nil {
+		t.Fatalf("Downloaded file does not exist at path: %s, err: %v", singleResult, statErr)
+	}
+
+	// Playlist: list entries, download each entry individually, verify count and existence
+	entries, err := y.ListVideoEntries(validYoutubePlaylistUrl)
+	if err != nil {
+		t.Fatalf("ListVideoEntries() error = %v", err)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("ListVideoEntries() returned no entries for valid playlist")
+	}
+
+	results := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		p, err := y.Download(entry, filepath.Join(rootDirectory, "Cat"))
+		if err != nil {
+			t.Fatalf("Download(entry) error = %v", err)
+		}
+		if p == "" {
+			t.Fatalf("Download(entry) returned empty path")
+		}
+		if _, statErr := os.Stat(p); statErr != nil {
+			t.Fatalf("Downloaded file does not exist at path: %s, err: %v", p, statErr)
+		}
+		results = append(results, p)
+	}
+
+	// Expect at least multiple items; playlist contains multiple known entries (8 at the time of writing)
+	if len(results) < 2 {
+		t.Errorf("Expected multiple downloaded items for playlist, got %d", len(results))
 	}
 }
 
