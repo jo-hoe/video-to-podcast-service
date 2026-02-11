@@ -6,52 +6,36 @@ import (
 	"testing"
 )
 
-func Test_GetAudioFiles(t *testing.T) {
+func TestGetAudioFiles_FindsMP3Files(t *testing.T) {
 	testFilePath, err := filepath.Abs(filepath.Join("..", "..", "..", "test_assets"))
 	if err != nil {
-		t.Errorf("Error: %v", err)
+		t.Fatalf("failed to resolve test assets path: %v", err)
 	}
 
-	type args struct {
-		directoryPath string
+	gotResult, err := GetAudioFiles(testFilePath)
+	if err != nil {
+		t.Fatalf("GetAudioFiles() unexpected error: %v", err)
 	}
-	tests := []struct {
-		name       string
-		args       args
-		wantResult []string
-		wantErr    bool
-	}{
-		{
-			name: "Find MP3 files",
-			args: args{
-				directoryPath: testFilePath,
-			},
-			wantResult: []string{
-				filepath.Join(testFilePath, "audio11.mp3"),
-				filepath.Join(testFilePath, "audio12.mp3"),
-				filepath.Join(testFilePath, "audio21.mp3"),
-			},
-			wantErr: false,
-		},
-		{
-			name: "Non Existing Directory",
-			args: args{
-				directoryPath: "test/non-existing-directory",
-			},
-			wantResult: make([]string, 0),
-			wantErr:    true,
-		},
+	wantResult := []string{
+		filepath.Join(testFilePath, "audio11.mp3"),
+		filepath.Join(testFilePath, "audio12.mp3"),
+		filepath.Join(testFilePath, "audio21.mp3"),
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotResult, err := GetAudioFiles(tt.args.directoryPath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetAudioFiles() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("GetAudioFiles() = %v, want %v", gotResult, tt.wantResult)
-			}
-		})
+	if !reflect.DeepEqual(gotResult, wantResult) {
+		t.Fatalf("GetAudioFiles() = %v, want %v", gotResult, wantResult)
+	}
+}
+
+func TestGetAudioFiles_NonExistingDirectoryReturnsError(t *testing.T) {
+	nonExisting := "test/non-existing-directory"
+	gotResult, err := GetAudioFiles(nonExisting)
+	if err == nil {
+		t.Fatalf("GetAudioFiles() expected error for non-existing directory, got nil")
+	}
+	if gotResult == nil {
+		t.Fatalf("GetAudioFiles() expected empty slice, got nil")
+	}
+	if len(gotResult) != 0 {
+		t.Fatalf("GetAudioFiles() expected 0 results, got %d", len(gotResult))
 	}
 }
