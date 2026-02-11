@@ -18,3 +18,4 @@ data:
       media:
         mediaPath: {{ .Values.media.mediaPath }}
         tempPath: {{ .Values.media.tempPath }}
+        maxParallelDownloads: {{ .Values.media.maxParallelDownloads }}

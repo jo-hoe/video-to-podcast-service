@@ -235,3 +235,36 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 
 	return args
 }
+
+// ListVideoEntries returns individual video URLs for a given input URL.
+// For playlist URLs, it returns all video URLs in the playlist.
+// For single video URLs, it returns a slice containing the original URL.
+func (y *YoutubeAudioDownloader) ListVideoEntries(urlString string) ([]string, error) {
+	entries := make([]string, 0)
+
+	// Detect playlist URLs
+	if regexp.MustCompile(playlistRegex).MatchString(urlString) {
+		args := y.buildBaseArgs(true)
+		// Use flat playlist to avoid resolving each entry and just print the URL
+		args = append(args, "--flat-playlist", "--print", "url", urlString)
+
+		cmd := exec.Command("yt-dlp", args...)
+		output, err := cmd.Output()
+		if err != nil {
+			slog.Error("error listing playlist entries", "url", urlString, "err", err)
+			return nil, err
+		}
+
+		lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "http://") || strings.HasPrefix(line, "https://") {
+				entries = append(entries, line)
+			}
+		}
+		return entries, nil
+	}
+
+	// Not a playlist, return the original URL
+	return []string{urlString}, nil
+}

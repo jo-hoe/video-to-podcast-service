@@ -132,6 +132,7 @@ media:
   # Paths are relative to the mount point in the container
   mediaPath: "/app/data/resources/media"
   tempPath: "/app/data/resources/temp"
+  maxParallelDownloads: 1
 
 nodeSelector: {}
 

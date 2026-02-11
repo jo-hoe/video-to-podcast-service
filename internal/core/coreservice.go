@@ -78,13 +78,40 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	if err != nil {
 		return fmt.Errorf("url %s not supported", url)
 	}
-	if !downloaderInstance.IsVideoAvailable(url) {
-		return fmt.Errorf("video %s is not available", url)
-	}
-	slog.Info("downloading", "url", url)
 
-	// Refactored: move download logic to a helper function to reduce nesting and improve error handling
-	go cs.handleDownload(url, downloaderInstance)
+	// Get individual entries (playlist expands to multiple URLs; single video returns itself)
+	entries, err := downloaderInstance.ListVideoEntries(url)
+	if err != nil {
+		slog.Error("failed to list video entries", "url", url, "err", err)
+		return fmt.Errorf("failed to list entries for %s", url)
+	}
+	if len(entries) == 0 {
+		return fmt.Errorf("no downloadable entries for %s", url)
+	}
+
+	slog.Info("starting downloads", "requestedUrl", url, "entryCount", len(entries))
+
+	// Throttle parallel downloads using a semaphore based on configured max parallel downloads (default 1)
+	maxParallel := cs.mediaConfig.MaxParallelDownloads
+	if maxParallel <= 0 {
+		maxParallel = 1
+	}
+	sem := make(chan struct{}, maxParallel)
+
+	// Schedule downloads in background to avoid blocking the API response
+	go func(urls []string) {
+		for _, entryURL := range urls {
+			if !downloaderInstance.IsVideoAvailable(entryURL) {
+				slog.Warn("video is not available, skipping", "url", entryURL)
+				continue
+			}
+			sem <- struct{}{}
+			go func(u string) {
+				defer func() { <-sem }()
+				cs.handleDownload(u, downloaderInstance)
+			}(entryURL)
+		}
+	}(entries)
 
 	return nil
 }

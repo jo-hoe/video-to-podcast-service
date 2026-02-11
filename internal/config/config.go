@@ -38,8 +38,9 @@ type Cookies struct {
 
 // Media holds media storage configuration
 type Media struct {
-	MediaPath string `yaml:"mediaPath"`
-	TempPath  string `yaml:"tempPath"`
+	MediaPath            string `yaml:"mediaPath"`
+	TempPath             string `yaml:"tempPath"`
+	MaxParallelDownloads int    `yaml:"maxParallelDownloads"`
 }
 
 var globalConfig *Config
@@ -189,6 +190,10 @@ func setDefaults(config *Config) error {
 	if config.Persistence.Media.TempPath == "" {
 		config.Persistence.Media.TempPath = filepath.Join(".", "mount", "resources", "temp")
 	}
+	// Set default max parallel downloads if not specified or invalid
+	if config.Persistence.Media.MaxParallelDownloads <= 0 {
+		config.Persistence.Media.MaxParallelDownloads = 1
+	}
 
 	return nil
 }
@@ -204,6 +209,7 @@ func logLoadedConfig(config *Config) {
 	slog.Info("Cookie Path", "value", config.Persistence.Cookies.CookiePath)
 	slog.Info("Media Path", "value", config.Persistence.Media.MediaPath)
 	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
+	slog.Info("Max Parallel Downloads", "value", config.Persistence.Media.MaxParallelDownloads)
 	slog.Info("============================")
 }
 
