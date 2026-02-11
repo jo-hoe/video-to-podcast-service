@@ -7,15 +7,6 @@
 
 Video To Podcast Service is a backend service that downloads video files (currently only from YouTube), extracts and converts them into audio files, and organizes them into podcast feeds accessible via RSS. The service exposes a REST API for adding new videos, listing available podcast feeds, retrieving audio files, and deleting podcast items.
 
-**Key Features:**
-
-- Download videos (YouTube supported) and convert to audio (MP3)
-- Organize audio files into podcast feeds (one feed per channel)
-- Serve podcast feeds as RSS for use in podcast apps
-- REST API for adding, listing, retrieving, and deleting podcast items
-- Dockerized for easy deployment
-- Kubernetes/Helm chart for k3s deployment
-
 ## Deployment Options
 
 ### Docker Deployment
@@ -131,3 +122,4 @@ golangci-lint run ./...
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
 - [Example podcast](https://feeds.libsyn.com/230510/rss)
+
