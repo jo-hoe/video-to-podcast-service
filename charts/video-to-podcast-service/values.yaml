@@ -133,6 +133,7 @@ media:
   mediaPath: "/app/data/resources/media"
   tempPath: "/app/data/resources/temp"
   maxParallelDownloads: 1
+  allowPartialDownloads: true
 
 nodeSelector: {}
 

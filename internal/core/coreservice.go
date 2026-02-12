@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
@@ -96,27 +97,48 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	if maxParallel <= 0 {
 		maxParallel = 1
 	}
-	sem := make(chan struct{}, maxParallel)
+	downloadSem := make(chan struct{}, maxParallel)
 
-	availableUrls := make([]string, 0)
+	// Run availability checks concurrently, bounded by maxParallel
+	availableUrls := make([]string, 0, len(urls))
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	availSem := make(chan struct{}, maxParallel)
+
 	for _, entryURL := range urls {
-		if !downloaderInstance.IsVideoAvailable(entryURL) {
-			slog.Error("video is not available, skipping download for", "url", entryURL)
-			continue
-		}
-		availableUrls = append(availableUrls, entryURL)
+		wg.Add(1)
+		go func(u string) {
+			defer wg.Done()
+			availSem <- struct{}{}
+			defer func() { <-availSem }()
+			if !downloaderInstance.IsVideoAvailable(u) {
+				slog.Error("video is not available, skipping download for", "url", u)
+				return
+			}
+			mu.Lock()
+			availableUrls = append(availableUrls, u)
+			mu.Unlock()
+		}(entryURL)
 	}
+	wg.Wait()
 
+	// Enforce partial download policy
+	if len(availableUrls) == 0 {
+		return fmt.Errorf("no available videos for %s", url)
+	}
 	if len(availableUrls) != len(urls) {
 		slog.Warn("some videos are not available and will be skipped", "requestedUrl", url, "availableCount", len(availableUrls), "requestedCount", len(urls))
+		if !cs.mediaConfig.AllowPartialDownloads {
+			return fmt.Errorf("partial downloads not allowed: %d of %d available for %s", len(availableUrls), len(urls), url)
+		}
 	}
 
 	// Schedule downloads in background to avoid blocking the API response
 	go func(availableUrls []string) {
 		for _, entryURL := range availableUrls {
-			sem <- struct{}{}
+			downloadSem <- struct{}{}
 			go func(u string) {
-				defer func() { <-sem }()
+				defer func() { <-downloadSem }()
 				cs.handleDownload(u, downloaderInstance)
 			}(entryURL)
 		}

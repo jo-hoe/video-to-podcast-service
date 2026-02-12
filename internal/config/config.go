@@ -38,9 +38,10 @@ type Cookies struct {
 
 // Media holds media storage configuration
 type Media struct {
-	MediaPath            string `yaml:"mediaPath"`
-	TempPath             string `yaml:"tempPath"`
-	MaxParallelDownloads int    `yaml:"maxParallelDownloads"`
+	MediaPath             string `yaml:"mediaPath"`
+	TempPath              string `yaml:"tempPath"`
+	MaxParallelDownloads  int    `yaml:"maxParallelDownloads"`
+	AllowPartialDownloads bool   `yaml:"allowPartialDownloads"`
 }
 
 var globalConfig *Config
@@ -210,6 +211,7 @@ func logLoadedConfig(config *Config) {
 	slog.Info("Media Path", "value", config.Persistence.Media.MediaPath)
 	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
 	slog.Info("Max Parallel Downloads", "value", config.Persistence.Media.MaxParallelDownloads)
+	slog.Info("Allow Partial Downloads", "value", config.Persistence.Media.AllowPartialDownloads)
 	slog.Info("============================")
 }
 

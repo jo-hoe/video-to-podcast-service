@@ -10,3 +10,4 @@ persistence:
   media:
     mediaPath: ./mount/resources/media
     tempPath: ./tmp
+    allowPartialDownloads: true
