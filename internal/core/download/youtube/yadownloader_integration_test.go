@@ -133,12 +133,12 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}
 
 	// Playlist: list entries, download each entry individually, verify count and existence
-	entries, err := y.ListVideoEntries(validYoutubePlaylistUrl)
+	entries, err := y.ListIndividualVideoURLs(validYoutubePlaylistUrl)
 	if err != nil {
-		t.Fatalf("ListVideoEntries() error = %v", err)
+		t.Fatalf("ListIndividualVideoURLs() error = %v", err)
 	}
 	if len(entries) == 0 {
-		t.Fatalf("ListVideoEntries() returned no entries for valid playlist")
+		t.Fatalf("ListIndividualVideoURLs() returned no entries for valid playlist")
 	}
 
 	results := make([]string, 0, len(entries))

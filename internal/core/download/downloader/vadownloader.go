@@ -7,10 +7,10 @@ type AudioDownloader interface {
 	Download(url string, path string) (string, error)
 	IsVideoSupported(url string) bool
 	IsVideoAvailable(url string) bool
-	// ListVideoEntries returns individual video URLs for a given input URL.
+	// ListIndividualVideoURLs returns individual video URLs for a given input URL.
 	// For playlist URLs, it returns all video URLs in the playlist.
 	// For single video URLs, it returns a slice containing the original URL.
-	ListVideoEntries(url string) ([]string, error)
+	ListIndividualVideoURLs(url string) ([]string, error)
 }
 
 const (

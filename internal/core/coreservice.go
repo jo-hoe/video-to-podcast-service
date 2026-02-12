@@ -79,17 +79,17 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 		return fmt.Errorf("url %s not supported", url)
 	}
 
-	// Get individual entries (playlist expands to multiple URLs; single video returns itself)
-	entries, err := downloaderInstance.ListVideoEntries(url)
+	// Get individual urls (playlist expands to multiple URLs; single video returns itself)
+	urls, err := downloaderInstance.ListIndividualVideoURLs(url)
 	if err != nil {
-		slog.Error("failed to list video entries", "url", url, "err", err)
-		return fmt.Errorf("failed to list entries for %s", url)
+		slog.Error("failed to list video urls", "url", url, "err", err)
+		return fmt.Errorf("failed to list urls for %s", url)
 	}
-	if len(entries) == 0 {
-		return fmt.Errorf("no downloadable entries for %s", url)
+	if len(urls) == 0 {
+		return fmt.Errorf("no downloadable urls for %s", url)
 	}
 
-	slog.Info("starting downloads", "requestedUrl", url, "entryCount", len(entries))
+	slog.Info("starting downloads", "requestedUrl", url, "entryCount", len(urls))
 
 	// Throttle parallel downloads using a semaphore based on configured max parallel downloads (default 1)
 	maxParallel := cs.mediaConfig.MaxParallelDownloads
@@ -98,20 +98,23 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	}
 	sem := make(chan struct{}, maxParallel)
 
+	for _, entryURL := range urls {
+		if !downloaderInstance.IsVideoAvailable(entryURL) {
+			slog.Error("video is not available, skipping download for", "url", entryURL)
+			return fmt.Errorf("video is not available: %s", entryURL)
+		}
+	}
+
 	// Schedule downloads in background to avoid blocking the API response
 	go func(urls []string) {
 		for _, entryURL := range urls {
-			if !downloaderInstance.IsVideoAvailable(entryURL) {
-				slog.Warn("video is not available, skipping", "url", entryURL)
-				continue
-			}
 			sem <- struct{}{}
 			go func(u string) {
 				defer func() { <-sem }()
 				cs.handleDownload(u, downloaderInstance)
 			}(entryURL)
 		}
-	}(entries)
+	}(urls)
 
 	return nil
 }
@@ -131,14 +134,13 @@ func (cs *CoreService) GetFeedDirectory(audioFilePath string) (string, error) {
 
 // handleDownload performs the download and podcast item creation with improved error handling and less nesting
 func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDownloader) {
-	const maxErrorCount = 4
-
 	filePath, err := downloader.Download(url, cs.audioSourceDirectory)
 	if err != nil {
 		slog.Error("failed to download", "url", url, "err", err)
 		return
 	}
 
+	const maxErrorCount = 4
 	retries := 0
 	for retries < maxErrorCount {
 		podcastItem, err := database.NewPodcastItem(filePath)

@@ -237,10 +237,10 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 	return args
 }
 
-// ListVideoEntries returns individual video URLs for a given input URL.
+// ListIndividualVideoURLs returns individual video URLs for a given input URL.
 // For playlist URLs, it returns all video URLs in the playlist.
 // For single video URLs, it returns a slice containing the original URL.
-func (y *YoutubeAudioDownloader) ListVideoEntries(urlString string) ([]string, error) {
+func (y *YoutubeAudioDownloader) ListIndividualVideoURLs(urlString string) ([]string, error) {
 	entries := make([]string, 0)
 
 	// Detect playlist URLs
