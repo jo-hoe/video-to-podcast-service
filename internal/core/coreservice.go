@@ -98,23 +98,29 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	}
 	sem := make(chan struct{}, maxParallel)
 
+	availableUrls := make([]string, 0)
 	for _, entryURL := range urls {
 		if !downloaderInstance.IsVideoAvailable(entryURL) {
 			slog.Error("video is not available, skipping download for", "url", entryURL)
-			return fmt.Errorf("video is not available: %s", entryURL)
+			continue
 		}
+		availableUrls = append(availableUrls, entryURL)
+	}
+
+	if len(availableUrls) != len(urls) {
+		slog.Warn("some videos are not available and will be skipped", "requestedUrl", url, "availableCount", len(availableUrls), "requestedCount", len(urls))
 	}
 
 	// Schedule downloads in background to avoid blocking the API response
-	go func(urls []string) {
-		for _, entryURL := range urls {
+	go func(availableUrls []string) {
+		for _, entryURL := range availableUrls {
 			sem <- struct{}{}
 			go func(u string) {
 				defer func() { <-sem }()
 				cs.handleDownload(u, downloaderInstance)
 			}(entryURL)
 		}
-	}(urls)
+	}(availableUrls)
 
 	return nil
 }
