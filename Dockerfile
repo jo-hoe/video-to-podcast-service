@@ -1,5 +1,5 @@
 # Build stage: build the Go application against musl (Alpine) for CGO compatibility
-FROM golang:1.26rc3-alpine AS build
+FROM golang:1.26-alpine AS build
 
 # Set the working directory
 WORKDIR /src
