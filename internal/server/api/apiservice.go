@@ -197,7 +197,7 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 		slog.Error("failed to generate PSP", "feedTitle", feedTitle, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate PSP")
 	}
-	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationXMLCharsetUTF8)
+	ctx.Response().Header().Set(echo.HeaderContentType, "application/rss+xml; charset=utf-8")
 	_, err = ctx.Response().Writer.Write([]byte(psp))
 	return err
 }
