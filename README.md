@@ -122,4 +122,3 @@ golangci-lint run ./...
 
 - [ID3 Tags](https://www.exiftool.org/TagNames/ID3.html)
 - [Example podcast](https://feeds.libsyn.com/230510/rss)
-
