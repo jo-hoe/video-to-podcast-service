@@ -92,10 +92,10 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 
 	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, podcastItem.AudioFilePath)
 
-	itemBuilder := gofeedx.NewItem(podcastItem.Title).
+	itemBuilder := gofeedx.NewItem(escapeXML(podcastItem.Title)).
 		WithGUID(podcastItem.ID, "false").
 		WithLink(link).
-		WithDescription(podcastItem.Description).
+		WithDescription(escapeXML(podcastItem.Description)).
 		WithAuthor(common.ValueOrDefault(podcastItem.Author, ""), "").
 		WithCreated(podcastItem.CreatedAt).
 		WithUpdated(podcastItem.UpdatedAt).
@@ -104,6 +104,11 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 		WithPSPImageHref(podcastItem.Thumbnail)
 
 	return itemBuilder.Build()
+}
+
+func escapeXML(s string) string {
+	// gofeedx should handle escaping, but we can add additional escaping if needed
+	return fmt.Sprintf("<![CDATA[%s]]>", s)
 }
 
 func (fp *FeedService) createFeed(host string, author string, filepath string) *gofeedx.Feed {
