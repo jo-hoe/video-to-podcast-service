@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/gofeedx"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
 	"github.com/labstack/echo/v4"
@@ -192,13 +192,13 @@ func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "feed not found")
 	}
 
-	rss, err := result.ToRss()
+	psp, err := gofeedx.ToPSP(result)
 	if err != nil {
-		slog.Error("failed to generate RSS", "feedTitle", feedTitle, "err", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate RSS")
+		slog.Error("failed to generate PSP", "feedTitle", feedTitle, "err", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to generate PSP")
 	}
 	ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationXMLCharsetUTF8)
-	_, err = ctx.Response().Writer.Write([]byte(rss))
+	_, err = ctx.Response().Writer.Write([]byte(psp))
 	return err
 }
 
@@ -257,7 +257,7 @@ func (*APIService) getPathAttributeValue(ctx echo.Context, attributeName string)
 	return url.PathUnescape(value)
 }
 
-func (service *APIService) getFeed(host, feedTitle string) (result *feeds.Feed, err error) {
+func (service *APIService) getFeed(host, feedTitle string) (result *gofeedx.Feed, err error) {
 	if feedTitle == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}

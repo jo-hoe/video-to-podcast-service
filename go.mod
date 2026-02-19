@@ -4,8 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/gorilla/feeds v1.2.0
-	github.com/jo-hoe/mp3-joiner v0.0.0-20250617132922-38a1e8cd705e
+	github.com/jo-hoe/mp3-joiner v0.0.0-20251215212911-6057123f7360
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/u2takey/ffmpeg-go v0.5.0
@@ -13,7 +12,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/stretchr/testify v1.11.1
+require (
+	github.com/jo-hoe/gofeedx v0.0.0-20260219211224-1cec66859e39
+	github.com/stretchr/testify v1.11.1
+)
 
 require (
 	github.com/aws/aws-sdk-go v1.55.8 // indirect
@@ -26,7 +28,6 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/u2takey/go-utils v0.3.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

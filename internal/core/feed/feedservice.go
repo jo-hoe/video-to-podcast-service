@@ -2,6 +2,7 @@ package feed
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/common"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 
-	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/gofeedx"
 )
 
 const (
@@ -35,8 +36,8 @@ func NewFeedService(
 	}
 }
 
-func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err error) {
-	feedCollector = make([]*feeds.Feed, 0)
+func (fp *FeedService) GetFeeds(host string) (feedCollector []*gofeedx.Feed, err error) {
+	feedCollector = make([]*gofeedx.Feed, 0)
 
 	podcastItems, err := fp.coreservice.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
@@ -58,10 +59,12 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err e
 		}
 		feed.Items = append(feed.Items, item)
 
+		// inject image if not already set, using the thumbnail of the podcast item
 		if feed.Image == nil {
-			feed.Image = &feeds.Image{
-				Url:  podcastItem.Thumbnail,
-				Link: podcastItem.Thumbnail,
+			feed.Image = &gofeedx.Image{
+				Url:   podcastItem.Thumbnail,
+				Link:  podcastItem.Thumbnail,
+				Title: directoryName,
 			}
 		}
 	}
@@ -69,16 +72,16 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*feeds.Feed, err e
 	return feedCollector, nil
 }
 
-func (fp *FeedService) getFeedWithAuthor(author string, feeds []*feeds.Feed) *feeds.Feed {
+func (fp *FeedService) getFeedWithAuthor(author string, feeds []*gofeedx.Feed) *gofeedx.Feed {
 	for _, feed := range feeds {
-		if feed.Author.Name == author {
+		if feed.Author != nil && feed.Author.Name == author {
 			return feed
 		}
 	}
 	return nil
 }
 
-func (fp *FeedService) createFeedItem(host string, podcastItem *database.PodcastItem) (*feeds.Item, error) {
+func (fp *FeedService) createFeedItem(host string, podcastItem *database.PodcastItem) (*gofeedx.Item, error) {
 	fileinfo, err := os.Stat(podcastItem.AudioFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not get file info for %s: %w", podcastItem.AudioFilePath, err)
@@ -89,30 +92,33 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 
 	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, podcastItem.AudioFilePath)
 
-	return &feeds.Item{
-		Id:          podcastItem.ID,
-		Title:       podcastItem.Title,
-		Link:        &feeds.Link{Href: link},
-		Description: podcastItem.Description,
-		Author:      &feeds.Author{Name: common.ValueOrDefault(podcastItem.Author, "")},
-		Created:     podcastItem.CreatedAt,
-		Updated:     podcastItem.UpdatedAt,
-		IsPermaLink: "false", //  always false, see https://validator.w3.org/feed/docs/error/InvalidPermalink.html
-		Enclosure: &feeds.Enclosure{
-			Url:    link,
-			Type:   "audio/mpeg",
-			Length: fmt.Sprintf("%d", fileinfo.Size()), // Use actual file size in bytes
-		},
-	}, nil
+	itemBuilder := gofeedx.NewItem(podcastItem.Title).
+		WithGUID(podcastItem.ID, "false").
+		WithLink(link).
+		WithDescription(podcastItem.Description).
+		WithAuthor(common.ValueOrDefault(podcastItem.Author, ""), "").
+		WithCreated(podcastItem.CreatedAt).
+		WithUpdated(podcastItem.UpdatedAt).
+		WithEnclosure(link, fileinfo.Size(), "audio/mpeg").
+		WithDurationSeconds(int(podcastItem.DurationInMilliseconds / 1000)).
+		WithPSPImageHref(podcastItem.Thumbnail)
+
+	return itemBuilder.Build()
 }
 
-func (fp *FeedService) createFeed(host string, author string, filepath string) *feeds.Feed {
-	feed := &feeds.Feed{
-		Title:       author,
-		Link:        &feeds.Link{Href: fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, filepath)},
-		Description: fmt.Sprintf("%s %s", defaultDescription, author),
-		Author:      &feeds.Author{Name: author},
-	}
+func (fp *FeedService) createFeed(host string, author string, filepath string) *gofeedx.Feed {
+	selfURL := fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, filepath)
 
-	return feed
+	feedBuilder := gofeedx.NewFeed(author).
+		WithLink(selfURL).
+		WithDescription(fmt.Sprintf("%s %s", defaultDescription, author)).
+		WithAuthor(author, "").
+		WithFeedURL(selfURL)
+
+	built, err := feedBuilder.Build()
+	if err != nil {
+		slog.Error("failed to build feed", "error", err)
+		return nil
+	}
+	return built
 }

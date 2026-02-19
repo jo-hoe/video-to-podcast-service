@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gorilla/feeds"
+	"github.com/jo-hoe/gofeedx"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 )
@@ -24,7 +24,7 @@ func TestCreateFeed(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want   *feeds.Feed
+		want   *gofeedx.Feed
 	}{
 		{
 			name: "create feed test",
@@ -36,11 +36,12 @@ func TestCreateFeed(t *testing.T) {
 				feedAudioFilePath: filepath.Join("c", "testDir", "audio.mp3"),
 				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c"), nil, nil),
 			},
-			want: &feeds.Feed{
+			want: &gofeedx.Feed{
 				Title:       defaultAuthor,
-				Link:        &feeds.Link{Href: "http://localhost/v1/feeds/testDir/rss.xml"},
+				Link:        &gofeedx.Link{Href: "http://localhost/v1/feeds/testDir/rss.xml"},
 				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
-				Author:      &feeds.Author{Name: defaultAuthor},
+				Author:      &gofeedx.Author{Name: defaultAuthor},
+				FeedURL:     "http://localhost/v1/feeds/testDir/rss.xml",
 			},
 		},
 	}
