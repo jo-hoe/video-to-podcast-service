@@ -28,6 +28,10 @@ github.com/jo-hoe/gofeedx v0.0.0-20260219203411-7d2517e3ada2 h1:rp1D6OdEVO4+LD7V
 github.com/jo-hoe/gofeedx v0.0.0-20260219203411-7d2517e3ada2/go.mod h1:i96H51TSEWupKIck5h2hukjYQtvROT1BvY89dx0nzFM=
 github.com/jo-hoe/gofeedx v0.0.0-20260219211224-1cec66859e39 h1:Ugr5ZVXGuMFHnS26RdZIf3u86V2UIxubXkGq0VcHlY0=
 github.com/jo-hoe/gofeedx v0.0.0-20260219211224-1cec66859e39/go.mod h1:i96H51TSEWupKIck5h2hukjYQtvROT1BvY89dx0nzFM=
+github.com/jo-hoe/gofeedx v0.0.0-20260220152051-293bd702d6e2 h1:n3qIIdDtzrHmre/YLMsbou5zeojcwbHNJlJvZYeJ7x8=
+github.com/jo-hoe/gofeedx v0.0.0-20260220152051-293bd702d6e2/go.mod h1:i96H51TSEWupKIck5h2hukjYQtvROT1BvY89dx0nzFM=
+github.com/jo-hoe/gofeedx v0.0.0-20260220152725-b46d799e4325 h1:6dijf/tKR0b2wIhCs5VWkUL196SkXzErRXaDXyTom8k=
+github.com/jo-hoe/gofeedx v0.0.0-20260220152725-b46d799e4325/go.mod h1:i96H51TSEWupKIck5h2hukjYQtvROT1BvY89dx0nzFM=
 github.com/jo-hoe/mp3-joiner v0.0.0-20250617132922-38a1e8cd705e h1:Z28sYz+YS2QKbXp8qUZLkTWK9j76WHxl4ZyX6asztQ4=
 github.com/jo-hoe/mp3-joiner v0.0.0-20250617132922-38a1e8cd705e/go.mod h1:fYfz7CzliOAer8jCAngphVat3ofwvTqfs6qwVeF/96U=
 github.com/jo-hoe/mp3-joiner v0.0.0-20251215212911-6057123f7360 h1:dpDoGuYacmvm6D7BFtQwEujHF3GJ1qvERby1eiMW8dw=
