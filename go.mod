@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/jo-hoe/gofeedx v0.0.0-20260220152725-b46d799e4325
+	github.com/jo-hoe/gofeedx v0.0.0-20260220193408-279df5290dfd
 	github.com/stretchr/testify v1.11.1
 )
 

@@ -25,6 +25,9 @@ const (
 	sponsorBlockCategories = "sponsor,selfpromo,interaction,intro,outro,preview,music_offtopic,filler,hook"
 	// ID3 tag youtube-dl uses to store the video URL
 	VideoUrlID3KeyAttribute = "purl"
+
+	liveStatusKeyAttribute = "live_status"
+	liveStatusLiveValue    = "is_live"
 )
 
 type YoutubeAudioDownloader struct {
@@ -198,16 +201,32 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 func (y *YoutubeAudioDownloader) IsVideoAvailable(urlString string) bool {
 	slog.Info("checking video availability", "url", urlString)
 
+	// Use yt-dlp to print live_status in a dry run.
+	// Treat videos that are currently livestreaming ("is_live") as not available.
 	args := y.buildBaseArgs(true)
-	args = append(args, urlString)
+	args = append(args, "--print", liveStatusKeyAttribute, urlString)
 
 	cmd := exec.Command("yt-dlp", args...)
-	err := cmd.Run()
-
+	output, err := cmd.Output()
 	if err != nil {
 		slog.Error("error checking video availability", "err", err)
 		return false
 	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	for _, line := range lines {
+		v := strings.TrimSpace(line)
+		if v == "" {
+			continue
+		}
+		// If any line indicates "is_live", consider unavailable immediately
+		if v == liveStatusLiveValue {
+			slog.Warn("video is currently live; treating as unavailable", "url", urlString, liveStatusKeyAttribute, v)
+			return false
+		}
+	}
+
+	// If not live, consider available (dry run succeeded)
 	return true
 }
 
