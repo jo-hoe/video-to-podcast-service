@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/jo-hoe/mp3-joiner v0.0.0-20251215212911-6057123f7360
-	github.com/labstack/echo/v4 v4.15.0
+	github.com/labstack/echo/v4 v4.15.1
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.51.0 // indirect
