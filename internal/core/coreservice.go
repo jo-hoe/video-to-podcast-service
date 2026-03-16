@@ -42,6 +42,32 @@ func (cs *CoreService) GetCookieConfig() *config.Cookies {
 	return cs.cookiesConfig
 }
 
+func (cs *CoreService) DeletePodcastItem(id string) error {
+	// Get the item first to retrieve file paths
+	item, err := cs.databaseService.GetPodcastItemByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get podcast item: %w", err)
+	}
+
+	// Delete the audio file if it exists
+	if item.AudioFilePath != "" {
+		if err := os.Remove(item.AudioFilePath); err != nil && !os.IsNotExist(err) {
+			slog.Warn("failed to delete audio file", "path", item.AudioFilePath, "err", err)
+			// Continue with database deletion even if file deletion fails
+		} else if err == nil {
+			slog.Info("deleted audio file", "path", item.AudioFilePath)
+		}
+	}
+
+	// Delete the database entry
+	if err := cs.databaseService.DeletePodcastItem(id); err != nil {
+		return fmt.Errorf("failed to delete podcast item from database: %w", err)
+	}
+
+	slog.Info("successfully deleted podcast item", "id", id)
+	return nil
+}
+
 func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
 	// get first part of the path as feed title

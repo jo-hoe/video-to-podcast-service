@@ -71,7 +71,7 @@ func (service *APIService) deleteFeedItem(ctx echo.Context) error {
 		slog.Error("failed to retrieve podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
 	}
-	err = service.coreService.GetDatabaseService().DeletePodcastItem(podcastItem.ID)
+	err = service.coreService.DeletePodcastItem(podcastItem.ID)
 	if err != nil {
 		slog.Error("failed to delete podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
