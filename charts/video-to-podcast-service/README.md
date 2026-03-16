@@ -1,6 +1,6 @@
 # video-to-podcast-service
 
-![Version: 1.5.1](https://img.shields.io/badge/Version-1.5.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.5.1](https://img.shields.io/badge/AppVersion-1.5.1-informational?style=flat-square)
+![Version: 1.6.0](https://img.shields.io/badge/Version-1.6.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.6.0](https://img.shields.io/badge/AppVersion-1.6.0-informational?style=flat-square)
 
 Service for converting videos to podcast feeds
 
@@ -35,6 +35,7 @@ Service for converting videos to podcast feeds
 | livenessProbe.timeoutSeconds | int | `5` |  |
 | logLevel | string | `"info"` |  |
 | media.allowPartialDownloads | bool | `true` |  |
+| media.enableSponsorBlock | bool | `true` | Enable SponsorBlock integration to remove sponsored segments from videos. Set to false if SponsorBlock API is unreliable or unavailable. |
 | media.maxParallelDownloads | int | `1` |  |
 | media.mediaPath | string | `"/app/data/resources/media"` |  |
 | media.tempPath | string | `"/app/data/resources/temp"` |  |

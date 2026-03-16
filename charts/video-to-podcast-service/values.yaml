@@ -134,6 +134,9 @@ media:
   tempPath: "/app/data/resources/temp"
   maxParallelDownloads: 1
   allowPartialDownloads: true
+  # -- Enable SponsorBlock integration to remove sponsored segments from videos.
+  # Set to false if SponsorBlock API is unreliable or unavailable.
+  enableSponsorBlock: true
 
 nodeSelector: {}
 

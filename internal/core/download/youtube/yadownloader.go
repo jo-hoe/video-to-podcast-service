@@ -167,7 +167,14 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, urlString stri
 		"--audio-format", "mp3",
 		"--embed-metadata",
 		"--no-progress",
-		"--sponsorblock-remove", sponsorBlockCategories,
+	)
+	
+	// Add SponsorBlock integration if enabled
+	if y.mediaConfig.EnableSponsorBlock {
+		args = append(args, "--sponsorblock-remove", sponsorBlockCategories)
+	}
+	
+	args = append(args,
 		// Workaround: using lower resolution to avoid issues with download of videos
 		// Remove when after upstream fix of
 		// https://github.com/yt-dlp/yt-dlp/issues/12482

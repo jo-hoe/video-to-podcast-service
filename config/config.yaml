@@ -11,3 +11,4 @@ persistence:
     mediaPath: ./mount/resources/media
     tempPath: ./tmp
     allowPartialDownloads: true
+    enableSponsorBlock: true
