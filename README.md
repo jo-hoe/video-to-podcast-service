@@ -112,9 +112,6 @@ golangci-lint run ./...
 
 ## Future Work
 
-- Add iTunes to
-  - add tags for podcast images (requires custom XML generation)
-  - set length in podcast metadata
 - Provide ticketing/progress feedback via API
 - Auto-chapterize videos without chapters
 
