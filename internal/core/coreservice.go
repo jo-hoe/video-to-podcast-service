@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -62,6 +63,23 @@ func (cs *CoreService) DeletePodcastItem(id string) error {
 	// Delete the database entry
 	if err := cs.databaseService.DeletePodcastItem(id); err != nil {
 		return fmt.Errorf("failed to delete podcast item from database: %w", err)
+	}
+
+	// Check if the feed directory is empty and remove it if so
+	if item.AudioFilePath != "" {
+		feedDirectory, err := cs.GetFeedDirectory(item.AudioFilePath)
+		if err == nil {
+			fullFeedPath := filepath.Join(cs.audioSourceDirectory, feedDirectory)
+			if files, err := os.ReadDir(fullFeedPath); err == nil {
+				if len(files) == 0 {
+					if err := os.Remove(fullFeedPath); err != nil {
+						slog.Warn("failed to remove empty feed directory", "directory", fullFeedPath, "err", err)
+					} else {
+						slog.Info("removed empty feed directory", "directory", fullFeedPath)
+					}
+				}
+			}
+		}
 	}
 
 	slog.Info("successfully deleted podcast item", "id", id)

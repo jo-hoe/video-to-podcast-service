@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -66,45 +65,10 @@ func (service *APIService) deleteFeedItem(ctx echo.Context) error {
 		return validationError
 	}
 
-	podcastItem, err := service.coreService.GetDatabaseService().GetPodcastItemByID(podcastItemID)
-	if err != nil {
-		slog.Error("failed to retrieve podcast item", "podcastItemID", podcastItemID, "err", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
-	}
-	err = service.coreService.DeletePodcastItem(podcastItem.ID)
+	err := service.coreService.DeletePodcastItem(podcastItemID)
 	if err != nil {
 		slog.Error("failed to delete podcast item", "podcastItemID", podcastItemID, "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
-	}
-
-	// Remove the audio file if it exists
-	err = os.Remove(podcastItem.AudioFilePath)
-	if err != nil && !os.IsNotExist(err) {
-		slog.Error("failed to delete audio file for podcast item", "podcastItemID", podcastItemID, "err", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete podcast item.")
-	}
-
-	// check if directory is empty and remove it if so
-	feedDirectory := filepath.Join(service.coreService.GetAudioSourceDirectory(), feedTitle)
-	if _, err := os.Stat(feedDirectory); err == nil {
-		files, err := os.ReadDir(feedDirectory)
-		if err != nil {
-			slog.Error("failed to read directory", "directory", feedDirectory, "err", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
-		}
-		if len(files) == 0 {
-			err = os.Remove(feedDirectory)
-			if err != nil {
-				slog.Error("failed to remove empty feed directory", "directory", feedDirectory, "err", err)
-				return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
-			}
-			slog.Info("removed empty feed directory", "directory", feedDirectory)
-		} else {
-			slog.Info("feed directory not empty, skipping removal", "directory", feedDirectory)
-		}
-	} else if !os.IsNotExist(err) {
-		slog.Error("failed to check if feed directory exists", "directory", feedDirectory, "err", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal error")
 	}
 
 	return ctx.NoContent(http.StatusOK)
