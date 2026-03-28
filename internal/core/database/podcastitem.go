@@ -48,11 +48,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	title := common.ValueOrDefault(audioMetadata[downloader.Title], fileNameWithoutExtension)
 	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
 
-	uploadTime, err := time.Parse("20060102", audioMetadata[downloader.DateTag])
-	if err != nil {
-		slog.Warn("could not parse date tag, reverting to default", "err", err)
-		uploadTime = fileInfo.ModTime().UTC()
-	}
+	uploadTime := parseUploadTime(audioMetadata["date"], fileInfo)
 
 	podcastItem = &PodcastItem{
 		ID:                     stringToHash(videoUrl),
@@ -90,4 +86,17 @@ func stringToHash(input string) string {
 		uuid[8:10],
 		uuid[10:16],
 	)
+}
+
+func parseUploadTime(dateTag string, fileInfo os.FileInfo) time.Time {
+	// Try full ISO 8601 datetime first (set when Unix timestamp is available)
+	if t, err := time.Parse("2006-01-02T15:04:05", dateTag); err == nil {
+		return t.UTC()
+	}
+	// Fall back to date-only format embedded by yt-dlp
+	if t, err := time.Parse("20060102", dateTag); err == nil {
+		return t.UTC()
+	}
+	slog.Warn("could not parse date tag, reverting to file mod time", "dateTag", dateTag)
+	return fileInfo.ModTime().UTC()
 }

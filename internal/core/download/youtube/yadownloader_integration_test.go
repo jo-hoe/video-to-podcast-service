@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
@@ -77,6 +78,18 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 	}
 	if metadata[downloader.VideoDownloadLink] != validYoutubeVideoUrl {
 		t.Errorf("YoutubeAudioDownloader.Download() video url tag mismatch = %v", metadata[downloader.VideoDownloadLink])
+	}
+	ts, parseErr := time.Parse("2006-01-02T15:04:05", metadata["date"])
+	if parseErr != nil {
+		t.Errorf("YoutubeAudioDownloader.Download() date tag is not in expected format (2006-01-02T15:04:05): %v", metadata["date"])
+	} else {
+		// "Me at the zoo" was uploaded on 2005-04-23
+		if ts.Year() != 2005 || ts.Month() != time.April || ts.Day() != 23 {
+			t.Errorf("YoutubeAudioDownloader.Download() date = %v, want 2005-04-23", ts.Format(time.DateOnly))
+		}
+		if ts.Hour() == 0 && ts.Minute() == 0 && ts.Second() == 0 {
+			t.Errorf("YoutubeAudioDownloader.Download() time is midnight, expected a real time-of-day")
+		}
 	}
 
 	// check if file is saved in correct location

@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
@@ -95,11 +97,19 @@ func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) error {
 	metadata[downloader.DateTag] = metadata["date"]
 	metadata[downloader.VideoDownloadLink] = metadata[downloader.VideoURLID3Key]
 
-	thumbnailURL, err := y.getThumbnailURL(metadata[downloader.VideoURLID3Key])
+	videoURL := metadata[downloader.VideoURLID3Key]
+
+	thumbnailURL, err := y.getThumbnailURL(videoURL)
 	if err != nil {
 		return err
 	}
 	metadata[downloader.ThumbnailUrlTag] = thumbnailURL
+
+	if ts, tsErr := y.getTimestamp(videoURL); tsErr == nil {
+		metadata["date"] = time.Unix(ts, 0).UTC().Format("2006-01-02T15:04:05")
+	} else {
+		slog.Warn("could not get timestamp, will fall back to date tag", "err", tsErr)
+	}
 
 	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
@@ -116,6 +126,23 @@ func (y *YoutubeAudioDownloader) getThumbnailURL(videoURL string) (string, error
 	}
 
 	return downloader.FirstHTTPSLineFromOutput(output), nil
+}
+
+func (y *YoutubeAudioDownloader) getTimestamp(videoURL string) (int64, error) {
+	args := y.buildBaseArgs(true)
+	args = append(args, "--print", "timestamp", videoURL)
+
+	cmd := exec.Command("yt-dlp", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, fmt.Errorf("yt-dlp timestamp fetch failed: %w", err)
+	}
+
+	ts := strings.TrimSpace(string(output))
+	if ts == "" || ts == "NA" {
+		return 0, fmt.Errorf("timestamp not available for %s", videoURL)
+	}
+	return strconv.ParseInt(ts, 10, 64)
 }
 
 func (y *YoutubeAudioDownloader) download(targetDirectory string, url string) ([]string, error) {
