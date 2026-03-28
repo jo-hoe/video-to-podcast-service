@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	mp3joiner "github.com/jo-hoe/mp3-joiner"
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
@@ -152,6 +154,12 @@ func (t *TwitchAudioDownloader) setMetadata(fullFilePath string, sourceURL strin
 	}
 	metadata[downloader.ThumbnailUrlTag] = thumbnailURL
 
+	if ts, tsErr := t.getTimestamp(sourceURL); tsErr == nil {
+		metadata["date"] = time.Unix(ts, 0).UTC().Format("2006-01-02T15:04:05")
+	} else {
+		slog.Warn("could not get timestamp, will fall back to date tag", "err", tsErr)
+	}
+
 	return mp3joiner.SetFFmpegMetadataTag(fullFilePath, metadata, chapters)
 }
 
@@ -167,6 +175,23 @@ func (t *TwitchAudioDownloader) getThumbnailURL(url string) (string, error) {
 	}
 
 	return downloader.FirstHTTPSLineFromOutput(output), nil
+}
+
+func (t *TwitchAudioDownloader) getTimestamp(url string) (int64, error) {
+	args := t.buildBaseArgs(true)
+	args = append(args, "--print", "timestamp", url)
+
+	cmd := exec.Command("yt-dlp", args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, fmt.Errorf("yt-dlp timestamp fetch failed: %w", err)
+	}
+
+	ts := strings.TrimSpace(string(output))
+	if ts == "" || ts == "NA" {
+		return 0, fmt.Errorf("timestamp not available for %s", url)
+	}
+	return strconv.ParseInt(ts, 10, 64)
 }
 
 // buildBaseArgs creates base arguments for yt-dlp command.
