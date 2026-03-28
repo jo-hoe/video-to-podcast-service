@@ -20,4 +20,3 @@ data:
         tempPath: {{ .Values.media.tempPath }}
         maxParallelDownloads: {{ .Values.media.maxParallelDownloads }}
         allowPartialDownloads: {{ .Values.media.allowPartialDownloads }}
-        enableSponsorBlock: {{ .Values.media.enableSponsorBlock }}

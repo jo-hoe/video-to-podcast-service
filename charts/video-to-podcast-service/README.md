@@ -35,7 +35,6 @@ Service for converting videos to podcast feeds
 | livenessProbe.timeoutSeconds | int | `5` |  |
 | logLevel | string | `"info"` |  |
 | media.allowPartialDownloads | bool | `true` |  |
-| media.enableSponsorBlock | bool | `true` | Enable SponsorBlock integration to remove sponsored segments from videos. Set to false if SponsorBlock API is unreliable or unavailable. |
 | media.maxParallelDownloads | int | `1` |  |
 | media.mediaPath | string | `"/app/data/resources/media"` |  |
 | media.tempPath | string | `"/app/data/resources/temp"` |  |

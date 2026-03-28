@@ -128,12 +128,10 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, url string) ([
 		"--audio-format", "mp3",
 		"--embed-metadata",
 		"--no-progress",
+		"--sponsorblock-remove", sponsorBlockCategories,
+		// Ignore SponsorBlock API errors so downloads continue even when the API is unavailable
+		"--ignore-errors",
 	)
-
-	// Add SponsorBlock integration if enabled
-	if y.mediaConfig.EnableSponsorBlock {
-		args = append(args, "--sponsorblock-remove", sponsorBlockCategories)
-	}
 
 	args = append(args,
 		// Workaround: using lower resolution to avoid issues with download of videos

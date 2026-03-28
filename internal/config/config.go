@@ -42,7 +42,6 @@ type Media struct {
 	TempPath              string `yaml:"tempPath"`
 	MaxParallelDownloads  int    `yaml:"maxParallelDownloads"`
 	AllowPartialDownloads bool   `yaml:"allowPartialDownloads"`
-	EnableSponsorBlock    bool   `yaml:"enableSponsorBlock"`
 }
 
 var globalConfig *Config
@@ -196,8 +195,6 @@ func setDefaults(config *Config) error {
 	if config.Persistence.Media.MaxParallelDownloads <= 0 {
 		config.Persistence.Media.MaxParallelDownloads = 1
 	}
-	// Note: EnableSponsorBlock defaults to false when not specified in YAML.
-	// The field must be explicitly set to true in the config to enable SponsorBlock.
 
 	return nil
 }
@@ -215,7 +212,6 @@ func logLoadedConfig(config *Config) {
 	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
 	slog.Info("Max Parallel Downloads", "value", config.Persistence.Media.MaxParallelDownloads)
 	slog.Info("Allow Partial Downloads", "value", config.Persistence.Media.AllowPartialDownloads)
-	slog.Info("Enable SponsorBlock", "value", config.Persistence.Media.EnableSponsorBlock)
 	slog.Info("============================")
 }
 
