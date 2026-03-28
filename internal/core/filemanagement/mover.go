@@ -11,6 +11,23 @@ import (
 	"path/filepath"
 )
 
+// MoveToTarget moves sourcePath into a subdirectory of targetRootPath.
+// The subdirectory name is taken from the immediate parent directory of sourcePath.
+// e.g. sourcePath=/tmp/abc/channel/file.mp3, targetRootPath=/podcasts → /podcasts/channel/file.mp3
+func MoveToTarget(sourcePath, targetRootPath string) (string, error) {
+	directoryName := filepath.Base(filepath.Dir(sourcePath))
+	targetSubDirectory := filepath.Join(targetRootPath, directoryName)
+	if err := os.MkdirAll(targetSubDirectory, os.ModePerm); err != nil {
+		return "", err
+	}
+
+	targetPath := filepath.Join(targetSubDirectory, filepath.Base(sourcePath))
+	if err := MoveFile(sourcePath, targetPath); err != nil {
+		return "", err
+	}
+	return targetPath, nil
+}
+
 func calculateFileHash(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {

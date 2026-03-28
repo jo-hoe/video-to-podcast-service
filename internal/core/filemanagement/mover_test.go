@@ -33,6 +33,58 @@ func setupTestMoveEnvironment(t *testing.T) (rootDirectory string, leftDirectory
 	return rootDirectory, leftDirectory, rightDirectory, fileName
 }
 
+func TestMoveToTarget(t *testing.T) {
+	rootDirectory, err := os.MkdirTemp(os.TempDir(), "testDir")
+	if err != nil {
+		t.Fatal("could not create root folder")
+	}
+	defer func() {
+		if err := os.RemoveAll(rootDirectory); err != nil {
+			t.Errorf("could not delete root directory: %v", err)
+		}
+	}()
+
+	// source: rootDirectory/channel/file.mp3
+	sourceDir := filepath.Join(rootDirectory, "channel")
+	if err := os.Mkdir(sourceDir, os.ModePerm); err != nil {
+		t.Fatal("could not create source directory")
+	}
+	sourceFile, err := os.CreateTemp(sourceDir, "*.mp3")
+	if err != nil {
+		t.Fatal("could not create source file")
+	}
+	sourcePath := sourceFile.Name()
+	if err := sourceFile.Close(); err != nil {
+		t.Fatalf("could not close source file: %v", err)
+	}
+
+	targetRoot, err := os.MkdirTemp(os.TempDir(), "targetDir")
+	if err != nil {
+		t.Fatal("could not create target root")
+	}
+	defer func() {
+		if err := os.RemoveAll(targetRoot); err != nil {
+			t.Errorf("could not delete target directory: %v", err)
+		}
+	}()
+
+	result, err := MoveToTarget(sourcePath, targetRoot)
+	if err != nil {
+		t.Fatalf("MoveToTarget() error = %v", err)
+	}
+
+	expectedPath := filepath.Join(targetRoot, "channel", filepath.Base(sourcePath))
+	if result != expectedPath {
+		t.Errorf("MoveToTarget() = %q, want %q", result, expectedPath)
+	}
+	if _, err := os.Stat(result); errors.Is(err, os.ErrNotExist) {
+		t.Errorf("file not found at target path %q", result)
+	}
+	if _, err := os.Stat(sourcePath); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("source file still exists at %q after move", sourcePath)
+	}
+}
+
 func TestMoveFile(t *testing.T) {
 	rootDirectory, leftDirectory, rightDirectory, fileName := setupTestMoveEnvironment(t)
 	// clean-up

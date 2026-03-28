@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -16,13 +15,15 @@ import (
 )
 
 const (
-	twitchVodRegex     = `https://(?:www\.)?twitch\.tv/videos/(\d+)`
-	twitchClipRegex    = `https://(?:www\.)?twitch\.tv/[A-Za-z0-9_]+/clip/([A-Za-z0-9_-]+)`
-	twitchClipsRegex   = `https://clips\.twitch\.tv/([A-Za-z0-9_-]+)`
-	liveStatusLiveValue = "is_live"
-	liveStatusKeyAttribute = "live_status"
-	// ID3 tag yt-dlp uses to store the source video URL
-	videoUrlID3KeyAttribute = "purl"
+	twitchVodRegex   = `https://(?:www\.)?twitch\.tv/videos/(\d+)`
+	twitchClipRegex  = `https://(?:www\.)?twitch\.tv/[A-Za-z0-9_]+/clip/([A-Za-z0-9_-]+)`
+	twitchClipsRegex = `https://clips\.twitch\.tv/([A-Za-z0-9_-]+)`
+)
+
+var (
+	twitchVodPattern   = regexp.MustCompile(twitchVodRegex)
+	twitchClipPattern  = regexp.MustCompile(twitchClipRegex)
+	twitchClipsPattern = regexp.MustCompile(twitchClipsRegex)
 )
 
 type TwitchAudioDownloader struct {
@@ -38,16 +39,16 @@ func NewTwitchAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config
 }
 
 func (t *TwitchAudioDownloader) IsVideoSupported(url string) bool {
-	return regexp.MustCompile(twitchVodRegex).MatchString(url) ||
-		regexp.MustCompile(twitchClipRegex).MatchString(url) ||
-		regexp.MustCompile(twitchClipsRegex).MatchString(url)
+	return twitchVodPattern.MatchString(url) ||
+		twitchClipPattern.MatchString(url) ||
+		twitchClipsPattern.MatchString(url)
 }
 
 func (t *TwitchAudioDownloader) IsVideoAvailable(url string) bool {
 	slog.Info("checking video availability", "url", url)
 
 	args := t.buildBaseArgs(true)
-	args = append(args, "--print", liveStatusKeyAttribute, url)
+	args = append(args, "--print", downloader.LiveStatusKey, url)
 
 	cmd := exec.Command("yt-dlp", args...)
 	output, err := cmd.Output()
@@ -56,15 +57,9 @@ func (t *TwitchAudioDownloader) IsVideoAvailable(url string) bool {
 		return false
 	}
 
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		v := strings.TrimSpace(line)
-		if v == "" {
-			continue
-		}
-		if v == liveStatusLiveValue {
-			slog.Warn("stream is currently live; treating as unavailable", "url", url, liveStatusKeyAttribute, v)
-			return false
-		}
+	if downloader.IsLiveFromOutput(output) {
+		slog.Warn("stream is currently live; treating as unavailable", "url", url)
+		return false
 	}
 
 	return true
@@ -103,7 +98,7 @@ func (t *TwitchAudioDownloader) Download(url string, targetPath string) (string,
 	slog.Info("set metadata", "filePath", filePath)
 
 	slog.Info("moving file to target folder")
-	result, err := moveToTarget(filePath, targetPath)
+	result, err := filemanagement.MoveToTarget(filePath, targetPath)
 	if err != nil {
 		return "", err
 	}
@@ -149,7 +144,7 @@ func (t *TwitchAudioDownloader) setMetadata(fullFilePath string, sourceURL strin
 
 	metadata[downloader.PodcastDescriptionTag] = strings.ReplaceAll(metadata["synopsis"], "\n", "<br>")
 	metadata[downloader.DateTag] = metadata["date"]
-	metadata[downloader.VideoDownloadLink] = metadata[videoUrlID3KeyAttribute]
+	metadata[downloader.VideoDownloadLink] = metadata[downloader.VideoURLID3Key]
 
 	thumbnailURL, err := t.getThumbnailURL(sourceURL)
 	if err != nil {
@@ -171,40 +166,13 @@ func (t *TwitchAudioDownloader) getThumbnailURL(url string) (string, error) {
 		return "", err
 	}
 
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		if strings.HasPrefix(line, "https") {
-			return line, nil
-		}
-	}
-
-	return "", nil
+	return downloader.FirstHTTPSLineFromOutput(output), nil
 }
 
-func moveToTarget(sourcePath, targetRootPath string) (string, error) {
-	directoryName := filepath.Base(filepath.Dir(sourcePath))
-	targetSubDirectory := filepath.Join(targetRootPath, directoryName)
-	if err := os.MkdirAll(targetSubDirectory, os.ModePerm); err != nil {
-		return "", err
-	}
-
-	targetPath := filepath.Join(targetSubDirectory, filepath.Base(sourcePath))
-	if err := filemanagement.MoveFile(sourcePath, targetPath); err != nil {
-		return "", err
-	}
-	return targetPath, nil
-}
-
+// buildBaseArgs creates base arguments for yt-dlp command.
+// When simulate is true, adds --simulate and --quiet flags for dry-run operations.
 func (t *TwitchAudioDownloader) buildBaseArgs(simulate bool) []string {
-	args := make([]string, 0)
-
-	if t.cookiesConfig != nil && t.cookiesConfig.Enabled && t.cookiesConfig.CookiePath != "" {
-		if _, err := os.Stat(t.cookiesConfig.CookiePath); err == nil {
-			slog.Info("using cookie file path", "path", t.cookiesConfig.CookiePath)
-			args = append(args, "--cookies", t.cookiesConfig.CookiePath)
-		} else {
-			slog.Warn("cookie file path specified but not found", "path", t.cookiesConfig.CookiePath)
-		}
-	}
+	args := downloader.AppendCookieArgs(make([]string, 0), t.cookiesConfig)
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
