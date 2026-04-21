@@ -18,7 +18,7 @@ COPY . ./
 RUN CGO_ENABLED=1 go build -o /out/app -ldflags="-s -w" ./
 
 # Runtime stage: use the Alpine ffmpeg base image to reduce size
-FROM jrottenberg/ffmpeg:8.0-alpine
+FROM jrottenberg/ffmpeg:8.1-alpine
 
 # Install required runtime dependencies
 # - ca-certificates: TLS trust store
