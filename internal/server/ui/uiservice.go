@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"text/template"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
+	"github.com/jo-hoe/video-to-podcast-service/internal/server/requestutil"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
 	"github.com/labstack/echo/v4"
 )
@@ -22,7 +24,7 @@ type UIService struct {
 
 type PodcastItemList struct {
 	PodcastItems []*database.PodcastItem
-	Host         string
+	BaseURL      *url.URL
 	APIPath      string
 }
 
@@ -80,12 +82,12 @@ func (service *UIService) indexHandler(ctx echo.Context) (err error) {
 	}
 
 	// Get host and API path from the request
-	host := ctx.Request().Host
-	apiPath := "api" // You might want to make this configurable
+	baseURL := requestutil.BaseURL(ctx)
+	apiPath := "api"
 
 	data := PodcastItemList{
 		PodcastItems: podcastItems,
-		Host:         host,
+		BaseURL:      baseURL,
 		APIPath:      apiPath,
 	}
 
@@ -138,6 +140,6 @@ func formatDuration(milliseconds int64) string {
 }
 
 // Helper function to generate feed link for a podcast item
-func (service *UIService) getFeedLink(host, filePath string) string {
-	return service.coreservice.GetLinkToFeed(host, api.FeedsPath, filePath)
+func (service *UIService) getFeedLink(baseURL *url.URL, filePath string) string {
+	return service.coreservice.GetLinkToFeed(baseURL, api.FeedsPath, filePath)
 }

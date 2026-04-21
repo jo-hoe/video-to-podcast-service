@@ -3,6 +3,7 @@ package feed
 import (
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -36,7 +37,7 @@ func NewFeedService(
 	}
 }
 
-func (fp *FeedService) GetFeeds(host string) (feedCollector []*gofeedx.Feed, err error) {
+func (fp *FeedService) GetFeeds(baseURL *url.URL) (feedCollector []*gofeedx.Feed, err error) {
 	feedCollector = make([]*gofeedx.Feed, 0)
 
 	podcastItems, err := fp.coreservice.GetDatabaseService().GetAllPodcastItems()
@@ -46,7 +47,7 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*gofeedx.Feed, err
 
 	for _, podcastItem := range podcastItems {
 		// create feed item from podcast item
-		item, err := fp.createFeedItem(host, podcastItem)
+		item, err := fp.createFeedItem(baseURL, podcastItem)
 		if err != nil {
 			return nil, fmt.Errorf("could not create feed item: %w", err)
 		}
@@ -54,7 +55,7 @@ func (fp *FeedService) GetFeeds(host string) (feedCollector []*gofeedx.Feed, err
 		directoryName := filepath.Base(filepath.Dir(podcastItem.AudioFilePath))
 		feed := fp.getFeedWithAuthor(directoryName, feedCollector)
 		if feed == nil {
-			feed = fp.createFeed(host, directoryName, podcastItem.AudioFilePath)
+			feed = fp.createFeed(baseURL, directoryName, podcastItem.AudioFilePath)
 			feedCollector = append(feedCollector, feed)
 		}
 		feed.Items = append(feed.Items, item)
@@ -81,7 +82,7 @@ func (fp *FeedService) getFeedWithAuthor(author string, feeds []*gofeedx.Feed) *
 	return nil
 }
 
-func (fp *FeedService) createFeedItem(host string, podcastItem *database.PodcastItem) (*gofeedx.Item, error) {
+func (fp *FeedService) createFeedItem(baseURL *url.URL, podcastItem *database.PodcastItem) (*gofeedx.Item, error) {
 	fileinfo, err := os.Stat(podcastItem.AudioFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not get file info for %s: %w", podcastItem.AudioFilePath, err)
@@ -90,7 +91,7 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 		return nil, fmt.Errorf("expected file but got directory: %s", podcastItem.AudioFilePath)
 	}
 
-	link := fp.coreservice.GetLinkToAudioFile(host, fp.feedItemPath, podcastItem.AudioFilePath)
+	link := fp.coreservice.GetLinkToAudioFile(baseURL, fp.feedItemPath, podcastItem.AudioFilePath)
 
 	itemBuilder := gofeedx.NewItem(podcastItem.Title).
 		WithGUID(podcastItem.ID, "false").
@@ -106,8 +107,8 @@ func (fp *FeedService) createFeedItem(host string, podcastItem *database.Podcast
 	return itemBuilder.Build()
 }
 
-func (fp *FeedService) createFeed(host string, author string, filepath string) *gofeedx.Feed {
-	selfURL := fp.coreservice.GetLinkToFeed(host, fp.feedItemPath, filepath)
+func (fp *FeedService) createFeed(baseURL *url.URL, author string, filepath string) *gofeedx.Feed {
+	selfURL := fp.coreservice.GetLinkToFeed(baseURL, fp.feedItemPath, filepath)
 
 	feedBuilder := gofeedx.NewFeed(author).
 		WithLink(selfURL).

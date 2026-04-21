@@ -12,6 +12,7 @@ import (
 	"github.com/jo-hoe/gofeedx"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
+	"github.com/jo-hoe/video-to-podcast-service/internal/server/requestutil"
 	"github.com/labstack/echo/v4"
 )
 
@@ -112,7 +113,8 @@ func (service *APIService) validateItemPathComponents(podcastItemID string, feed
 }
 
 func (service *APIService) feedsHandler(ctx echo.Context) (err error) {
-	feeds, err := service.getFeedService().GetFeeds(ctx.Request().Host)
+	baseURL := requestutil.BaseURL(ctx)
+	feeds, err := service.getFeedService().GetFeeds(baseURL)
 	if err != nil {
 		slog.Error("failed to get feeds", "err", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get feeds")
@@ -150,7 +152,8 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 
 func (service *APIService) feedHandler(ctx echo.Context) (err error) {
 	feedTitle := ctx.Param("feedTitle")
-	result, err := service.getFeed(ctx.Request().Host, feedTitle)
+	baseURL := requestutil.BaseURL(ctx)
+	result, err := service.getFeed(baseURL, feedTitle)
 	if err != nil {
 		slog.Error("failed to get feed", "feedTitle", feedTitle, "err", err)
 		return echo.NewHTTPError(http.StatusNotFound, "feed not found")
@@ -221,12 +224,12 @@ func (*APIService) getPathAttributeValue(ctx echo.Context, attributeName string)
 	return url.PathUnescape(value)
 }
 
-func (service *APIService) getFeed(host, feedTitle string) (result *gofeedx.Feed, err error) {
+func (service *APIService) getFeed(baseURL *url.URL, feedTitle string) (result *gofeedx.Feed, err error) {
 	if feedTitle == "" {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "feedTitle is required")
 	}
 
-	feedItems, err := service.getFeedService().GetFeeds(host)
+	feedItems, err := service.getFeedService().GetFeeds(baseURL)
 	if err != nil {
 		return nil, err
 	}

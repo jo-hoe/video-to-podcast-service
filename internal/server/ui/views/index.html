@@ -96,7 +96,7 @@
                             <div class="grid"> <!-- Nested grid for RSS and Delete button -->
                                 <div>
                                     {{if .Title}}
-                                    <a href="{{getFeedLink $.Host .AudioFilePath}}" target="_blank">RSS Feed</a>
+                                    <a href="{{getFeedLink $.BaseURL .AudioFilePath}}" target="_blank">RSS Feed</a>
                                     {{else}}
                                     <span>-</span>
                                     {{end}}

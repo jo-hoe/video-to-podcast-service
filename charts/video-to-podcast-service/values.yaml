@@ -49,6 +49,8 @@ service:
 ingress:
   enabled: false
   className: ""
+  # The service respects X-Forwarded-Proto and X-Forwarded-Host headers
+  # for generating correct RSS feed URLs behind a reverse proxy.
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"

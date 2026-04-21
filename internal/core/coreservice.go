@@ -86,22 +86,21 @@ func (cs *CoreService) DeletePodcastItem(id string) error {
 	return nil
 }
 
-func (cs *CoreService) GetLinkToFeed(host string, apiPath string, audioFilePath string) string {
+func (cs *CoreService) GetLinkToFeed(baseURL *url.URL, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
-	// get first part of the path as feed title
 	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
 	if len(parts) == 0 {
 		slog.Error("audio file path does not contain a valid feed title", "audioFilePath", audioFilePath)
 		return ""
 	}
 	feedTitle := parts[0]
-	// URL encode the feed title
-	urlEncodedFeedTitle := url.PathEscape(feedTitle)
 
-	return fmt.Sprintf("http://%s/%s/%s/rss.xml", host, apiPath, urlEncodedFeedTitle)
+	result := *baseURL
+	result.Path = fmt.Sprintf("/%s/%s/rss.xml", apiPath, url.PathEscape(feedTitle))
+	return result.String()
 }
 
-func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFilePath string) string {
+func (cs *CoreService) GetLinkToAudioFile(baseURL *url.URL, apiPath string, audioFilePath string) string {
 	pathWithoutRoot := cs.getPathWithoutRoot(audioFilePath)
 	parts := strings.Split(pathWithoutRoot, string(os.PathSeparator))
 	for i, part := range parts {
@@ -109,7 +108,9 @@ func (cs *CoreService) GetLinkToAudioFile(host string, apiPath string, audioFile
 	}
 	audioUrlPath := strings.Join(parts, "/")
 
-	return fmt.Sprintf("http://%s/%s/%s", host, apiPath, audioUrlPath)
+	result := *baseURL
+	result.Path = fmt.Sprintf("/%s/%s", apiPath, audioUrlPath)
+	return result.String()
 }
 
 func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {

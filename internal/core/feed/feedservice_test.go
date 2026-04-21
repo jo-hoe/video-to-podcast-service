@@ -2,6 +2,7 @@ package feed
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -18,7 +19,7 @@ func TestCreateFeed(t *testing.T) {
 		feedItemPath      string
 		feedAudioFilePath string
 		feedAuthor        string
-		feedHost          string
+		baseURL           *url.URL
 		coreService       *core.CoreService
 	}
 	tests := []struct {
@@ -27,12 +28,12 @@ func TestCreateFeed(t *testing.T) {
 		want   *gofeedx.Feed
 	}{
 		{
-			name: "create feed test",
+			name: "create feed with http scheme",
 			fields: fields{
 				feedBasePort:      "443",
 				feedItemPath:      "v1/feeds",
 				feedAuthor:        defaultAuthor,
-				feedHost:          "localhost",
+				baseURL:           &url.URL{Scheme: "http", Host: "localhost"},
 				feedAudioFilePath: filepath.Join("c", "testDir", "audio.mp3"),
 				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c"), nil, nil),
 			},
@@ -44,6 +45,24 @@ func TestCreateFeed(t *testing.T) {
 				FeedURL:     "http://localhost/v1/feeds/testDir/rss.xml",
 			},
 		},
+		{
+			name: "create feed with https scheme",
+			fields: fields{
+				feedBasePort:      "443",
+				feedItemPath:      "v1/feeds",
+				feedAuthor:        defaultAuthor,
+				baseURL:           &url.URL{Scheme: "https", Host: "podcast.example.com"},
+				feedAudioFilePath: filepath.Join("c", "testDir", "audio.mp3"),
+				coreService:       core.NewCoreService(&database.MockDatabase{}, filepath.Join("c"), nil, nil),
+			},
+			want: &gofeedx.Feed{
+				Title:       defaultAuthor,
+				Link:        &gofeedx.Link{Href: "https://podcast.example.com/v1/feeds/testDir/rss.xml"},
+				Description: fmt.Sprintf("%s %s", defaultDescription, defaultAuthor),
+				Author:      &gofeedx.Author{Name: defaultAuthor},
+				FeedURL:     "https://podcast.example.com/v1/feeds/testDir/rss.xml",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,7 +71,7 @@ func TestCreateFeed(t *testing.T) {
 				feedBasePort: tt.fields.feedBasePort,
 				feedItemPath: tt.fields.feedItemPath,
 			}
-			if got := fp.createFeed(tt.fields.feedHost, tt.fields.feedAuthor, tt.fields.feedAudioFilePath); !reflect.DeepEqual(got, tt.want) {
+			if got := fp.createFeed(tt.fields.baseURL, tt.fields.feedAuthor, tt.fields.feedAudioFilePath); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("createFeed() = %v, want %v", got, tt.want)
 			}
 		})
