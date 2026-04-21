@@ -32,7 +32,7 @@ func parseForwarded(header string) (scheme, host string) {
 	if idx := strings.IndexByte(header, ','); idx != -1 {
 		header = header[:idx]
 	}
-	for _, part := range strings.Split(header, ";") {
+	for part := range strings.SplitSeq(header, ";") {
 		kv := strings.SplitN(strings.TrimSpace(part), "=", 2)
 		if len(kv) != 2 {
 			continue
