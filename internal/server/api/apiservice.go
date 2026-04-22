@@ -151,7 +151,10 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 }
 
 func (service *APIService) feedHandler(ctx echo.Context) (err error) {
-	feedTitle := ctx.Param("feedTitle")
+	feedTitle, err := service.getPathAttributeValue(ctx, "feedTitle")
+	if err != nil {
+		return err
+	}
 	baseURL := requestutil.BaseURL(ctx)
 	result, err := service.getFeed(baseURL, feedTitle)
 	if err != nil {
