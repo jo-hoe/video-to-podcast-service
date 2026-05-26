@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   video-to-podcast-service:
   - apiVersion: v2
+    appVersion: 1.7.2
+    created: "2026-05-26T21:03:52.199696889Z"
+    description: Service for converting videos to podcast feeds
+    digest: 170c8cc7047757475bb3298d3c2f589e2c017c6307bc6af70ac36b1c217bbb86
+    name: video-to-podcast-service
+    type: application
+    urls:
+    - https://github.com/jo-hoe/video-to-podcast-service/releases/download/video-to-podcast-service-1.7.2/video-to-podcast-service-1.7.2.tgz
+    version: 1.7.2
+  - apiVersion: v2
     appVersion: 1.7.1
     created: "2026-04-22T18:50:25.370929796Z"
     description: Service for converting videos to podcast feeds
@@ -151,4 +161,4 @@ entries:
     urls:
     - https://github.com/jo-hoe/video-to-podcast-service/releases/download/video-to-podcast-service-1.0.0/video-to-podcast-service-1.0.0.tgz
     version: 1.0.0
-generated: "2026-04-22T18:50:25.371019791Z"
+generated: "2026-05-26T21:03:52.199773473Z"
