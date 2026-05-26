@@ -17,18 +17,22 @@ COPY . ./
 # Build with CGO (required for sqlite dependency) and output to a specific location
 RUN CGO_ENABLED=1 go build -o /out/app -ldflags="-s -w" ./
 
-# Runtime stage: use the Alpine ffmpeg base image to reduce size
-FROM jrottenberg/ffmpeg:8.1-alpine
+# Runtime stage: use Alpine directly for a minimal image
+FROM alpine:3.23
 
-# Install required runtime dependencies
+# Install required runtime dependencies:
 # - ca-certificates: TLS trust store
-# - python3: runtime for yt-dlp
-# - deno: JS runtime for yt-dlp's JS operations
-# - wget: to fetch yt-dlp standalone binary (zipapp)
+# - ffmpeg: audio/video conversion
+# - python3: runtime for yt-dlp zipapp
+# - deno: JS runtime required by yt-dlp to solve YouTube's n-challenge (>= 2.3.0)
+# - sqlite-libs: runtime SQLite shared library (CGO dependency)
+# - wget: to fetch yt-dlp standalone binary
 RUN apk add --no-cache \
     ca-certificates \
+    ffmpeg \
     python3 \
     deno \
+    sqlite-libs \
     wget && \
     update-ca-certificates && \
     wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp -O /usr/local/bin/yt-dlp && \
@@ -43,9 +47,9 @@ RUN apk add --no-cache \
 # Create a non-root user and set up directories (BusyBox adduser)
 RUN adduser -D -h /home/appuser appuser && \
     mkdir -p /home/appuser/app/resources && \
-    mkdir -p /home/appuser/.cache && \
+    mkdir -p /home/appuser/.cache/deno && \
     chown -R appuser:appuser /home/appuser && \
-    chmod 755 /home/appuser/.cache
+    chmod 755 /home/appuser/.cache/deno
 
 # Set the working directory
 WORKDIR /home/appuser/app
