@@ -18,7 +18,7 @@ COPY . ./
 RUN CGO_ENABLED=1 go build -o /out/app -ldflags="-s -w" ./
 
 # Runtime stage: use Alpine directly for a minimal image
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Install required runtime dependencies:
 # - ca-certificates: TLS trust store
