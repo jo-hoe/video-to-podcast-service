@@ -1,0 +1,34 @@
+name: Update yt-dlp
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest yt-dlp release
+        id: latest
+        run: |
+          VERSION=$(gh release view --repo yt-dlp/yt-dlp --json tagName -q .tagName)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Dockerfile
+        run: |
+          sed -i "s|yt-dlp/releases/download/[0-9.]*/yt-dlp|yt-dlp/releases/download/${{ steps.latest.outputs.version }}/yt-dlp|g" Dockerfile
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: ":arrow_up: Bump yt-dlp to ${{ steps.latest.outputs.version }}"
+          title: ":arrow_up: Bump yt-dlp to ${{ steps.latest.outputs.version }}"
+          body: "Bumps [yt-dlp](https://github.com/yt-dlp/yt-dlp) to `${{ steps.latest.outputs.version }}`."
+          branch: dependabot/yt-dlp-${{ steps.latest.outputs.version }}
+          delete-branch: true
