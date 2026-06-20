@@ -35,7 +35,7 @@ RUN apk add --no-cache \
     sqlite-libs \
     wget && \
     update-ca-certificates && \
-    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.03.17/yt-dlp -O /usr/local/bin/yt-dlp && \
+    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.06.09/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
     # Verify installations
     deno --version && \
