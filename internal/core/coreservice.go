@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/config"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
@@ -207,9 +208,24 @@ func (cs *CoreService) GetFeedDirectory(audioFilePath string) (string, error) {
 
 // handleDownload performs the download and podcast item creation with improved error handling and less nesting
 func (cs *CoreService) handleDownload(url string, downloader downloader.AudioDownloader) {
-	filePath, err := downloader.Download(url, cs.audioSourceDirectory)
+	const maxDownloadAttempts = 4
+	const downloadBackoff = 30 * time.Second
+
+	var filePath string
+	var err error
+	for attempt := 1; attempt <= maxDownloadAttempts; attempt++ {
+		filePath, err = downloader.Download(url, cs.audioSourceDirectory)
+		if err == nil {
+			break
+		}
+		slog.Error("failed to download", "url", url, "attempt", attempt, "err", err)
+		if attempt < maxDownloadAttempts {
+			slog.Info("retrying download", "url", url, "backoff", downloadBackoff, "nextAttempt", attempt+1)
+			time.Sleep(downloadBackoff)
+		}
+	}
 	if err != nil {
-		slog.Error("failed to download", "url", url, "err", err)
+		slog.Warn("giving up on download after max attempts", "url", url, "attempts", maxDownloadAttempts)
 		return
 	}
 

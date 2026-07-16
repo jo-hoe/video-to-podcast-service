@@ -32,3 +32,4 @@ jobs:
           body: "Bumps [yt-dlp](https://github.com/yt-dlp/yt-dlp) to `${{ steps.latest.outputs.version }}`."
           branch: dependabot/yt-dlp-${{ steps.latest.outputs.version }}
           delete-branch: true
+          labels: automerge
