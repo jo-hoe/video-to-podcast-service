@@ -85,6 +85,36 @@ func TestExtractPathFromConnectionString_FileStripsPrefix(t *testing.T) {
 	}
 }
 
+func TestPotProvider_IsEnabled_NilReceiver(t *testing.T) {
+	var p *PotProvider
+	if p.IsEnabled() {
+		t.Fatal("expected false for nil receiver")
+	}
+}
+
+func TestPotProvider_IsEnabled_NilField(t *testing.T) {
+	p := &PotProvider{}
+	if p.IsEnabled() {
+		t.Fatal("expected false when Enabled is nil")
+	}
+}
+
+func TestPotProvider_IsEnabled_False(t *testing.T) {
+	f := false
+	p := &PotProvider{Enabled: &f}
+	if p.IsEnabled() {
+		t.Fatal("expected false when Enabled is false")
+	}
+}
+
+func TestPotProvider_IsEnabled_True(t *testing.T) {
+	tr := true
+	p := &PotProvider{Enabled: &tr}
+	if !p.IsEnabled() {
+		t.Fatal("expected true when Enabled is true")
+	}
+}
+
 func TestCreateDirectoriesFromPaths(t *testing.T) {
 	tmp := t.TempDir()
 	paths := []string{

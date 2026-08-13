@@ -148,7 +148,7 @@ affinity: {}
 # and configures yt-dlp to use the mweb player client with PO token support,
 # resolving HTTP 403 fragment errors on long YouTube videos.
 potProvider:
-  enabled: false
+  enabled: true
   image:
     repository: brainicism/bgutil-ytdlp-pot-provider
     tag: "latest"
