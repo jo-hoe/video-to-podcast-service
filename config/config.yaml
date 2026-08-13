@@ -11,3 +11,6 @@ persistence:
     mediaPath: ./mount/resources/media
     tempPath: ./tmp
     allowPartialDownloads: true
+  potProvider:
+    enabled: false
+    baseUrl: "http://127.0.0.1:4416"

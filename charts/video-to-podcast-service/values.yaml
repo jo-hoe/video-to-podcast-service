@@ -142,3 +142,22 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# PO Token provider sidecar configuration
+# When enabled, deploys brainicism/bgutil-ytdlp-pot-provider as a sidecar
+# and configures yt-dlp to use the mweb player client with PO token support,
+# resolving HTTP 403 fragment errors on long YouTube videos.
+potProvider:
+  enabled: false
+  image:
+    repository: brainicism/bgutil-ytdlp-pot-provider
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  port: 4416
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi

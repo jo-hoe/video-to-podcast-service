@@ -11,13 +11,13 @@ import (
 
 const ErrIsVideoSupported = "this downloader is not responsible for this URL '%s'"
 
-func GetVideoDownloader(url string, cookiesConfig *config.Cookies, mediaConfig *config.Media) (downloader.AudioDownloader, error) {
+func GetVideoDownloader(url string, cookiesConfig *config.Cookies, mediaConfig *config.Media, potProviderConfig *config.PotProvider) (downloader.AudioDownloader, error) {
 	twitchAudioDownloader := twitch.NewTwitchAudioDownloader(cookiesConfig, mediaConfig)
 	if twitchAudioDownloader.IsVideoSupported(url) {
 		return twitchAudioDownloader, nil
 	}
 
-	youtubeAudioDownloader := youtube.NewYoutubeAudioDownloader(cookiesConfig, mediaConfig)
+	youtubeAudioDownloader := youtube.NewYoutubeAudioDownloader(cookiesConfig, mediaConfig, potProviderConfig)
 	if youtubeAudioDownloader.IsVideoSupported(url) {
 		return youtubeAudioDownloader, nil
 	}

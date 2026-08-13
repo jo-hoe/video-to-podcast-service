@@ -61,6 +61,29 @@ spec:
               readOnly: true
             {{- end }}
             {{- end }}
+        {{- if .Values.potProvider.enabled }}
+        - name: pot-provider
+          image: "{{ .Values.potProvider.image.repository }}:{{ .Values.potProvider.image.tag }}"
+          imagePullPolicy: {{ .Values.potProvider.image.pullPolicy }}
+          ports:
+            - name: pot-provider
+              containerPort: {{ .Values.potProvider.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: pot-provider
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: pot-provider
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.potProvider.resources | nindent 12 }}
+        {{- end }}
       volumes:
         - name: config
           configMap:

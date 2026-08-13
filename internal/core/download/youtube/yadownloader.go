@@ -32,14 +32,16 @@ var (
 )
 
 type YoutubeAudioDownloader struct {
-	cookiesConfig *config.Cookies
-	mediaConfig   *config.Media
+	cookiesConfig     *config.Cookies
+	mediaConfig       *config.Media
+	potProviderConfig *config.PotProvider
 }
 
-func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media) *YoutubeAudioDownloader {
+func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media, potProviderConfig *config.PotProvider) *YoutubeAudioDownloader {
 	return &YoutubeAudioDownloader{
-		cookiesConfig: cookiesConfig,
-		mediaConfig:   mediaConfig,
+		cookiesConfig:     cookiesConfig,
+		mediaConfig:       mediaConfig,
+		potProviderConfig: potProviderConfig,
 	}
 }
 
@@ -215,17 +217,28 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(url string) bool {
 // When simulate is true, adds --simulate and --quiet flags for dry-run operations.
 func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 	args := downloader.AppendCookieArgs(make([]string, 0), y.cookiesConfig)
-
-	// Workaround: use web_safari client
-	// Remove after upstream fix of https://github.com/yt-dlp/yt-dlp/issues/12482
-	// is available and integration tests pass without this code.
-	args = append(args, "--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual")
+	args = append(args, y.buildExtractorArgs()...)
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
 	}
 
 	return args
+}
+
+// buildExtractorArgs returns the yt-dlp --extractor-args slice based on pot provider config.
+// With pot provider enabled: uses mweb client (requires PO token) and registers the HTTP provider.
+// Without pot provider: falls back to web_safari workaround (see https://github.com/yt-dlp/yt-dlp/issues/12482).
+func (y *YoutubeAudioDownloader) buildExtractorArgs() []string {
+	if y.potProviderConfig != nil && y.potProviderConfig.Enabled {
+		return []string{
+			"--extractor-args", "youtube:player_client=mweb",
+			"--extractor-args", "youtubepot-bgutilhttp:base_url=" + y.potProviderConfig.BaseURL,
+		}
+	}
+	return []string{
+		"--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual",
+	}
 }
 
 // ListIndividualVideoURLs returns individual video URLs for a given input URL.

@@ -24,6 +24,7 @@ FROM alpine:3.24
 # - ca-certificates: TLS trust store
 # - ffmpeg: audio/video conversion
 # - python3: runtime for yt-dlp zipapp
+# - py3-pip: install yt-dlp Python plugins
 # - deno: JS runtime required by yt-dlp to solve YouTube's n-challenge (>= 2.3.0)
 # - sqlite-libs: runtime SQLite shared library (CGO dependency)
 # - wget: to fetch yt-dlp standalone binary
@@ -31,12 +32,14 @@ RUN apk add --no-cache \
     ca-certificates \
     ffmpeg \
     python3 \
+    py3-pip \
     deno \
     sqlite-libs \
     wget && \
     update-ca-certificates && \
     wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
+    pip3 install --break-system-packages bgutil-ytdlp-pot-provider && \
     # Verify installations
     deno --version && \
     yt-dlp --version && \

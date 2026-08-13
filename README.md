@@ -2,8 +2,9 @@
 
 [![Test Status](https://github.com/jo-hoe/video-to-podcast-service/workflows/test/badge.svg)](https://github.com/jo-hoe/video-to-podcast-service/actions?workflow=test)
 [![Lint Status](https://github.com/jo-hoe/video-to-podcast-service/workflows/lint/badge.svg)](https://github.com/jo-hoe/video-to-podcast-service/actions?workflow=lint)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jo-hoe/video-to-podcast-service)](https://goreportcard.com/report/github.com/jo-hoe/video-to-podcast-service)
 [![Coverage Status](https://coveralls.io/repos/github/jo-hoe/video-to-podcast-service/badge.svg?branch=main)](https://coveralls.io/github/jo-hoe/video-to-podcast-service?branch=main)
+[![Image Version](https://ghcr-badge.egpl.dev/jo-hoe/video-to-podcast-service/latest_tag?trim=major&label=image&color=blue)](https://github.com/jo-hoe/video-to-podcast-service/pkgs/container/video-to-podcast-service)
+[![Chart Version](https://img.shields.io/github/v/release/jo-hoe/video-to-podcast-service?label=chart&color=blue)](https://github.com/jo-hoe/video-to-podcast-service/releases)
 
 Video To Podcast Service is a backend service that downloads video files (currently from YouTube and Twitch), extracts and converts them into audio files, and organizes them into podcast feeds accessible via RSS. The service exposes a REST API for adding new videos, listing available podcast feeds, retrieving audio files, and deleting podcast items.
 
