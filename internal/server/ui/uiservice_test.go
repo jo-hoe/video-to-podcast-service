@@ -14,7 +14,7 @@ import (
 func TestRootRedirectHandler_NoError(t *testing.T) {
 	e := echo.New()
 	mockDB := database.NewMockDatabase()
-	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil, nil)
+	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil)
 	uiService := NewUIService(coreService)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -28,7 +28,7 @@ func TestRootRedirectHandler_NoError(t *testing.T) {
 func TestRootRedirectHandler_StatusMovedPermanently(t *testing.T) {
 	e := echo.New()
 	mockDB := database.NewMockDatabase()
-	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil, nil)
+	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil)
 	uiService := NewUIService(coreService)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -42,7 +42,7 @@ func TestRootRedirectHandler_StatusMovedPermanently(t *testing.T) {
 func TestRootRedirectHandler_LocationHeaderIndex(t *testing.T) {
 	e := echo.New()
 	mockDB := database.NewMockDatabase()
-	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil, nil)
+	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil)
 	uiService := NewUIService(coreService)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -56,7 +56,7 @@ func TestRootRedirectHandler_LocationHeaderIndex(t *testing.T) {
 func TestRootRedirectIntegration_StatusMovedPermanently(t *testing.T) {
 	e := echo.New()
 	mockDB := database.NewMockDatabase()
-	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil, nil)
+	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil)
 
 	uiService := NewUIService(coreService)
 	uiService.SetUIRoutes(e)
@@ -72,7 +72,7 @@ func TestRootRedirectIntegration_StatusMovedPermanently(t *testing.T) {
 func TestRootRedirectIntegration_LocationHeaderIndex(t *testing.T) {
 	e := echo.New()
 	mockDB := database.NewMockDatabase()
-	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil, nil)
+	coreService := core.NewCoreService(mockDB, "/tmp/test", nil, nil)
 
 	uiService := NewUIService(coreService)
 	uiService.SetUIRoutes(e)

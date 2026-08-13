@@ -55,7 +55,7 @@ func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 
 	e.Validator = &genericValidator{Validator: validator.New()}
 
-	coreService := core.NewCoreService(databaseService, defaultResourcePath, &cfg.Persistence.Cookies, &cfg.Persistence.Media, &cfg.Persistence.PotProvider)
+	coreService := core.NewCoreService(databaseService, defaultResourcePath, &cfg.Persistence.Cookies, &cfg.Persistence.Media)
 
 	defaultPortStr := strconv.Itoa(cfg.Port)
 	apiService := api.NewAPIService(coreService, defaultPortStr)

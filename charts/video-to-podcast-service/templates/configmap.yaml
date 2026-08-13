@@ -20,6 +20,3 @@ data:
         tempPath: {{ .Values.media.tempPath }}
         maxParallelDownloads: {{ .Values.media.maxParallelDownloads }}
         allowPartialDownloads: {{ .Values.media.allowPartialDownloads }}
-      potProvider:
-        enabled: {{ .Values.potProvider.enabled }}
-        baseUrl: "http://127.0.0.1:{{ .Values.potProvider.port }}"

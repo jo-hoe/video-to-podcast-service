@@ -49,7 +49,7 @@ func Test_YoutubeAudioDownloader_Download_File_Properties(t *testing.T) {
 		}
 	}()
 
-	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}, nil)
+	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir})
 	result, err := y.Download(validYoutubeVideoUrl, rootDirectory)
 	if err != nil {
 		t.Fatalf("YoutubeAudioDownloader.Download() error = %v", err)
@@ -131,7 +131,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 		}
 	}()
 
-	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir}, nil)
+	y := NewYoutubeAudioDownloader(nil, &config.Media{TempPath: tempDir})
 
 	// Single video download should return a single file path and file should exist
 	singleResult, err := y.Download(validYoutubeVideoUrl, rootDirectory)
@@ -177,7 +177,7 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader(nil, nil, nil)
+	downloader := NewYoutubeAudioDownloader(nil, nil)
 
 	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
 	if isAvailable {
@@ -187,7 +187,7 @@ func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
 
 func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader(nil, nil, nil)
+	downloader := NewYoutubeAudioDownloader(nil, nil)
 
 	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
 	if !isAvailable {

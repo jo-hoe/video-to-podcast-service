@@ -32,16 +32,14 @@ var (
 )
 
 type YoutubeAudioDownloader struct {
-	cookiesConfig     *config.Cookies
-	mediaConfig       *config.Media
-	potProviderConfig *config.PotProvider
+	cookiesConfig *config.Cookies
+	mediaConfig   *config.Media
 }
 
-func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media, potProviderConfig *config.PotProvider) *YoutubeAudioDownloader {
+func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media) *YoutubeAudioDownloader {
 	return &YoutubeAudioDownloader{
-		cookiesConfig:     cookiesConfig,
-		mediaConfig:       mediaConfig,
-		potProviderConfig: potProviderConfig,
+		cookiesConfig: cookiesConfig,
+		mediaConfig:   mediaConfig,
 	}
 }
 
@@ -215,29 +213,12 @@ func (y *YoutubeAudioDownloader) IsVideoAvailable(url string) bool {
 // When simulate is true, adds --simulate and --quiet flags for dry-run operations.
 func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 	args := downloader.AppendCookieArgs(make([]string, 0), y.cookiesConfig)
-	args = append(args, y.buildExtractorArgs()...)
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
 	}
 
 	return args
-}
-
-// buildExtractorArgs returns the yt-dlp --extractor-args slice based on pot provider config.
-// Uses android_vr as primary client (no PO token required) with mweb as fallback when
-// pot provider is enabled. android_vr provides clean DASH formats without GVS token binding.
-// Without pot provider: uses web_safari with player_js_version=actual as a safe fallback.
-func (y *YoutubeAudioDownloader) buildExtractorArgs() []string {
-	if y.potProviderConfig != nil && y.potProviderConfig.IsEnabled() {
-		return []string{
-			"--extractor-args", "youtube:player_client=android_vr,mweb",
-			"--extractor-args", "youtubepot-bgutilhttp:base_url=" + y.potProviderConfig.BaseURL,
-		}
-	}
-	return []string{
-		"--extractor-args", "youtube:player_client=default,web_safari;player_js_version=actual",
-	}
 }
 
 // ListIndividualVideoURLs returns individual video URLs for a given input URL.

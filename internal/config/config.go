@@ -19,21 +19,9 @@ type Config struct {
 
 // Persistence holds all persistence-related configuration
 type Persistence struct {
-	Database    Database    `yaml:"database"`
-	Cookies     Cookies     `yaml:"cookies"`
-	Media       Media       `yaml:"media"`
-	PotProvider PotProvider `yaml:"potProvider"`
-}
-
-// PotProvider holds configuration for the bgutil yt-dlp PO token provider
-type PotProvider struct {
-	Enabled *bool  `yaml:"enabled"`
-	BaseURL string `yaml:"baseUrl"`
-}
-
-// IsEnabled returns true if the pot provider is enabled (defaults to true when unset).
-func (p *PotProvider) IsEnabled() bool {
-	return p != nil && p.Enabled != nil && *p.Enabled
+	Database Database `yaml:"database"`
+	Cookies  Cookies  `yaml:"cookies"`
+	Media    Media    `yaml:"media"`
 }
 
 // Database holds database configuration
@@ -208,16 +196,6 @@ func setDefaults(config *Config) error {
 		config.Persistence.Media.MaxParallelDownloads = 1
 	}
 
-	// Set default pot provider base URL
-	if config.Persistence.PotProvider.BaseURL == "" {
-		config.Persistence.PotProvider.BaseURL = "http://127.0.0.1:4416"
-	}
-	// Default pot provider to enabled
-	if config.Persistence.PotProvider.Enabled == nil {
-		t := true
-		config.Persistence.PotProvider.Enabled = &t
-	}
-
 	return nil
 }
 
@@ -234,8 +212,6 @@ func logLoadedConfig(config *Config) {
 	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
 	slog.Info("Max Parallel Downloads", "value", config.Persistence.Media.MaxParallelDownloads)
 	slog.Info("Allow Partial Downloads", "value", config.Persistence.Media.AllowPartialDownloads)
-	slog.Info("PotProvider Enabled", "value", config.Persistence.PotProvider.IsEnabled())
-	slog.Info("PotProvider BaseURL", "value", config.Persistence.PotProvider.BaseURL)
 	slog.Info("============================")
 }
 
