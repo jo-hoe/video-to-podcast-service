@@ -163,11 +163,9 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, url string) ([
 	)
 
 	args = append(args,
-		// Workaround: using lower resolution to avoid issues with download of videos
-		// Remove when after upstream fix of
-		// https://github.com/yt-dlp/yt-dlp/issues/12482
-		// is available and integration tests pass without this code.
-		"--format", "bestaudio/best[height<=360]",
+		// Prefer m4a/HLS formats over WebM to avoid mweb GVS 403 errors.
+		// web_safari provides HLS (m3u8) formats that do not require a GVS PO token.
+		"--format", "bestaudio[ext=m4a]/bestaudio/best[height<=360]",
 		"--output", tempFilenameTemplate,
 		url,
 	)
@@ -227,13 +225,13 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 }
 
 // buildExtractorArgs returns the yt-dlp --extractor-args slice based on pot provider config.
-// With pot provider enabled: uses mweb for PO token authenticated requests combined with
-// web_safari HLS formats (which do not require a PO token for GVS) as a reliable fallback.
+// Uses android_vr as primary client (no PO token required) with mweb as fallback when
+// pot provider is enabled. android_vr provides clean DASH formats without GVS token binding.
 // Without pot provider: uses web_safari with player_js_version=actual as a safe fallback.
 func (y *YoutubeAudioDownloader) buildExtractorArgs() []string {
 	if y.potProviderConfig != nil && y.potProviderConfig.IsEnabled() {
 		return []string{
-			"--extractor-args", "youtube:player_client=mweb,web_safari",
+			"--extractor-args", "youtube:player_client=android_vr,mweb",
 			"--extractor-args", "youtubepot-bgutilhttp:base_url=" + y.potProviderConfig.BaseURL,
 		}
 	}
