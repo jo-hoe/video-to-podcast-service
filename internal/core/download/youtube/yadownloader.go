@@ -227,13 +227,13 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 }
 
 // buildExtractorArgs returns the yt-dlp --extractor-args slice based on pot provider config.
-// With pot provider enabled: uses mweb client (requires PO token) and registers the HTTP provider.
-// Without pot provider: uses web_safari client fallback (see https://github.com/yt-dlp/yt-dlp/issues/12482).
-// Deno is used automatically by yt-dlp as the default JS runtime when available.
+// With pot provider enabled: uses mweb for PO token authenticated requests combined with
+// web_safari HLS formats (which do not require a PO token for GVS) as a reliable fallback.
+// Without pot provider: uses web_safari with player_js_version=actual as a safe fallback.
 func (y *YoutubeAudioDownloader) buildExtractorArgs() []string {
 	if y.potProviderConfig != nil && y.potProviderConfig.IsEnabled() {
 		return []string{
-			"--extractor-args", "youtube:player_client=mweb",
+			"--extractor-args", "youtube:player_client=mweb,web_safari",
 			"--extractor-args", "youtubepot-bgutilhttp:base_url=" + y.potProviderConfig.BaseURL,
 		}
 	}
