@@ -156,8 +156,10 @@ func (y *YoutubeAudioDownloader) download(targetDirectory string, url string) ([
 		"--embed-metadata",
 		"--no-progress",
 		"--sponsorblock-remove", sponsorBlockCategories,
-		// Ignore SponsorBlock API errors so downloads continue even when the API is unavailable
-		"--ignore-errors",
+		// Abort if any fragment is unavailable (e.g. 403) so the download
+		// fails cleanly and the retry logic can re-fetch fresh stream URLs.
+		// SponsorBlock API failures are PostProcessingErrors and are unaffected by this flag.
+		"--abort-on-unavailable-fragments",
 	)
 
 	args = append(args,
