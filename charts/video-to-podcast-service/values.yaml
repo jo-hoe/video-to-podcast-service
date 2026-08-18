@@ -162,6 +162,10 @@ ytDlp:
     storageClass: ""
     size: 128Mi
 
+  # -- Enable verbose yt-dlp output in logs (includes PO token and plugin debug lines).
+  # Useful for diagnosing download failures. Keep false in production to reduce log noise.
+  verbose: false
+
   # -- PO token sidecar configuration.
   # The bgutil-ytdlp-pot-provider HTTP server runs as a sidecar container and
   # automatically supplies Proof-of-Origin tokens to yt-dlp, which makes traffic

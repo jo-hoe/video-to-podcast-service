@@ -15,6 +15,12 @@ type Config struct {
 	Port        int         `yaml:"port"`
 	LogLevel    string      `yaml:"logLevel"`
 	Persistence Persistence `yaml:"persistence"`
+	YtDlp       YtDlp       `yaml:"ytDlp"`
+}
+
+// YtDlp holds yt-dlp specific configuration
+type YtDlp struct {
+	Verbose bool `yaml:"verbose"`
 }
 
 // Persistence holds all persistence-related configuration
@@ -212,6 +218,7 @@ func logLoadedConfig(config *Config) {
 	slog.Info("Temp Path", "value", config.Persistence.Media.TempPath)
 	slog.Info("Max Parallel Downloads", "value", config.Persistence.Media.MaxParallelDownloads)
 	slog.Info("Allow Partial Downloads", "value", config.Persistence.Media.AllowPartialDownloads)
+	slog.Info("yt-dlp Verbose", "value", config.YtDlp.Verbose)
 	slog.Info("============================")
 }
 

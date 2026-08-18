@@ -10,7 +10,7 @@ import (
 func TestGetVideoDownloader_ReturnsYouTubeDownloader(t *testing.T) {
 	url := "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
-	downloader, err := GetVideoDownloader(url, nil, nil)
+	downloader, err := GetVideoDownloader(url, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("GetVideoDownloader() unexpected error: %v", err)
 	}
@@ -22,7 +22,7 @@ func TestGetVideoDownloader_ReturnsYouTubeDownloader(t *testing.T) {
 func TestGetVideoDownloader_ReturnsTwitchDownloader(t *testing.T) {
 	url := "https://www.twitch.tv/videos/2345678901"
 
-	downloader, err := GetVideoDownloader(url, nil, nil)
+	downloader, err := GetVideoDownloader(url, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("GetVideoDownloader() unexpected error: %v", err)
 	}
@@ -34,7 +34,7 @@ func TestGetVideoDownloader_ReturnsTwitchDownloader(t *testing.T) {
 func TestGetVideoDownloader_UnsupportedURL_ReturnsError(t *testing.T) {
 	url := "https://unsupport.com/123456789"
 
-	downloader, err := GetVideoDownloader(url, nil, nil)
+	downloader, err := GetVideoDownloader(url, nil, nil, nil)
 	if err == nil {
 		t.Fatalf("GetVideoDownloader() expected error for unsupported url, got nil")
 	}

@@ -21,14 +21,16 @@ type CoreService struct {
 	audioSourceDirectory string
 	cookiesConfig        *config.Cookies
 	mediaConfig          *config.Media
+	ytDlpConfig          *config.YtDlp
 }
 
-func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string, cookiesConfig *config.Cookies, mediaConfig *config.Media) *CoreService {
+func NewCoreService(databaseService database.DatabaseService, audioSourceDirectory string, cookiesConfig *config.Cookies, mediaConfig *config.Media, ytDlpConfig *config.YtDlp) *CoreService {
 	return &CoreService{
 		databaseService:      databaseService,
 		audioSourceDirectory: audioSourceDirectory,
 		cookiesConfig:        cookiesConfig,
 		mediaConfig:          mediaConfig,
+		ytDlpConfig:          ytDlpConfig,
 	}
 }
 
@@ -121,7 +123,7 @@ func (cs *CoreService) getPathWithoutRoot(audioFilePath string) string {
 }
 
 func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
-	downloaderInstance, err := download.GetVideoDownloader(url, cs.cookiesConfig, cs.mediaConfig)
+	downloaderInstance, err := download.GetVideoDownloader(url, cs.cookiesConfig, cs.mediaConfig, cs.ytDlpConfig)
 	if err != nil {
 		return fmt.Errorf("url %s not supported", url)
 	}

@@ -20,3 +20,5 @@ data:
         tempPath: {{ .Values.media.tempPath }}
         maxParallelDownloads: {{ .Values.media.maxParallelDownloads }}
         allowPartialDownloads: {{ .Values.media.allowPartialDownloads }}
+    ytDlp:
+      verbose: {{ .Values.ytDlp.verbose }}

@@ -17,7 +17,7 @@ import (
 
 func newTestAPIService(db database.DatabaseService, mediaDir string, cookies *config.Cookies) *APIService {
 	mediaConfig := &config.Media{MediaPath: mediaDir}
-	coreService := core.NewCoreService(db, mediaDir, cookies, mediaConfig)
+	coreService := core.NewCoreService(db, mediaDir, cookies, mediaConfig, nil)
 	return NewAPIService(coreService, "8080")
 }
 

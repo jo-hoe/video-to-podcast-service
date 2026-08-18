@@ -34,12 +34,14 @@ var (
 type YoutubeAudioDownloader struct {
 	cookiesConfig *config.Cookies
 	mediaConfig   *config.Media
+	ytDlpConfig   *config.YtDlp
 }
 
-func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media) *YoutubeAudioDownloader {
+func NewYoutubeAudioDownloader(cookiesConfig *config.Cookies, mediaConfig *config.Media, ytDlpConfig *config.YtDlp) *YoutubeAudioDownloader {
 	return &YoutubeAudioDownloader{
 		cookiesConfig: cookiesConfig,
 		mediaConfig:   mediaConfig,
+		ytDlpConfig:   ytDlpConfig,
 	}
 }
 
@@ -218,9 +220,7 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
-	} else {
-		// --verbose is only added for real downloads (not simulate/dry-run) so
-		// that PO token activity and plugin debug output appear in the pod logs.
+	} else if y.ytDlpConfig != nil && y.ytDlpConfig.Verbose {
 		args = append(args, "--verbose")
 	}
 
