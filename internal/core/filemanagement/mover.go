@@ -69,37 +69,35 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := inputFile.Close(); err != nil {
-			slog.Warn("Error closing input file", "err", err)
+	inputClosed := false
+	closeInput := func() {
+		if !inputClosed {
+			inputClosed = true
+			if cerr := inputFile.Close(); cerr != nil {
+				slog.Warn("Error closing input file", "err", cerr)
+			}
 		}
-	}()
+	}
+	defer closeInput()
+
 	fileName := filepath.Base(inputFile.Name())
 
 	if doesFileExist(targetPath) {
 		slog.Info("file already exists at target", "fileName", fileName)
 		slog.Info("creating hash of original file")
-		// check if this is the same file
 		filesEqual, err := areFileEqual(sourcePath, targetPath)
 		if err != nil {
 			return err
 		}
 		if filesEqual {
 			slog.Info("hash equal, deleting file at origin")
-			// same file already exists and can be removed from source
-			err = os.Remove(sourcePath)
-			if err != nil {
-				return err
-			}
-			// stop process
-			return nil
-		} else {
-			slog.Info("hash not equal, deleting file from target folder")
-			// remove destination file and continue
-			err = os.Remove(targetPath)
-			if err != nil {
-				return err
-			}
+			// Must close inputFile before os.Remove on Windows
+			closeInput()
+			return os.Remove(sourcePath)
+		}
+		slog.Info("hash not equal, deleting file from target folder")
+		if err = os.Remove(targetPath); err != nil {
+			return err
 		}
 	}
 
@@ -110,43 +108,32 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	}
 	defer func() {
 		slog.Info("securely cleaning cache and closing file")
-		fileClosingError := outputFile.Close()
-		if fileClosingError != nil {
-			slog.Warn("could not close file")
+		if cerr := outputFile.Close(); cerr != nil {
+			slog.Warn("could not close output file", "err", cerr)
 			return
 		}
 
-		// check if copying was successful
 		if err != nil {
 			return
 		}
 
 		slog.Info("renaming temp file", "targetPath", targetPath)
-		// rename file to actual file name
 		err = os.Rename(tempFileName, targetPath)
 		if err != nil {
 			slog.Error("could not rename file", "err", err)
 			return
 		}
 
-		// currently double-check of file hash
-		// target/source file has been omitted
-
 		slog.Info("file moved successfully", "fileName", fileName)
-		// The copy was successful, so now delete the original file
 		slog.Info("deleting file from source folder", "fileName", fileName)
-		err = os.Remove(sourcePath)
-		if err != nil {
-			slog.Warn("could not close file", "err", err)
+		// Must close inputFile before os.Remove on Windows
+		closeInput()
+		if rerr := os.Remove(sourcePath); rerr != nil {
+			slog.Warn("could not remove source file", "err", rerr)
+			err = rerr
 		}
-
 	}()
 
-	// actual file copy
 	_, err = io.Copy(outputFile, inputFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
