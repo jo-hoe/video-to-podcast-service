@@ -37,6 +37,9 @@ RUN apk add --no-cache \
     update-ca-certificates && \
     wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
+    # Pre-create user-writable bin dir for nightly self-updates
+    mkdir -p /home/appuser/bin && \
+    cp /usr/local/bin/yt-dlp /home/appuser/bin/yt-dlp && \
     # Verify installations
     deno --version && \
     yt-dlp --version && \
@@ -66,6 +69,9 @@ USER appuser
 
 # Set HOME environment variable explicitly
 ENV HOME=/home/appuser
+
+# Ensure user-writable yt-dlp bin dir takes precedence for self-updates
+ENV PATH="/home/appuser/bin:${PATH}"
 
 # Entrypoint script: optionally updates yt-dlp to nightly before starting the app
 COPY --chown=appuser:appuser docker-entrypoint.sh ./docker-entrypoint.sh
