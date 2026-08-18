@@ -218,6 +218,10 @@ func (y *YoutubeAudioDownloader) buildBaseArgs(simulate bool) []string {
 
 	if simulate {
 		args = append(args, "--simulate", "--quiet")
+	} else {
+		// --verbose is only added for real downloads (not simulate/dry-run) so
+		// that PO token activity and plugin debug output appear in the pod logs.
+		args = append(args, "--verbose")
 	}
 
 	return args

@@ -10,7 +10,6 @@
     <script src="https://unpkg.com/htmx.org/dist/htmx.min.js"></script>
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <style>
-        /* Spinner only - Keeping the one for form submission */
         .spinner {
             display: none;
         }
@@ -25,32 +24,30 @@
             vertical-align: middle;
         }
 
-        /* Style for the disabled button */
         button.htmx-request {
             pointer-events: none;
-            /* Disables click events */
             opacity: 0.6;
-            /* Visually dims the button */
             cursor: not-allowed;
-            /* Changes cursor to indicate it's not clickable */
         }
 
-        /* Ensure images within the grid column don't overflow */
         .grid>div>img,
         .grid>div>a>img {
             max-width: 100%;
             height: auto;
         }
 
-        /* Adjust thumbnail max-height for better layout within card */
         .thumbnail-container img {
             max-height: 16em;
-            /* Adjust as needed */
             width: auto;
             display: block;
-            /* Remove extra space below image */
             margin: 0 auto;
-            /* Center image if smaller than container */
+        }
+
+        #url-error {
+            color: red;
+            font-size: 0.875em;
+            margin-top: 0.25em;
+            display: none;
         }
     </style>
 </head>
@@ -60,99 +57,125 @@
         <h1>Video to Podcast Service</h1>
 
         <form id="addItemsForm" hx-post="/htmx/addItem" hx-trigger="submit" hx-target="#result" hx-swap="innerHTML"
-            hx-encoding="json" hx-indicator="#loading-indicator, #submit-button">
+            hx-encoding="json" hx-indicator="#loading-indicator, #submit-button"
+            hx-on::response-error="htmx.swap('#result', event.detail.xhr.responseText, {swapStyle: 'innerHTML'})"
+            hx-on::send-error="document.getElementById('result').innerHTML='<span style=\'color:red\'>Network error — could not reach server.</span>'">
             <input type="url" id="videoUrl" name="url" required placeholder="Enter video URL">
+            <small id="url-error">Please enter a valid URL (must start with http:// or https://).</small>
             <button type="submit" id="submit-button">Submit</button>
             <span id="loading-indicator" class="spinner" aria-busy="true" style="margin-left:10px;"></span>
         </form>
         <section id="result"></section>
-        <section>
-            <h2>Available Items</h2>
-            {{if .PodcastItems}}
-            <div>
-                {{range .PodcastItems}}
-                <article id="podcast-{{.ID}}">
-                    <div class="grid">
-                        <div class="thumbnail-container"
-                            style="display: flex; align-items: center; justify-content: center;">
-                            {{if .Thumbnail}}
-                            {{if .VideoURL}}
-                            <a href="{{.VideoURL}}" target="_blank">
-                                <img src="{{.Thumbnail}}" alt="Thumbnail">
-                            </a>
-                            {{else}}
-                            <img src="{{.Thumbnail}}" alt="Thumbnail">
-                            {{end}}
-                            {{else}}
-                            <p>No Image</p>
-                            {{end}}
-                        </div>
-                        <div>
-                            <h3>{{.Title}}</h3>
-                            <p><strong>Author:</strong> {{.Author}}</p>
-                            <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
-                            <p><strong>Updated:</strong> <time class="updated-time" datetime="{{.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}"></time></p>
 
-                            <div class="grid"> <!-- Nested grid for RSS and Delete button -->
-                                <div>
-                                    {{if .Title}}
-                                    <a href="{{getFeedLink $.BaseURL .AudioFilePath}}" target="_blank">RSS Feed</a>
-                                    {{else}}
-                                    <span>-</span>
-                                    {{end}}
-                                </div>
-                                <div style="text-align: right;"> <!-- Align delete button to the right -->
-                                    <form method="DELETE"
-                                        hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
-                                        hx-target="#podcast-{{.ID}}" hx-swap="outerHTML remove">
-                                        <button type="submit" aria-label="Delete" title="Delete">
-                                            &#128465;
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </article>
-                {{end}}
-            </div>
-            {{else}}
-            <p><em>No podcast items found. Add a video URL above to get started!</em></p>
-            {{end}}
+        <section id="items-section"
+            hx-get="/htmx/items"
+            hx-trigger="every 10s"
+            hx-swap="innerHTML">
+            {{ template "items" . }}
         </section>
     </main>
 <script>
-    // Format "Updated" timestamps in the browser's local timezone with format YYYY-MM-DD HH:MM
     function renderUpdatedTimes(root) {
         const scope = root || document;
         const times = scope.querySelectorAll('time.updated-time');
         times.forEach(function (t) {
             const iso = t.getAttribute('datetime');
             if (!iso) return;
-            const d = new Date(iso); // Parsed as UTC if Z/offset provided; displayed in local time
+            const d = new Date(iso);
             if (isNaN(d.getTime())) {
-                t.textContent = iso; // Fallback to raw value
+                t.textContent = iso;
                 return;
             }
             const pad = (n) => String(n).padStart(2, '0');
             const local = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
             t.textContent = local;
-            t.title = d.toString(); // Hover shows full localized string
+            t.title = d.toString();
         });
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         renderUpdatedTimes(document);
+
+        // Client-side URL validation: show inline error without blocking submit
+        const input = document.getElementById('videoUrl');
+        const urlError = document.getElementById('url-error');
+        input.addEventListener('input', function () {
+            if (input.validity.typeMismatch || input.validity.valueMissing) {
+                urlError.style.display = 'block';
+            } else {
+                urlError.style.display = 'none';
+            }
+        });
     });
 
-    // Ensure times are formatted for any HTMX-updated fragments as well
-    if (document.body && document.body.addEventListener) {
-        document.body.addEventListener('htmx:afterSwap', function (evt) {
-            renderUpdatedTimes(evt.target || document);
-        });
-    }
+    document.body.addEventListener('htmx:afterSwap', function (evt) {
+        renderUpdatedTimes(evt.target || document);
+    });
+
+    // Suppress polling errors from being logged as hard failures in the console
+    document.body.addEventListener('htmx:responseError', function (evt) {
+        if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath === '/htmx/items') {
+            console.warn('items poll failed:', evt.detail.xhr.status);
+            evt.preventDefault();
+        }
+    });
 </script>
 </body>
 
 </html>
+{{ end }}
+
+{{ block "items" . }}
+<h2>Available Items</h2>
+{{if .PodcastItems}}
+<div>
+    {{range .PodcastItems}}
+    <article id="podcast-{{.ID}}">
+        <div class="grid">
+            <div class="thumbnail-container"
+                style="display: flex; align-items: center; justify-content: center;">
+                {{if .Thumbnail}}
+                {{if .VideoURL}}
+                <a href="{{.VideoURL}}" target="_blank">
+                    <img src="{{.Thumbnail}}" alt="Thumbnail">
+                </a>
+                {{else}}
+                <img src="{{.Thumbnail}}" alt="Thumbnail">
+                {{end}}
+                {{else}}
+                <p>No Image</p>
+                {{end}}
+            </div>
+            <div>
+                <h3>{{.Title}}</h3>
+                <p><strong>Author:</strong> {{.Author}}</p>
+                <p><strong>Duration:</strong> {{formatDuration .DurationInMilliseconds}}</p>
+                <p><strong>Updated:</strong> <time class="updated-time" datetime="{{.UpdatedAt.Format "2006-01-02T15:04:05Z07:00"}}"></time></p>
+
+                <div class="grid">
+                    <div>
+                        {{if .Title}}
+                        <a href="{{getFeedLink $.BaseURL .AudioFilePath}}" target="_blank">RSS Feed</a>
+                        {{else}}
+                        <span>-</span>
+                        {{end}}
+                    </div>
+                    <div style="text-align: right;">
+                        <form method="DELETE"
+                            hx-delete="/v1/feeds/{{getFeedTitleFromPath .AudioFilePath}}/{{.ID}}"
+                            hx-target="#podcast-{{.ID}}" hx-swap="outerHTML">
+                            <button type="submit" aria-label="Delete" title="Delete">
+                                &#128465;
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </article>
+    {{end}}
+</div>
+{{else}}
+<p><em>No podcast items found. Add a video URL above to get started!</em></p>
+{{end}}
 {{ end }}

@@ -129,7 +129,7 @@ cookies:
   # Note: secretName takes precedence over cookieContent
   secretName: ""
 
-# Media configuration
+# -- Media configuration
 media:
   # Paths are relative to the mount point in the container
   mediaPath: "/app/data/resources/media"
@@ -145,6 +145,46 @@ affinity: {}
 
 # -- yt-dlp configuration
 ytDlp:
-  # -- Run "yt-dlp --update-to nightly" on container start.
-  # Enable when the stable release is broken and a nightly fix is available.
+  # -- Pull the nightly build of yt-dlp instead of the version baked into the image.
+  # The initContainer runs as root and writes the binary to a dedicated PVC that is
+  # mounted read-only by the main container, so appuser never needs write access.
+  # Enable when the stable release is broken and a nightly fix is already available.
   updateToNightly: false
+
+  # -- PVC used by the initContainer to store the yt-dlp binary.
+  # A separate small PVC avoids coupling the binary to the app data volume.
+  # The PVC is not a cache — it is a handoff mechanism between the initContainer
+  # (runs as root, writes the binary) and the main container (reads it as appuser).
+  # The initContainer re-downloads on every pod start, so a pod restart always
+  # picks up the latest build in the selected channel. This is intentional:
+  # when updateToNightly is true a restart is the mechanism to get a newer nightly.
+  binaryPvc:
+    storageClass: ""
+    size: 128Mi
+
+  # -- PO token sidecar configuration.
+  # The bgutil-ytdlp-pot-provider HTTP server runs as a sidecar container and
+  # automatically supplies Proof-of-Origin tokens to yt-dlp, which makes traffic
+  # appear more legitimate to YouTube and reduces 403 errors.
+  #
+  # Failure behavior (by design):
+  # - Sidecar crash: K8s restarts it via the liveness probe. While it is down
+  #   the bgutil plugin raises PoTokenProviderRejectedRequest (not a hard error)
+  #   so yt-dlp continues without a PO token — same behavior as without sidecar.
+  # - Invalid tokens (e.g. YouTube updates Botguard): downloads may 403, same as
+  #   without the sidecar. Use updateToNightly as the first mitigation lever.
+  # - Plugin goes unmaintained: graceful degradation as above. No hard dependency.
+  poTokenSidecar:
+    # -- Enable the sidecar container that provides PO tokens to yt-dlp.
+    enabled: true
+    image:
+      repository: brainicism/bgutil-ytdlp-pot-provider
+      tag: "latest"
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi

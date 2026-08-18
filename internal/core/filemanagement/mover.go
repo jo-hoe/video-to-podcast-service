@@ -87,10 +87,6 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 		if filesEqual {
 			slog.Info("hash equal, deleting file at origin")
 			// same file already exists and can be removed from source
-			err = inputFile.Close()
-			if err != nil {
-				return err
-			}
 			err = os.Remove(sourcePath)
 			if err != nil {
 				return err
@@ -110,9 +106,6 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 	tempFileName := fmt.Sprintf("%s.part", targetPath)
 	outputFile, err := os.Create(tempFileName)
 	if err != nil {
-		if err := inputFile.Close(); err != nil {
-			slog.Warn("Error closing input file", "err", err)
-		}
 		return err
 	}
 	defer func() {
@@ -151,9 +144,6 @@ func MoveFile(sourcePath, targetPath string) (err error) {
 
 	// actual file copy
 	_, err = io.Copy(outputFile, inputFile)
-	if err := inputFile.Close(); err != nil {
-		slog.Warn("Error closing input file", "err", err)
-	}
 	if err != nil {
 		return err
 	}

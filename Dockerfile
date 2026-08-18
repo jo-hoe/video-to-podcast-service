@@ -37,9 +37,14 @@ RUN apk add --no-cache \
     update-ca-certificates && \
     wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
-    # Pre-create user-writable bin dir for nightly self-updates
-    mkdir -p /home/appuser/bin && \
-    cp /usr/local/bin/yt-dlp /home/appuser/bin/yt-dlp && \
+    # Install bgutil-ytdlp-pot-provider plugin for PO token support.
+    # The plugin is installed into the yt-dlp user plugin directory so it is
+    # picked up automatically. When the bgutil HTTP sidecar is unreachable the
+    # plugin raises PoTokenProviderRejectedRequest (not a hard error), so
+    # yt-dlp falls back gracefully to running without a PO token.
+    mkdir -p /home/appuser/.yt-dlp/plugins && \
+    wget https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/latest/download/bgutil-ytdlp-pot-provider.zip \
+        -O /home/appuser/.yt-dlp/plugins/bgutil-ytdlp-pot-provider.zip && \
     # Verify installations
     deno --version && \
     yt-dlp --version && \
@@ -60,9 +65,13 @@ WORKDIR /home/appuser/app
 # Copy the built application from the build stage
 COPY --from=build /out/app ./app
 
+# Copy yt-dlp config (sets bgutil POT provider base_url for the sidecar)
+COPY config/yt-dlp.conf /home/appuser/.config/yt-dlp/config
+
 # Ensure the executable has execute permissions and set ownership
 RUN chmod +x ./app && \
-    chown -R appuser:appuser /home/appuser/app
+    chown -R appuser:appuser /home/appuser/app && \
+    chown -R appuser:appuser /home/appuser/.config
 
 # Set the user to the non-root user
 USER appuser
@@ -70,11 +79,5 @@ USER appuser
 # Set HOME environment variable explicitly
 ENV HOME=/home/appuser
 
-# Ensure user-writable yt-dlp bin dir takes precedence for self-updates
-ENV PATH="/home/appuser/bin:${PATH}"
-
-# Entrypoint script: optionally updates yt-dlp to nightly before starting the app
-COPY --chown=appuser:appuser docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# ENTRYPOINT should point to the executable
+ENTRYPOINT ["./app"]

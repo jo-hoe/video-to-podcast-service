@@ -3,6 +3,9 @@ services:
     build: .
     image: video-to-podcast-service
     user: "0:0"
+    # Note: in Kubernetes the yt-dlp binary is managed by an initContainer and
+    # a dedicated PVC (supports nightly builds via ytDlp.updateToNightly).
+    # In Compose the image-baked stable binary is used — sufficient for local dev.
     ports:
       - "8080:8080"
     volumes:
@@ -10,6 +13,9 @@ services:
       - "./volume/resources/:/home/appuser/app/mount/resources"
       - "./volume/database/:/home/appuser/app/mount/database"
       - "./volume/cookies/:/home/appuser/app/mount/cookies"
+      # Override the image-baked yt-dlp config so the bgutil plugin points at
+      # the Compose service name instead of localhost (which is K8s-specific)
+      - "./config/yt-dlp.compose.conf:/home/appuser/.config/yt-dlp/config:ro"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://video-to-podcast-service:8080"]
       interval: 12s
@@ -18,3 +24,13 @@ services:
       timeout: 12s
     environment:
       PORT: "8080"
+    depends_on:
+      - bgutil-pot-provider
+
+  # Supplies Proof-of-Origin tokens to yt-dlp via the bgutil plugin.
+  # If this service is down, yt-dlp falls back gracefully to running without
+  # a PO token — no hard dependency. Remove this service to disable PO tokens.
+  bgutil-pot-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    ports:
+      - "4416:4416"

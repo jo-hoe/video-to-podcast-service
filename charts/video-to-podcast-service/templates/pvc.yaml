@@ -19,3 +19,20 @@ spec:
     requests:
       storage: {{ .Values.persistence.size }}
 {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "video-to-podcast-service.fullname" . }}-ytdlp-bin
+  labels:
+    {{- include "video-to-podcast-service.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.ytDlp.binaryPvc.storageClass }}
+  storageClassName: {{ .Values.ytDlp.binaryPvc.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.ytDlp.binaryPvc.size }}
+

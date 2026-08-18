@@ -25,7 +25,6 @@ type UIService struct {
 type PodcastItemList struct {
 	PodcastItems []*database.PodcastItem
 	BaseURL      *url.URL
-	APIPath      string
 }
 
 func NewUIService(coreservice *core.CoreService) *UIService {
@@ -48,7 +47,8 @@ func (service *UIService) SetUIRoutes(e *echo.Echo) {
 	// Set UI routes
 	e.GET("/", service.rootRedirectHandler) // Redirect root to index.html
 	e.GET(MainPageName, service.indexHandler)
-	e.POST("/htmx/addItem", service.htmxAddItemHandler) // new HTMX endpoint
+	e.POST("/htmx/addItem", service.htmxAddItemHandler)
+	e.GET("/htmx/items", service.htmxItemsHandler)
 	e.GET("/icon.svg", service.iconHandler)
 }
 
@@ -63,35 +63,38 @@ func getFeedTitleFromPath(path string) string {
 	return filepath.Base(filepath.Dir(path))
 }
 
-func (service *UIService) indexHandler(ctx echo.Context) (err error) {
-	// Get all podcast items from database
+func (service *UIService) buildItemList(ctx echo.Context) (*PodcastItemList, error) {
 	podcastItems, err := service.coreservice.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
-		// Log error but don't fail the page load
 		podcastItems = []*database.PodcastItem{}
 	}
-
-	// Sort by UpdatedAt in descending order (most recent first)
 	sort.Slice(podcastItems, func(i, j int) bool {
 		return podcastItems[i].UpdatedAt.After(podcastItems[j].UpdatedAt)
 	})
-
-	// reduce the number of results to 128 items
 	if len(podcastItems) > 128 {
 		podcastItems = podcastItems[:128]
 	}
-
-	// Get host and API path from the request
-	baseURL := requestutil.BaseURL(ctx)
-	apiPath := "api"
-
-	data := PodcastItemList{
+	return &PodcastItemList{
 		PodcastItems: podcastItems,
-		BaseURL:      baseURL,
-		APIPath:      apiPath,
-	}
+		BaseURL:      requestutil.BaseURL(ctx),
+	}, nil
+}
 
+func (service *UIService) indexHandler(ctx echo.Context) (err error) {
+	data, err := service.buildItemList(ctx)
+	if err != nil {
+		return err
+	}
 	return ctx.Render(http.StatusOK, "index", data)
+}
+
+// htmxItemsHandler renders only the items list fragment for polling-based auto-refresh.
+func (service *UIService) htmxItemsHandler(ctx echo.Context) error {
+	data, err := service.buildItemList(ctx)
+	if err != nil {
+		return ctx.HTML(http.StatusInternalServerError, "<p>Error loading items.</p>")
+	}
+	return ctx.Render(http.StatusOK, "items", data)
 }
 
 // New handler for HTMX single URL form
@@ -104,7 +107,7 @@ func (service *UIService) htmxAddItemHandler(ctx echo.Context) error {
 		return ctx.HTML(http.StatusBadRequest, "<span style='color:red'>Invalid or missing URL.</span>")
 	}
 	if err := service.coreservice.DownloadItemsHandler(req.URL); err != nil {
-		return ctx.HTML(http.StatusInternalServerError, "<span style='color:red'>Failed to process: "+req.URL+"</span>")
+		return ctx.HTML(http.StatusUnprocessableEntity, "<span style='color:red'>Could not process URL: "+err.Error()+"</span>")
 	}
 	return ctx.HTML(http.StatusOK, "<span style='color:green'>Submitted successfully!</span>")
 }

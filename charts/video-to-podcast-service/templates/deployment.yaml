@@ -29,6 +29,39 @@ spec:
       serviceAccountName: {{ include "video-to-podcast-service.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # The initContainer runs as root and downloads yt-dlp into a dedicated PVC
+      # on every pod start, so the binary is always the latest available in the
+      # selected channel. The PVC is not a cache — it is purely a handoff mechanism
+      # between the initContainer (writer, root) and the main container (reader,
+      # appuser). This means a pod restart intentionally picks up a newer nightly
+      # build, which is the desired behavior when ytDlp.updateToNightly is true.
+      # The main container mounts the PVC read-only so appuser never needs write
+      # access to the binary.
+      initContainers:
+        - name: yt-dlp-installer
+          image: alpine:3.24
+          securityContext:
+            runAsUser: 0
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              apk add --no-cache wget
+              {{- if .Values.ytDlp.updateToNightly }}
+              echo "Downloading yt-dlp nightly build"
+              wget "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp" \
+                -O /mnt/yt-dlp-bin/yt-dlp
+              {{- else }}
+              echo "Downloading yt-dlp stable build"
+              wget "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
+                -O /mnt/yt-dlp-bin/yt-dlp
+              {{- end }}
+              chmod a+rx /mnt/yt-dlp-bin/yt-dlp
+              echo "yt-dlp version: $(/mnt/yt-dlp-bin/yt-dlp --version)"
+          volumeMounts:
+            - name: ytdlp-bin
+              mountPath: /mnt/yt-dlp-bin
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -38,8 +71,6 @@ spec:
           env:
             - name: CONFIG_PATH
               value: /etc/video-to-podcast/config.yaml
-            - name: YT_DLP_UPDATE_TO_NIGHTLY
-              value: {{ .Values.ytDlp.updateToNightly | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort | default .Values.service.port }}
@@ -56,6 +87,10 @@ spec:
               readOnly: true
             - name: data
               mountPath: /app/data
+            - name: ytdlp-bin
+              mountPath: /usr/local/bin/yt-dlp
+              subPath: yt-dlp
+              readOnly: true
             {{- if .Values.cookies.enabled }}
             {{- if or .Values.cookies.secretName .Values.cookies.cookieContent }}
             - name: cookies-secret
@@ -63,6 +98,25 @@ spec:
               readOnly: true
             {{- end }}
             {{- end }}
+        {{- if .Values.ytDlp.poTokenSidecar.enabled }}
+        - name: bgutil-pot-provider
+          image: "{{ .Values.ytDlp.poTokenSidecar.image.repository }}:{{ .Values.ytDlp.poTokenSidecar.image.tag }}"
+          imagePullPolicy: {{ .Values.ytDlp.poTokenSidecar.image.pullPolicy }}
+          ports:
+            - name: bgutil
+              containerPort: 4416
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: bgutil
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.ytDlp.poTokenSidecar.resources | nindent 12 }}
+        {{- end }}
       volumes:
         - name: config
           configMap:
@@ -74,6 +128,9 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        - name: ytdlp-bin
+          persistentVolumeClaim:
+            claimName: {{ include "video-to-podcast-service.fullname" . }}-ytdlp-bin
         {{- if .Values.cookies.enabled }}
         {{- if .Values.cookies.secretName }}
         - name: cookies-secret

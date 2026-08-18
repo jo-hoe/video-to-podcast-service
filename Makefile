@@ -59,7 +59,9 @@ stop-k3d: ## stop K3d cluster
 	@k3d cluster delete --config ${ROOT_DIR}k3d/podcastcluster.yaml
 
 .PHONY: restart-k3d
-restart-k3d: stop-k3d start-k3d ## restart the k3d cluster
+restart-k3d: stop-k3d ## restart the k3d cluster
+	-@k3d registry delete registry.localhost
+	@$(MAKE) start-k3d
 
 .PHONY: start-docker
 start-docker: ## start service
