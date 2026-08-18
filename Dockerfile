@@ -67,5 +67,8 @@ USER appuser
 # Set HOME environment variable explicitly
 ENV HOME=/home/appuser
 
-# ENTRYPOINT should point to the executable
-ENTRYPOINT ["./app"]
+# Entrypoint script: optionally updates yt-dlp to nightly before starting the app
+COPY --chown=appuser:appuser docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]

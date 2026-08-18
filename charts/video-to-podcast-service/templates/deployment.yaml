@@ -38,6 +38,8 @@ spec:
           env:
             - name: CONFIG_PATH
               value: /etc/video-to-podcast/config.yaml
+            - name: YT_DLP_UPDATE_TO_NIGHTLY
+              value: {{ .Values.ytDlp.updateToNightly | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort | default .Values.service.port }}

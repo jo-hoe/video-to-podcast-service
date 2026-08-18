@@ -142,3 +142,9 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+# -- yt-dlp configuration
+ytDlp:
+  # -- Run "yt-dlp --update-to nightly" on container start.
+  # Enable when the stable release is broken and a nightly fix is available.
+  updateToNightly: false
