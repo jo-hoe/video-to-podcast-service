@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/jo-hoe/gofeedx"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/feed"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/requestutil"
 	"github.com/labstack/echo/v4"
@@ -24,7 +26,7 @@ const (
 )
 
 type APIService struct {
-	coreService *core.CoreService
+	coreService core.Service
 	defaultPort string
 }
 
@@ -36,7 +38,7 @@ type DownloadItems struct {
 	URLS []string `json:"urls" validate:"required"`
 }
 
-func NewAPIService(coreservice *core.CoreService, defaultPort string) *APIService {
+func NewAPIService(coreservice core.Service, defaultPort string) *APIService {
 	return &APIService{
 		coreService: coreservice,
 		defaultPort: defaultPort,
@@ -143,6 +145,9 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 		err = service.coreService.DownloadItemsHandler(url)
 		if err != nil {
 			slog.Error("failed to handle download", "url", url, "err", err)
+			if errors.Is(err, downloader.ErrVideoLive) {
+				return echo.NewHTTPError(http.StatusConflict, "video is currently live")
+			}
 			return echo.NewHTTPError(http.StatusBadRequest, "unsupported URL")
 		}
 	}

@@ -21,13 +21,13 @@ const (
 )
 
 type FeedService struct {
-	coreservice  *core.CoreService
+	coreservice  core.Service
 	feedBasePort string
 	feedItemPath string
 }
 
 func NewFeedService(
-	coreService *core.CoreService,
+	coreService core.Service,
 	feedBasePort string,
 	feedItemPath string) *FeedService {
 	return &FeedService{

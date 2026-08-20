@@ -1,11 +1,13 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
-	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
+	"github.com/jo-hoe/video-to-podcast-service/internal/core/download/downloader"
 	"github.com/labstack/echo/v4"
 )
 
@@ -54,9 +56,8 @@ func TestGetPathAttributeValue_MissingParam_ReturnsBadRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	ctx := e.NewContext(req, rec)
-	// no route parameter set → Param returns ""
 
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 	_, err := svc.getPathAttributeValue(ctx, "feedTitle")
 	if err == nil {
 		t.Fatal("expected error for missing param, got nil")
@@ -78,7 +79,7 @@ func TestGetPathAttributeValue_EncodedParam_IsDecoded(t *testing.T) {
 	ctx.SetParamNames("feedTitle")
 	ctx.SetParamValues("My%20Feed")
 
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 	got, err := svc.getPathAttributeValue(ctx, "feedTitle")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -96,7 +97,7 @@ func TestGetPathAttributeValue_PlainParam_ReturnedUnchanged(t *testing.T) {
 	ctx.SetParamNames("feedTitle")
 	ctx.SetParamValues("MyFeed")
 
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 	got, err := svc.getPathAttributeValue(ctx, "feedTitle")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -110,7 +111,7 @@ func TestGetPathAttributeValue_PlainParam_ReturnedUnchanged(t *testing.T) {
 
 func TestProbeHandler_Returns200(t *testing.T) {
 	e := echo.New()
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 
 	req := httptest.NewRequest(http.MethodGet, "/"+ProbePath, nil)
 	rec := httptest.NewRecorder()
@@ -121,5 +122,137 @@ func TestProbeHandler_Returns200(t *testing.T) {
 	}
 	if rec.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+// --- addItemsHandler ---
+
+func addItemsRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(http.MethodPost, "/v1/addItems", strings.NewReader(body))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+	return e.NewContext(req, rec), rec
+}
+
+func TestAddItemsHandler_InvalidBody_Returns400(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	svc := newTestAPIService(newMockService())
+	ctx, _ := addItemsRequest(e, `not json`)
+
+	err := svc.addItemsHandler(ctx)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		t.Fatalf("expected *echo.HTTPError, got %T", err)
+	}
+	if he.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", he.Code)
+	}
+}
+
+func TestAddItemsHandler_MissingURLs_Returns400(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	svc := newTestAPIService(newMockService())
+	ctx, _ := addItemsRequest(e, `{}`)
+
+	err := svc.addItemsHandler(ctx)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		t.Fatalf("expected *echo.HTTPError, got %T", err)
+	}
+	if he.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", he.Code)
+	}
+}
+
+func TestAddItemsHandler_DownloadSuccess_Returns200(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	mock := newMockService()
+	mock.DownloadItemsHandlerFunc = func(_ string) error { return nil }
+	svc := newTestAPIService(mock)
+	ctx, rec := addItemsRequest(e, `{"urls":["https://www.youtube.com/watch?v=abc"]}`)
+
+	if err := svc.addItemsHandler(ctx); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+func TestAddItemsHandler_VideoIsLive_Returns409(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	mock := newMockService()
+	mock.DownloadItemsHandlerFunc = func(_ string) error {
+		return downloader.ErrVideoLive
+	}
+	svc := newTestAPIService(mock)
+	ctx, _ := addItemsRequest(e, `{"urls":["https://www.youtube.com/watch?v=live123"]}`)
+
+	err := svc.addItemsHandler(ctx)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		t.Fatalf("expected *echo.HTTPError, got %T", err)
+	}
+	if he.Code != http.StatusConflict {
+		t.Errorf("expected 409, got %d", he.Code)
+	}
+}
+
+func TestAddItemsHandler_VideoIsLiveWrapped_Returns409(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	mock := newMockService()
+	mock.DownloadItemsHandlerFunc = func(_ string) error {
+		return errors.Join(downloader.ErrVideoLive, errors.New("extra context"))
+	}
+	svc := newTestAPIService(mock)
+	ctx, _ := addItemsRequest(e, `{"urls":["https://www.youtube.com/watch?v=live456"]}`)
+
+	err := svc.addItemsHandler(ctx)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		t.Fatalf("expected *echo.HTTPError, got %T", err)
+	}
+	if he.Code != http.StatusConflict {
+		t.Errorf("expected 409 for wrapped ErrVideoLive, got %d", he.Code)
+	}
+}
+
+func TestAddItemsHandler_GenericError_Returns400(t *testing.T) {
+	e := echo.New()
+	e.Validator = newRequestValidator()
+	mock := newMockService()
+	mock.DownloadItemsHandlerFunc = func(_ string) error {
+		return errors.New("unsupported url")
+	}
+	svc := newTestAPIService(mock)
+	ctx, _ := addItemsRequest(e, `{"urls":["https://unsupported.example.com/video"]}`)
+
+	err := svc.addItemsHandler(ctx)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	he, ok := err.(*echo.HTTPError)
+	if !ok {
+		t.Fatalf("expected *echo.HTTPError, got %T", err)
+	}
+	if he.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", he.Code)
 	}
 }

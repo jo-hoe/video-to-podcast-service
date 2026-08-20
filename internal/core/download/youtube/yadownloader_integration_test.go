@@ -18,6 +18,10 @@ const (
 
 // Skips integration test if requirements are not meet
 func checkPrerequisites(t *testing.T) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	// Some servers/IPs are blocked by Youtube and the test will fail
 	// this includes Github Actions servers
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
@@ -175,22 +179,20 @@ func Test_YoutubeAudioDownloader_Download(t *testing.T) {
 	}
 }
 
-func TestYoutubeAudioDownloader_IsVideoAvailable_Negative_Test(t *testing.T) {
+func TestYoutubeAudioDownloader_CheckVideoAvailability_UnavailableURL_ReturnsError(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader(nil, nil, nil)
+	d := NewYoutubeAudioDownloader(nil, nil, nil)
 
-	isAvailable := downloader.IsVideoAvailable("https://www.youtube.com/watch?v=invalid_url")
-	if isAvailable {
-		t.Errorf("Video is reported to available but should not be accessible")
+	if err := d.CheckVideoAvailability("https://www.youtube.com/watch?v=invalid_url"); err == nil {
+		t.Error("expected error for unavailable video, got nil")
 	}
 }
 
-func TestYoutubeAudioDownloader_IsVideoAvailable(t *testing.T) {
+func TestYoutubeAudioDownloader_CheckVideoAvailability_ValidURL_ReturnsNil(t *testing.T) {
 	checkPrerequisites(t)
-	downloader := NewYoutubeAudioDownloader(nil, nil, nil)
+	d := NewYoutubeAudioDownloader(nil, nil, nil)
 
-	isAvailable := downloader.IsVideoAvailable(validYoutubeVideoUrl)
-	if !isAvailable {
-		t.Errorf("Video is reported to not available")
+	if err := d.CheckVideoAvailability(validYoutubeVideoUrl); err != nil {
+		t.Errorf("expected nil for available video, got: %v", err)
 	}
 }

@@ -190,27 +190,24 @@ func (y *YoutubeAudioDownloader) IsVideoSupported(url string) bool {
 		youtubeTinyPattern.MatchString(url)
 }
 
-func (y *YoutubeAudioDownloader) IsVideoAvailable(url string) bool {
+func (y *YoutubeAudioDownloader) CheckVideoAvailability(url string) error {
 	slog.Info("checking video availability", "url", url)
 
-	// Use yt-dlp to print live_status in a dry run.
-	// Treat videos that are currently livestreaming ("is_live") as not available.
 	args := y.buildBaseArgs(true)
 	args = append(args, "--print", downloader.LiveStatusKey, url)
 
 	cmd := exec.Command("yt-dlp", args...)
 	output, err := cmd.Output()
 	if err != nil {
-		slog.Error("error checking video availability", "err", err)
-		return false
+		return fmt.Errorf("yt-dlp availability check failed: %w", err)
 	}
 
 	if downloader.IsLiveFromOutput(output) {
 		slog.Warn("video is currently live; treating as unavailable", "url", url)
-		return false
+		return downloader.ErrVideoLive
 	}
 
-	return true
+	return nil
 }
 
 // buildBaseArgs creates base arguments for yt-dlp command.

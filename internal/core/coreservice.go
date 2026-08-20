@@ -1,6 +1,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -153,14 +154,20 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 	var wg sync.WaitGroup
 	availSem := make(chan struct{}, maxParallel)
 
+	var liveErr error
 	for _, entryURL := range urls {
 		wg.Add(1)
 		go func(u string) {
 			defer wg.Done()
 			availSem <- struct{}{}
 			defer func() { <-availSem }()
-			if !downloaderInstance.IsVideoAvailable(u) {
-				slog.Error("video is not available, skipping download for", "url", u)
+			if err := downloaderInstance.CheckVideoAvailability(u); err != nil {
+				if errors.Is(err, downloader.ErrVideoLive) {
+					mu.Lock()
+					liveErr = fmt.Errorf("%w: %s", downloader.ErrVideoLive, u)
+					mu.Unlock()
+				}
+				slog.Error("video is not available, skipping download for", "url", u, "err", err)
 				return
 			}
 			mu.Lock()
@@ -172,6 +179,9 @@ func (cs *CoreService) DownloadItemsHandler(url string) (err error) {
 
 	// Enforce partial download policy
 	if len(availableUrls) == 0 {
+		if liveErr != nil {
+			return liveErr
+		}
 		return fmt.Errorf("no available videos for %s", url)
 	}
 	if len(availableUrls) != len(urls) {

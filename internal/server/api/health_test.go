@@ -15,30 +15,49 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func newTestAPIService(db database.DatabaseService, mediaDir string, cookies *config.Cookies) *APIService {
-	mediaConfig := &config.Media{MediaPath: mediaDir}
-	coreService := core.NewCoreService(db, mediaDir, cookies, mediaConfig, nil)
-	return NewAPIService(coreService, "8080")
+func newTestAPIService(svc core.Service) *APIService {
+	return NewAPIService(svc, "8080")
+}
+
+func newMockService(opts ...func(*core.MockService)) *core.MockService {
+	m := core.NewMockService()
+	m.AudioSourceDirectory = ""
+	for _, o := range opts {
+		o(m)
+	}
+	return m
+}
+
+func withDB(db database.DatabaseService) func(*core.MockService) {
+	return func(m *core.MockService) { m.DatabaseService = db }
+}
+
+func withMediaDir(dir string) func(*core.MockService) {
+	return func(m *core.MockService) { m.AudioSourceDirectory = dir }
+}
+
+func withCookies(c *config.Cookies) func(*core.MockService) {
+	return func(m *core.MockService) { m.CookieConfig = c }
 }
 
 // --- checkCookieHealth ---
 
 func TestCheckCookieHealth_NilConfig_ReturnsDisabled(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 	if got := svc.checkCookieHealth(); got != HealthStatusDisabled {
 		t.Errorf("expected %q, got %q", HealthStatusDisabled, got)
 	}
 }
 
 func TestCheckCookieHealth_DisabledConfig_ReturnsDisabled(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), &config.Cookies{Enabled: false})
+	svc := newTestAPIService(newMockService(withCookies(&config.Cookies{Enabled: false})))
 	if got := svc.checkCookieHealth(); got != HealthStatusDisabled {
 		t.Errorf("expected %q, got %q", HealthStatusDisabled, got)
 	}
 }
 
 func TestCheckCookieHealth_EmptyPath_ReturnsUnhealthy(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), &config.Cookies{Enabled: true, CookiePath: ""})
+	svc := newTestAPIService(newMockService(withCookies(&config.Cookies{Enabled: true, CookiePath: ""})))
 	if got := svc.checkCookieHealth(); got != HealthStatusUnhealthy {
 		t.Errorf("expected %q, got %q", HealthStatusUnhealthy, got)
 	}
@@ -49,17 +68,17 @@ func TestCheckCookieHealth_ValidFile_ReturnsHealthy(t *testing.T) {
 	if err := os.WriteFile(cookieFile, []byte(""), 0644); err != nil {
 		t.Fatalf("setup: %v", err)
 	}
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), &config.Cookies{Enabled: true, CookiePath: cookieFile})
+	svc := newTestAPIService(newMockService(withCookies(&config.Cookies{Enabled: true, CookiePath: cookieFile})))
 	if got := svc.checkCookieHealth(); got != HealthStatusHealthy {
 		t.Errorf("expected %q, got %q", HealthStatusHealthy, got)
 	}
 }
 
 func TestCheckCookieHealth_NonExistentParentDir_ReturnsUnhealthy(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), &config.Cookies{
+	svc := newTestAPIService(newMockService(withCookies(&config.Cookies{
 		Enabled:    true,
 		CookiePath: "/non/existent/path/cookies.txt",
-	})
+	})))
 	if got := svc.checkCookieHealth(); got != HealthStatusUnhealthy {
 		t.Errorf("expected %q, got %q", HealthStatusUnhealthy, got)
 	}
@@ -68,7 +87,7 @@ func TestCheckCookieHealth_NonExistentParentDir_ReturnsUnhealthy(t *testing.T) {
 // --- checkDatabaseHealth ---
 
 func TestCheckDatabaseHealth_WorkingDatabase_ReturnsHealthy(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService())
 	if got := svc.checkDatabaseHealth(); got != HealthStatusHealthy {
 		t.Errorf("expected %q, got %q", HealthStatusHealthy, got)
 	}
@@ -79,7 +98,7 @@ func TestCheckDatabaseHealth_FailingDatabase_ReturnsUnhealthy(t *testing.T) {
 	mock.GetAllPodcastItemsFunc = func() ([]*database.PodcastItem, error) {
 		return nil, errors.New("db connection error")
 	}
-	svc := newTestAPIService(mock, t.TempDir(), nil)
+	svc := newTestAPIService(newMockService(withDB(mock)))
 	if got := svc.checkDatabaseHealth(); got != HealthStatusUnhealthy {
 		t.Errorf("expected %q, got %q", HealthStatusUnhealthy, got)
 	}
@@ -88,14 +107,14 @@ func TestCheckDatabaseHealth_FailingDatabase_ReturnsUnhealthy(t *testing.T) {
 // --- checkMediaHealth ---
 
 func TestCheckMediaHealth_ExistingDirectory_ReturnsHealthy(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService(withMediaDir(t.TempDir())))
 	if got := svc.checkMediaHealth(); got != HealthStatusHealthy {
 		t.Errorf("expected %q, got %q", HealthStatusHealthy, got)
 	}
 }
 
 func TestCheckMediaHealth_EmptyPath_ReturnsUnhealthy(t *testing.T) {
-	svc := newTestAPIService(database.NewMockDatabase(), "", nil)
+	svc := newTestAPIService(newMockService())
 	if got := svc.checkMediaHealth(); got != HealthStatusUnhealthy {
 		t.Errorf("expected %q, got %q", HealthStatusUnhealthy, got)
 	}
@@ -103,7 +122,7 @@ func TestCheckMediaHealth_EmptyPath_ReturnsUnhealthy(t *testing.T) {
 
 func TestCheckMediaHealth_NewDirectory_CreatesAndReturnsHealthy(t *testing.T) {
 	newDir := filepath.Join(t.TempDir(), "new_media_dir")
-	svc := newTestAPIService(database.NewMockDatabase(), newDir, nil)
+	svc := newTestAPIService(newMockService(withMediaDir(newDir)))
 	if got := svc.checkMediaHealth(); got != HealthStatusHealthy {
 		t.Errorf("expected %q, got %q", HealthStatusHealthy, got)
 	}
@@ -113,7 +132,7 @@ func TestCheckMediaHealth_NewDirectory_CreatesAndReturnsHealthy(t *testing.T) {
 
 func TestHealthHandler_AllHealthy_Returns200(t *testing.T) {
 	e := echo.New()
-	svc := newTestAPIService(database.NewMockDatabase(), t.TempDir(), nil)
+	svc := newTestAPIService(newMockService(withMediaDir(t.TempDir())))
 
 	req := httptest.NewRequest(http.MethodGet, "/"+HealthPath, nil)
 	rec := httptest.NewRecorder()
@@ -141,7 +160,7 @@ func TestHealthHandler_FailingDatabase_Returns503(t *testing.T) {
 	mock.GetAllPodcastItemsFunc = func() ([]*database.PodcastItem, error) {
 		return nil, errors.New("db error")
 	}
-	svc := newTestAPIService(mock, t.TempDir(), nil)
+	svc := newTestAPIService(newMockService(withDB(mock), withMediaDir(t.TempDir())))
 
 	req := httptest.NewRequest(http.MethodGet, "/"+HealthPath, nil)
 	rec := httptest.NewRecorder()

@@ -46,7 +46,7 @@ func (t *TwitchAudioDownloader) IsVideoSupported(url string) bool {
 		twitchClipsPattern.MatchString(url)
 }
 
-func (t *TwitchAudioDownloader) IsVideoAvailable(url string) bool {
+func (t *TwitchAudioDownloader) CheckVideoAvailability(url string) error {
 	slog.Info("checking video availability", "url", url)
 
 	args := t.buildBaseArgs(true)
@@ -55,16 +55,15 @@ func (t *TwitchAudioDownloader) IsVideoAvailable(url string) bool {
 	cmd := exec.Command("yt-dlp", args...)
 	output, err := cmd.Output()
 	if err != nil {
-		slog.Error("error checking video availability", "err", err)
-		return false
+		return fmt.Errorf("yt-dlp availability check failed: %w", err)
 	}
 
 	if downloader.IsLiveFromOutput(output) {
 		slog.Warn("stream is currently live; treating as unavailable", "url", url)
-		return false
+		return downloader.ErrVideoLive
 	}
 
-	return true
+	return nil
 }
 
 func (t *TwitchAudioDownloader) ListIndividualVideoURLs(url string) ([]string, error) {
