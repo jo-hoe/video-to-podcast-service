@@ -35,7 +35,7 @@ RUN apk add --no-cache \
     sqlite-libs \
     wget && \
     update-ca-certificates && \
-    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp -O /usr/local/bin/yt-dlp && \
+    wget https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp -O /usr/local/bin/yt-dlp && \
     chmod a+rx /usr/local/bin/yt-dlp && \
     # Install bgutil-ytdlp-pot-provider plugin for PO token support.
     # The plugin is installed into the yt-dlp user plugin directory so it is
