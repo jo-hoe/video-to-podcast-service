@@ -55,6 +55,20 @@ Report: `[Step 2/5] ✓ Chart.yaml updated`
 
 Report: `[Step 3/5] Committing and pushing...`
 
+**First, check for uncommitted code changes and commit them if present:**
+```bash
+git status --short
+```
+
+If there are any modified or untracked files outside of `charts/` (i.e. app code, tests, config), stage and commit them before the chart bump commit:
+```bash
+git add <each modified or untracked file>
+git commit -m "feat: <short summary of the changes>"
+```
+
+Use `git diff --cached` and `git log --oneline -5` to write an accurate commit message reflecting what actually changed.
+
+Then commit the chart bump:
 ```bash
 git add charts/video-to-podcast-service/Chart.yaml
 git commit -m "chore: bump chart and appVersion to <new-version>"
