@@ -1,0 +1,24 @@
+# Test image: unit + integration tests
+# Extends the build stage with ffmpeg and yt-dlp so all tests can run.
+# Not used in production — see Dockerfile for the production image.
+FROM golang:1.26.6-alpine3.23
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+RUN apk add --no-cache \
+    build-base \
+    sqlite-dev \
+    ffmpeg \
+    python3 \
+    wget && \
+    wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && \
+    chmod a+rx /usr/local/bin/yt-dlp && \
+    apk del wget && \
+    rm -rf /var/cache/apk/*
+
+COPY . ./
+
+CMD ["sh", "-c", "CGO_ENABLED=1 go test -v ./..."]

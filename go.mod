@@ -4,16 +4,16 @@ go 1.26.0
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/jo-hoe/mp3-joiner v0.0.0-20251215212911-6057123f7360
+	github.com/jo-hoe/mp3-joiner v0.0.1
 	github.com/labstack/echo/v4 v4.15.4
-	github.com/mattn/go-sqlite3 v1.14.49
+	github.com/mattn/go-sqlite3 v1.14.50
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/net v0.58.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
-	github.com/jo-hoe/gofeedx v0.0.0-20260220193408-279df5290dfd
+	github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38
 	github.com/stretchr/testify v1.12.0
 )
 

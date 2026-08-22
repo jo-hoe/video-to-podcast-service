@@ -1,0 +1,19 @@
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - "./config/yt-dlp.compose.conf:/root/.config/yt-dlp/config:ro"
+    depends_on:
+      bgutil-pot-provider:
+        condition: service_healthy
+
+  bgutil-pot-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:4416"]
+      interval: 5s
+      retries: 6
+      start_period: 5s
+      timeout: 5s

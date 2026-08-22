@@ -17,6 +17,12 @@ COPY . ./
 # Build with CGO (required for sqlite dependency) and output to a specific location
 RUN CGO_ENABLED=1 go build -o /out/app -ldflags="-s -w" ./
 
+# Test stage: run unit tests inside the build environment (CGO + sqlite available).
+# Use Dockerfile.test + docker-compose.test.yml for the full integration test suite.
+FROM build AS test
+RUN apk add --no-cache ffmpeg
+RUN CGO_ENABLED=1 go test -short ./...
+
 # Runtime stage: use Alpine directly for a minimal image
 FROM alpine:3.24
 
