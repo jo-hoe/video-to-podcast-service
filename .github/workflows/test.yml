@@ -1,3 +1,4 @@
+  
 on:
   push:
     branches:
@@ -5,31 +6,39 @@ on:
   pull_request:
     branches:
       - main
-
+      
 name: test
 jobs:
   test:
     strategy:
       matrix:
+        go-version: [1.26.x]
         platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Run tests (Docker)
-        if: matrix.platform == 'ubuntu-latest'
-        run: docker build --target test .
-
-      - name: Install Go
-        if: matrix.platform == 'windows-latest'
-        uses: actions/setup-go@v7
-        with:
-          go-version: "1.26.x"
-
-      - name: Install ffmpeg (Windows)
-        if: matrix.platform == 'windows-latest'
-        uses: AnimMouse/setup-ffmpeg@v1
-
-      - name: Run tests (Windows)
-        if: matrix.platform == 'windows-latest'
-        run: go test -short ./...
+    - uses: actions/checkout@v7
+    - uses: AnimMouse/setup-ffmpeg@v1
+      id: setup-ffmpeg
+    - run: ffmpeg -version
+    - name: Install Go
+      if: success()
+      uses: actions/setup-go@v7
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Checkout code
+      uses: actions/checkout@v7
+    - name: Run tests with coverage
+      if: matrix.platform == 'ubuntu-latest'
+      run: go test -v ./... -covermode=count -coverprofile=coverage.out
+    - name: Run tests
+      if: matrix.platform != 'ubuntu-latest'
+      run: go test -v ./...
+    - name: Convert coverage.out to coverage.lcov
+      if: matrix.platform == 'ubuntu-latest'
+      uses: jandelgado/gcov2lcov-action@v1
+    - name: Coveralls
+      if: matrix.platform == 'ubuntu-latest'
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+        path-to-lcov: coverage.lcov
