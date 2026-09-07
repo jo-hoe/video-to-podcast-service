@@ -1,7 +1,7 @@
 # Test image: unit + integration tests
 # Extends the build stage with ffmpeg and yt-dlp so all tests can run.
 # Not used in production — see Dockerfile for the production image.
-FROM golang:1.27.0-alpine3.23
+FROM golang:1.27.1-alpine3.23
 
 WORKDIR /src
 
