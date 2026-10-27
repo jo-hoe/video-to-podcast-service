@@ -42,7 +42,11 @@ func BaseURL(ctx echo.Context) *url.URL {
 	scheme, host := parseForwarded(ctx.Request().Header.Get("Forwarded"))
 
 	if scheme == "" {
-		scheme = ctx.Scheme()
+		if fwdProto := ctx.Request().Header.Get("X-Forwarded-Proto"); fwdProto != "" {
+			scheme = fwdProto
+		} else {
+			scheme = ctx.Scheme()
+		}
 	}
 	if host == "" {
 		host = ctx.Request().Host
