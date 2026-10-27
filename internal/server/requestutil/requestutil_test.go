@@ -81,6 +81,11 @@ func TestBaseURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Reset global state so tests are independent of each other and of
+			// any TestSetPublicBaseURL cases that may run in the same process.
+			publicBaseURL = nil
+			t.Cleanup(func() { publicBaseURL = nil })
+
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			req.Host = tt.host
