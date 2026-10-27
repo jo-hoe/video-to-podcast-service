@@ -65,7 +65,7 @@ func TestMakeAbsoluteConnectionStringFromRoot_RelativeFileResolved(t *testing.T)
 
 	relFile := filepath.Join(".", "mount", "database", "db.sqlite")
 	got := makeAbsoluteConnectionStringFromRoot("file:"+relFile, cwd)
-	want := "file:" + filepath.Join(cwd, relFile)
+	want := "file:" + filepath.ToSlash(filepath.Join(cwd, relFile))
 	if got != want {
 		t.Fatalf("expected relative file conn string resolved, got %s want %s", got, want)
 	}

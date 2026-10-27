@@ -103,9 +103,10 @@ func (y *YoutubeAudioDownloader) setMetadata(fullFilePath string) error {
 
 	thumbnailURL, err := y.getThumbnailURL(videoURL)
 	if err != nil {
-		return err
+		slog.Warn("could not get thumbnail url, continuing without thumbnail", "videoURL", videoURL, "err", err)
+	} else {
+		metadata[downloader.ThumbnailUrlTag] = thumbnailURL
 	}
-	metadata[downloader.ThumbnailUrlTag] = thumbnailURL
 
 	if ts, tsErr := y.getTimestamp(videoURL); tsErr == nil {
 		metadata["date"] = time.Unix(ts, 0).UTC().Format("2006-01-02T15:04:05")

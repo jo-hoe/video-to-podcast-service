@@ -11,6 +11,7 @@ import (
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/api"
+	"github.com/jo-hoe/video-to-podcast-service/internal/server/requestutil"
 	"github.com/jo-hoe/video-to-podcast-service/internal/server/ui"
 
 	"github.com/go-playground/validator"
@@ -22,6 +23,13 @@ var defaultResourcePath string
 
 func StartServer(databaseService database.DatabaseService, cfg *config.Config) {
 	defaultResourcePath = cfg.Persistence.Media.MediaPath
+
+	// Configure an explicit, trusted base URL for generated links if set.
+	// When configured, client-supplied forwarded/host headers are ignored.
+	if err := requestutil.SetPublicBaseURL(cfg.PublicBaseURL); err != nil {
+		slog.Error("invalid publicBaseURL configuration", "value", cfg.PublicBaseURL, "err", err)
+		panic(err)
+	}
 
 	e := echo.New()
 	// Use RequestLogger with LogValuesFunc to satisfy linter and avoid panic.

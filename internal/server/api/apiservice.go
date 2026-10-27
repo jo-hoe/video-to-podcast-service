@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -141,15 +142,22 @@ func (service *APIService) addItemsHandler(ctx echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request data")
 	}
 
-	for _, url := range downloadItems.URLS {
-		err = service.coreService.DownloadItemsHandler(url)
-		if err != nil {
-			slog.Error("failed to handle download", "url", url, "err", err)
+	var failedURLs []string
+	for _, u := range downloadItems.URLS {
+		if err = service.coreService.DownloadItemsHandler(u); err != nil {
+			slog.Error("failed to handle download", "url", u, "err", err)
 			if errors.Is(err, downloader.ErrVideoLive) {
 				return echo.NewHTTPError(http.StatusConflict, "video is currently live")
 			}
-			return echo.NewHTTPError(http.StatusBadRequest, "unsupported URL")
+			failedURLs = append(failedURLs, u)
 		}
+	}
+
+	if len(failedURLs) > 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, map[string]any{
+			"message":     "one or more URLs could not be processed",
+			"failed_urls": failedURLs,
+		})
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -190,6 +198,16 @@ func (service *APIService) audioFileHandler(ctx echo.Context) (err error) {
 	}
 
 	expectedPath := filepath.Clean(filepath.Join(service.coreService.GetAudioSourceDirectory(), decodedFeedTitle, decodedAudioFileName))
+
+	// Confine the resolved path to the media root to prevent path traversal
+	// (e.g. "..%2F..%2Fetc%2Fpasswd"). This is the primary control; the DB
+	// membership check below is a secondary defense.
+	root := filepath.Clean(service.coreService.GetAudioSourceDirectory())
+	if expectedPath != root && !isWithinRoot(expectedPath, root) {
+		slog.Warn("rejected path outside media root", "feedTitle", decodedFeedTitle, "audioFileName", decodedAudioFileName)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid audio file path")
+	}
+
 	podcastItems, err := service.coreService.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
 		slog.Error("failed to retrieve podcast items", "err", err)
@@ -221,6 +239,16 @@ func equalPath(a, b string) bool {
 		return strings.EqualFold(ca, cb)
 	}
 	return ca == cb
+}
+
+// isWithinRoot reports whether cleanPath is contained within root (which must
+// already be cleaned). Comparison is case-insensitive on Windows to match equalPath.
+func isWithinRoot(cleanPath, root string) bool {
+	prefix := root + string(os.PathSeparator)
+	if runtime.GOOS == "windows" {
+		return strings.HasPrefix(strings.ToLower(cleanPath), strings.ToLower(prefix))
+	}
+	return strings.HasPrefix(cleanPath, prefix)
 }
 
 // getPathAttributeValue returns a decoded path parameter or an error if missing/invalid.

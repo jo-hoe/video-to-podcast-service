@@ -27,17 +27,10 @@ func NewSQLiteDatabase(connectionString string) *SQLiteDatabase {
 }
 
 func (s *SQLiteDatabase) InitializeDatabase() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", s.connectionString)
-	if err != nil {
+	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
-	// Optionally, check if the connection is valid
-	if err := db.Ping(); err != nil {
-		_ = db.Close()
-		return nil, err
-	}
-	s.db = db
-	return db, nil
+	return s.db, nil
 }
 
 func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
@@ -45,8 +38,7 @@ func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
 	if s.connectionString == "" {
 		s.connectionString = defaultDatabaseFileName
 	}
-	db, err := sql.Open("sqlite3", s.connectionString)
-	if err != nil {
+	if err := s.ensureOpen(); err != nil {
 		return nil, err
 	}
 	createTableStmt := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
@@ -61,18 +53,33 @@ func (s *SQLiteDatabase) CreateDatabase() (*sql.DB, error) {
 		created_at DATETIME,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	)`, defaultDatabaseName)
-	_, err = db.Exec(createTableStmt)
-	if err != nil {
-		_ = db.Close()
+	if _, err := s.db.Exec(createTableStmt); err != nil {
 		return nil, err
 	}
+	return s.db, nil
+}
+
+// ensureOpen opens (and pings) the database connection if it is not already open.
+func (s *SQLiteDatabase) ensureOpen() error {
+	if s.db != nil {
+		return nil
+	}
+	db, err := sql.Open("sqlite3", s.connectionString)
+	if err != nil {
+		return err
+	}
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
+		return err
+	}
 	s.db = db
-	return db, nil
+	return nil
 }
 
 func (s *SQLiteDatabase) DoesDatabaseExist() bool {
-	// Check if the database file exists
-	if s.db == nil {
+	// Ensure the connection is open before inspecting the schema; on a cold
+	// start s.db is nil, so without this the check would always report false.
+	if err := s.ensureOpen(); err != nil {
 		return false
 	}
 	var exists bool
@@ -116,6 +123,9 @@ func (s *SQLiteDatabase) GetAllPodcastItems() ([]*PodcastItem, error) {
 		item.UpdatedAt = item.UpdatedAt.UTC()
 		items = append(items, item)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return items, nil
 }
 
@@ -153,6 +163,9 @@ func (s *SQLiteDatabase) GetPodcastItemByID(id string) (*PodcastItem, error) {
 
 // Close closes the database connection.
 func (s *SQLiteDatabase) CloseConnection() error {
+	if s.db == nil {
+		return nil
+	}
 	return s.db.Close()
 }
 

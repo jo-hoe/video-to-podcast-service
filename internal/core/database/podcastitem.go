@@ -48,10 +48,18 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 	title := common.ValueOrDefault(audioMetadata[downloader.Title], fileNameWithoutExtension)
 	description := common.ValueOrDefault(audioMetadata[downloader.PodcastDescriptionTag], "")
 
+	// Derive the ID from the video URL when available. When it is missing,
+	// fall back to the audio file path so that distinct files do not all hash
+	// to the same value (which would collide under INSERT OR REPLACE).
+	idSeed := videoUrl
+	if idSeed == "" {
+		idSeed = audioFilePath
+	}
+
 	uploadTime := parseUploadTime(audioMetadata["date"], fileInfo)
 
 	podcastItem = &PodcastItem{
-		ID:                     stringToHash(videoUrl),
+		ID:                     stringToHash(idSeed),
 		Title:                  title,
 		Description:            description,
 		Author:                 audioMetadata[downloader.Artist],
@@ -63,7 +71,7 @@ func NewPodcastItem(audioFilePath string) (podcastItem *PodcastItem, err error) 
 		UpdatedAt:              time.Now().UTC(),
 	}
 
-	return podcastItem, err
+	return podcastItem, nil
 }
 
 func stringToHash(input string) string {

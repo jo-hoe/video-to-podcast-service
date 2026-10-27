@@ -56,6 +56,9 @@ func (fp *FeedService) GetFeeds(baseURL *url.URL) (feedCollector []*gofeedx.Feed
 		feed := fp.getFeedWithAuthor(directoryName, feedCollector)
 		if feed == nil {
 			feed = fp.createFeed(baseURL, directoryName, podcastItem.AudioFilePath)
+			if feed == nil {
+				return nil, fmt.Errorf("could not create feed for %q", directoryName)
+			}
 			feedCollector = append(feedCollector, feed)
 		}
 		feed.Items = append(feed.Items, item)

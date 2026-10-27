@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"html/template"
 	"net/url"
 	"path/filepath"
 	"sort"
-	"text/template"
 
 	"github.com/jo-hoe/video-to-podcast-service/internal/core"
 	"github.com/jo-hoe/video-to-podcast-service/internal/core/database"
@@ -66,7 +66,7 @@ func getFeedTitleFromPath(path string) string {
 func (service *UIService) buildItemList(ctx echo.Context) (*PodcastItemList, error) {
 	podcastItems, err := service.coreservice.GetDatabaseService().GetAllPodcastItems()
 	if err != nil {
-		podcastItems = []*database.PodcastItem{}
+		return nil, err
 	}
 	sort.Slice(podcastItems, func(i, j int) bool {
 		return podcastItems[i].UpdatedAt.After(podcastItems[j].UpdatedAt)

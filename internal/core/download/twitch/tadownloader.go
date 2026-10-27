@@ -149,9 +149,10 @@ func (t *TwitchAudioDownloader) setMetadata(fullFilePath string, sourceURL strin
 
 	thumbnailURL, err := t.getThumbnailURL(sourceURL)
 	if err != nil {
-		return err
+		slog.Warn("could not get thumbnail url, continuing without thumbnail", "url", sourceURL, "err", err)
+	} else {
+		metadata[downloader.ThumbnailUrlTag] = thumbnailURL
 	}
-	metadata[downloader.ThumbnailUrlTag] = thumbnailURL
 
 	if ts, tsErr := t.getTimestamp(sourceURL); tsErr == nil {
 		metadata["date"] = time.Unix(ts, 0).UTC().Format("2006-01-02T15:04:05")

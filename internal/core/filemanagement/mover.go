@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // MoveToTarget moves sourcePath into a subdirectory of targetRootPath.
@@ -16,8 +17,14 @@ import (
 // e.g. sourcePath=/tmp/abc/channel/file.mp3, targetRootPath=/podcasts → /podcasts/channel/file.mp3
 func MoveToTarget(sourcePath, targetRootPath string) (string, error) {
 	directoryName := filepath.Base(filepath.Dir(sourcePath))
+	// Guard against a directory name (derived from downloaded metadata such as
+	// channel/uploader) that could escape the target root via traversal.
+	if directoryName == "." || directoryName == ".." || directoryName == string(os.PathSeparator) ||
+		strings.ContainsAny(directoryName, `/\`) {
+		return "", fmt.Errorf("invalid target subdirectory name %q derived from source path", directoryName)
+	}
 	targetSubDirectory := filepath.Join(targetRootPath, directoryName)
-	if err := os.MkdirAll(targetSubDirectory, os.ModePerm); err != nil {
+	if err := os.MkdirAll(targetSubDirectory, 0755); err != nil {
 		return "", err
 	}
 
@@ -43,7 +50,7 @@ func calculateFileHash(filePath string) ([]byte, error) {
 	if _, err := io.Copy(hasher, file); err != nil {
 		return make([]byte, 0), err
 	}
-	return hasher.Sum(nil), err
+	return hasher.Sum(nil), nil
 }
 
 func areFileEqual(leftFilePath string, rightFilePath string) (bool, error) {

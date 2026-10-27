@@ -12,10 +12,11 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Port        int         `yaml:"port"`
-	LogLevel    string      `yaml:"logLevel"`
-	Persistence Persistence `yaml:"persistence"`
-	YtDlp       YtDlp       `yaml:"ytDlp"`
+	Port          int         `yaml:"port"`
+	LogLevel      string      `yaml:"logLevel"`
+	PublicBaseURL string      `yaml:"publicBaseURL"`
+	Persistence   Persistence `yaml:"persistence"`
+	YtDlp         YtDlp       `yaml:"ytDlp"`
 }
 
 // YtDlp holds yt-dlp specific configuration
@@ -149,7 +150,7 @@ func makeAbsoluteConnectionStringFromRoot(connectionString, projectRoot string) 
 	if strings.HasPrefix(connectionString, "file:") {
 		filePath := connectionString[5:] // Remove "file:" prefix
 		if !filepath.IsAbs(filePath) {
-			return "file:" + filepath.Join(projectRoot, filePath)
+			return "file:" + filepath.ToSlash(filepath.Join(projectRoot, filePath))
 		}
 	}
 	return connectionString
@@ -180,7 +181,7 @@ func setDefaults(config *Config) error {
 		config.Persistence.Database.Driver = "sqlite3"
 	}
 	if config.Persistence.Database.ConnectionString == "" {
-		config.Persistence.Database.ConnectionString = filepath.Join("file:.", "mount", "database", "video-to-podcast-service.db")
+		config.Persistence.Database.ConnectionString = "file:" + filepath.ToSlash(filepath.Join("mount", "database", "video-to-podcast-service.db"))
 	}
 
 	// Set default cookie configuration if not specified
@@ -210,6 +211,7 @@ func logLoadedConfig(config *Config) {
 	slog.Info("=== Configuration Loaded ===")
 	slog.Info("Port", "value", config.Port)
 	slog.Info("Log Level", "value", config.LogLevel)
+	slog.Info("Public Base URL", "value", config.PublicBaseURL)
 	slog.Info("Database Driver", "value", config.Persistence.Database.Driver)
 	slog.Info("Database Connection", "value", config.Persistence.Database.ConnectionString)
 	slog.Info("Cookies Enabled", "value", config.Persistence.Cookies.Enabled)
