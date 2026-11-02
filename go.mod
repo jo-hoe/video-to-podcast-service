@@ -1,20 +1,16 @@
 module github.com/jo-hoe/video-to-podcast-service
 
-go 1.26.0
+go 1.27
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
-	github.com/jo-hoe/mp3-joiner v0.0.1
+	github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38
+	github.com/jo-hoe/mp3-joiner v0.1.0
 	github.com/labstack/echo/v4 v4.16.3
 	github.com/mattn/go-sqlite3 v1.14.52
-	github.com/u2takey/ffmpeg-go v0.5.0
-	golang.org/x/net v0.61.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1
-)
-
-require (
-	github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38
 	github.com/stretchr/testify v1.12.1
+	github.com/u2takey/ffmpeg-go v0.5.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -33,6 +29,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.16.0 // indirect

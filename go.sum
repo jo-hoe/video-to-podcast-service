@@ -24,8 +24,8 @@ github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGw
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38 h1:2aktkSGaWqhkVdkf3A+Z9dHJLXFO+2eNGIRueILqKvI=
 github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38/go.mod h1:i96H51TSEWupKIck5h2hukjYQtvROT1BvY89dx0nzFM=
-github.com/jo-hoe/mp3-joiner v0.0.1 h1:HMaN5DucAzlYhFNv+iz+c1Rkuit+A0pq8cA2FzQ6KnA=
-github.com/jo-hoe/mp3-joiner v0.0.1/go.mod h1:VZTJ2qUjwv2mVkWTchdaokgASb3AOJfBCC4cSRZeFHc=
+github.com/jo-hoe/mp3-joiner v0.1.0 h1:3zUr+rxutmdnzxpnJnWkjDzTqQ7J/ATL4cSwIeZ6P3E=
+github.com/jo-hoe/mp3-joiner v0.1.0/go.mod h1:zB2ttO5HuMmqQ2s6DrhRcRBvbVfKjhqpEqFaVlrNs/0=
 github.com/json-iterator/go v1.1.10/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
