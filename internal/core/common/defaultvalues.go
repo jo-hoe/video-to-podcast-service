@@ -1,13 +1,16 @@
 package common
 
-import "reflect"
-
 func ValueOrDefault[T any](value, defaultValue T) T {
-	reflectedValue := reflect.ValueOf(value)
-	if reflectedValue.Kind() == reflect.Invalid {
-		return defaultValue
-	} else if reflectedValue.Kind() == reflect.String && reflectedValue.String() == "" {
-		return defaultValue
+	switch v := any(value).(type) {
+	case string:
+		if v == "" {
+			return defaultValue
+		}
+		return value
+	default:
+		if any(value) == nil {
+			return defaultValue
+		}
+		return value
 	}
-	return value
 }

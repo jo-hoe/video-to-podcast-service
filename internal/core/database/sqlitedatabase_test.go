@@ -77,7 +77,7 @@ func TestCreatePodcastItemTwice(t *testing.T) {
 	}
 }
 
-func getPodcastItemByID(t *testing.T, db *SQLiteDatabase, id string) (*PodcastItem, error) {
+func getPodcastItemByID(_ *testing.T, db *SQLiteDatabase, id string) (*PodcastItem, error) {
 	allItems, err := db.GetAllPodcastItems()
 	if err != nil {
 		return nil, err
