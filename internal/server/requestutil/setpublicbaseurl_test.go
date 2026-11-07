@@ -43,11 +43,9 @@ func TestSetPublicBaseURL_EmptyString_ClearsBaseURL(t *testing.T) {
 func TestSetPublicBaseURL_InvalidURL_ReturnsError(t *testing.T) {
 	t.Cleanup(func() { publicBaseURL = nil })
 
-	// url.Parse is very permissive; use a scheme-only invalid URL
-	// that will parse but won't cause issues — this just verifies no panic.
-	// Actual parse errors come from malformed URLs with invalid characters.
-	if err := SetPublicBaseURL("://bad url with spaces"); err == nil {
-		// url.Parse may not error here; that's fine — just verify no panic
+	// A control character makes url.Parse fail.
+	if err := SetPublicBaseURL("http://exa\x7fmple.com"); err == nil {
+		t.Fatal("expected error for malformed URL")
 	}
 }
 
