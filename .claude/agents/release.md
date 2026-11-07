@@ -8,6 +8,8 @@ allowedTools:
   - Bash(gh *)
   - Bash(helm *)
   - Bash(grep *)
+  - Bash(go test *)
+  - Bash(docker *)
 ---
 
 ## Release process for video-to-podcast-service
@@ -16,7 +18,7 @@ Follow these steps in order. Do not skip steps. After each step, report completi
 
 ### Step 1 — Determine version and release type
 
-Report: `[Step 1/5] Determining version and release type...`
+Report: `[Step 1/6] Determining version and release type...`
 
 Check the current versions and what has changed since the last tag:
 ```bash
@@ -27,15 +29,15 @@ git diff $(git tag --sort=-v:refname | head -1)..HEAD -- charts/video-to-podcast
 ```
 
 **Determine release type from the diff:**
-- **No release needed** — only non-app, non-chart files changed (e.g. `.claude/`, docs, CI config). Stop here and report: `[Step 1/5] No release needed — no app or chart changes since last tag.`
+- **No release needed** — only non-app, non-chart files changed (e.g. `.claude/`, docs, CI config). Stop here and report: `[Step 1/6] No release needed — no app or chart changes since last tag.`
 - **Full release** — app code changed (`internal/`, `main.go`, `go.mod`, `go.sum`, `Dockerfile`). Bumps both `version` and `appVersion`. Pushes a new semver tag to trigger `image.yml`.
 - **Chart-only release** — only chart templates/values changed (`charts/`), no app code changes. Bumps only `version`, keeps `appVersion`. No new tag pushed.
 
-Report: `[Step 1/5] ✓ Release type: <full|chart-only>, chart version: <new-version>, appVersion: <app-version>`
+Report: `[Step 1/6] ✓ Release type: <full|chart-only>, chart version: <new-version>, appVersion: <app-version>`
 
 ### Step 2 — Bump Chart.yaml
 
-Report: `[Step 2/5] Bumping Chart.yaml...`
+Report: `[Step 2/6] Bumping Chart.yaml...`
 
 **Full release:** update both fields:
 ```yaml
@@ -49,11 +51,29 @@ version: <new-version>
 appVersion: "<current-app-version>"   # unchanged
 ```
 
-Report: `[Step 2/5] ✓ Chart.yaml updated`
+Report: `[Step 2/6] ✓ Chart.yaml updated`
 
-### Step 3 — Commit, push, and (for full releases) tag
+### Step 3 — Run integration tests locally
 
-Report: `[Step 3/5] Committing and pushing...`
+Report: `[Step 3/6] Running integration tests...`
+
+Run the full test suite via Docker (includes CGO, ffmpeg, yt-dlp, and bgutil sidecar):
+```bash
+docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+```
+
+Check the exit code of the `test` container. If any test fails, report the failure and stop. Do not proceed to commit or push with failing tests.
+
+Clean up after:
+```bash
+docker compose -f docker-compose.test.yml down
+```
+
+Report: `[Step 3/6] ✓ All tests passed`
+
+### Step 4 — Commit, push, and (for full releases) tag
+
+Report: `[Step 4/6] Committing and pushing...`
 
 **First, check for uncommitted code changes and commit them if present:**
 ```bash
@@ -87,11 +107,11 @@ git fetch origin && git rebase origin/main
 ```
 Then re-push (and re-tag if needed).
 
-Report: `[Step 3/5] ✓ Pushed main` (and `+ tag v<new-version>` for full releases)
+Report: `[Step 4/6] ✓ Pushed main` (and `+ tag v<new-version>` for full releases)
 
-### Step 4 — Babysit CI
+### Step 5 — Babysit CI
 
-Report: `[Step 4/5] Waiting for CI (timeout: 10 minutes)...`
+Report: `[Step 5/6] Waiting for CI (timeout: 10 minutes)...`
 
 Poll every 30 seconds, up to 20 times. On each poll:
 ```bash
@@ -107,7 +127,7 @@ gh run list --repo jo-hoe/video-to-podcast-service --limit 8
 - `test` — triggered by main push
 - `Release Charts` — triggered by Chart.yaml change on main
 
-Report each poll as: `[Step 4/5] Poll <n>/20 — test: <status>, image: <status|n/a>, chart: <status>`
+Report each poll as: `[Step 5/6] Poll <n>/20 — test: <status>, image: <status|n/a>, chart: <status>`
 
 Stop as soon as all tracked workflows show `completed`. If any shows `failure`, fetch logs immediately:
 ```bash
@@ -115,13 +135,13 @@ gh run view <id> --log-failed
 ```
 Then report the failure and stop.
 
-If 20 polls pass without completion: `[Step 4/5] ✗ Timeout after 10 minutes` and stop.
+If 20 polls pass without completion: `[Step 5/6] ✗ Timeout after 10 minutes` and stop.
 
-Report: `[Step 4/5] ✓ All workflows completed successfully`
+Report: `[Step 5/6] ✓ All workflows completed successfully`
 
-### Step 5 — Verify and confirm
+### Step 6 — Verify and confirm
 
-Report: `[Step 5/5] Verifying published artifacts...`
+Report: `[Step 6/6] Verifying published artifacts...`
 
 Always verify the chart:
 ```bash
@@ -132,7 +152,7 @@ For full releases also verify the image tag via the workflow success (image API 
 
 If chart verification fails, report the error and stop.
 
-Report: `[Step 5/5] ✓ Release complete`
+Report: `[Step 6/6] ✓ Release complete`
 
 Confirm:
 - Chart: `oci://ghcr.io/jo-hoe/charts/video-to-podcast-service --version <new-version>`
