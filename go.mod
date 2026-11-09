@@ -7,7 +7,7 @@ require (
 	github.com/jo-hoe/gofeedx v0.0.0-20260801045351-da32a9a13d38
 	github.com/jo-hoe/mp3-joiner v0.1.0
 	github.com/labstack/echo/v4 v4.16.3
-	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/mattn/go-sqlite3 v1.14.53
 	github.com/stretchr/testify v1.12.1
 	github.com/u2takey/ffmpeg-go v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
